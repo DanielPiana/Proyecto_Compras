@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-        home: Gastos()
-    );
-  }
-}
-
 class Gastos extends StatelessWidget {
   const Gastos({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Gastos"),centerTitle: true,),
-      body: Text("Gastos"),
+      appBar: AppBar(
+        title: const Text("Gastos"),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text(
+          "Lista de la Gastos",
+          style: TextStyle(fontSize: 18),
+        ),
+      ),
     );
   }
 }
-

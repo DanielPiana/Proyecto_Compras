@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-        home: Recetas()
-    );
-  }
-}
-
 class Recetas extends StatelessWidget {
   const Recetas({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Recetas"),centerTitle: true,),
-      body: Text("Recetas"),
+      appBar: AppBar(
+        title: const Text("Recetas"),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text(
+          "Lista de la Recetas",
+          style: TextStyle(fontSize: 18),
+        ),
+      ),
     );
   }
 }
-

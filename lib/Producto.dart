@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-        home: Producto()
-    );
-  }
-}
-
 class Producto extends StatelessWidget {
   const Producto({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Productos"),centerTitle: true,),
-      body: Text("Productos"),
+      appBar: AppBar(
+        title: const Text("Productos"),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text(
+          "Productos",
+          style: TextStyle(
+            color: Color(0xFF212121), // Gris oscuro para el texto
+            fontSize: 18,
+          ),
+        ),
+      ),
     );
   }
 }
-
