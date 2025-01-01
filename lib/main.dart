@@ -5,13 +5,77 @@ import 'package:proyectocompras/Producto.dart';
 import 'package:proyectocompras/Recetas.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
+/*---------------------------------------------------------------------------------------*/
+void main() async {
+  // INICIALIZAR SQLITE PARA APLICACIONES DE ESCRITORIO.
+  sqfliteFfiInit();
+  final databaseFactory = databaseFactoryFfi;
 
-void main() {
-  runApp(const MainApp());
+  // CONFIGURAR RUTA DE LA BASE DE DATOS.
+  final dbPath = join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
+  final database = await databaseFactory.openDatabase(dbPath);
+
+  // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
+  await database.execute('DROP TABLE IF EXISTS recetas');
+  await database.execute('DROP TABLE IF EXISTS productos');
+  await database.execute('DROP TABLE IF EXISTS receta_producto');
+  await database.execute('DROP TABLE IF EXISTS facturas');
+  await database.execute('DROP TABLE IF EXISTS producto_factura');
+
+  // CREAR TABLA DE TAREAS SI NO EXISTE.
+  try {
+    await database.execute('''
+ CREATE TABLE IF NOT EXISTS recetas (
+  id INTEGER PRIMARY KEY,
+  nombre TEXT
+);
+CREATE TABLE IF NOT EXISTS productos (
+  id INTEGER PRIMARY KEY,
+  codBarras INTEGER,
+  nombre TEXT,
+  descripcion TEXT,
+  precio REAL,
+  supermercado TEXT
+);
+CREATE TABLE IF NOT EXISTS receta_producto (
+  idReceta INTEGER,
+  idProducto INTEGER,
+  cantidad TEXT,
+  FOREIGN KEY (idReceta) REFERENCES recetas(id),
+  FOREIGN KEY (idProducto) REFERENCES productos(id)
+);
+CREATE TABLE IF NOT EXISTS facturas (
+  id INTEGER PRIMARY KEY,
+  precio REAL,
+  fecha TEXT,
+  supermercado TEXT
+);
+CREATE TABLE IF NOT EXISTS producto_factura (
+  idProducto INTEGER,
+  idFactura INTEGER,
+  cantidad INTEGER,
+  FOREIGN KEY (idProducto) REFERENCES productos(id),
+  FOREIGN KEY (idFactura) REFERENCES facturas(id)
+);
+INSERT INTO productos (id, codBarras, nombre, descripcion,precio, supermercado)
+    VALUES 
+      (1, 123456789012, 'Manzanas', 'Frutas frescas', 6.49 , 'Dia'),
+      (2, 987654321098, 'Leche', 'Leche entera 1L', 4 , 'Mercadona'),
+      (3, 555555555555, 'Pan', 'Pan integral', 5.99, 'Gadis');
+
+''');
+  } catch (e) {
+    debugPrint("Error al crear tablas: $e");
+  }
+
+  // INICIAR APLICACIÓN CON BASE DE DATOS.
+  runApp(MainApp(database: database));
 }
-
+/*---------------------------------------------------------------------------------------*/
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  final Database database;
+
+  const MainApp({super.key,required this.database});
 
   @override
   Widget build(BuildContext context) {
@@ -30,28 +94,50 @@ class MainApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Colors.white), // Iconos en blanco
         ),
       ),
-      home: const Main(),
+      home: Main(database: database),
     );
   }
 }
-
+/*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
-  const Main({super.key});
+  final Database database;
+
+  const Main({super.key,required this.database});
 
   @override
   State<Main> createState() => _MainState();
 }
-
+/*---------------------------------------------------------------------------------------*/
 class _MainState extends State<Main> {
+  late List<Widget> pages;
+
   int _selectedIndex = 0;
 
-  // Lista de páginas para el body
-  final List<Widget> pages = [
-    Producto(),
-    Compra(),
-    Gastos(),
-    Recetas(),
-  ];
+  @override //INICIALIZADOR
+  void initState() {
+    super.initState();
+
+    // Inicializamos las paginas aqui, para que no de error el widget.database
+     pages = [
+      Producto(database: widget.database),
+      Compra(),
+      Gastos(),
+      Recetas(),
+    ];
+  }
+  /*
+  // Función para cargar los productos desde la base de datos
+  Future<void> _cargarProductos() async {
+    try {
+      final productos = await widget.database.query('productos');
+      setState(() {
+        _productos = productos;
+      });
+    } catch (e) {
+      debugPrint('Error al cargar productos: $e');
+    }
+  }
+*/
 
   // Método para cambiar la página seleccionada
   void _onItemTapped(int index) {
@@ -133,5 +219,4 @@ class _MainState extends State<Main> {
     );
   }
 }
-
-
+/*---------------------------------------------------------------------------------------*/
