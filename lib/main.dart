@@ -31,7 +31,7 @@ void main() async {
 );
 CREATE TABLE IF NOT EXISTS productos (
   id INTEGER PRIMARY KEY,
-  codBarras INTEGER,
+  codBarras INTEGER UNIQUE,
   nombre TEXT,
   descripcion TEXT,
   precio REAL,
@@ -57,12 +57,25 @@ CREATE TABLE IF NOT EXISTS producto_factura (
   FOREIGN KEY (idProducto) REFERENCES productos(id),
   FOREIGN KEY (idFactura) REFERENCES facturas(id)
 );
-INSERT INTO productos (id, codBarras, nombre, descripcion,precio, supermercado)
-    VALUES 
-      (1, 123456789012, 'Manzanas', 'Frutas frescas', 6.49 , 'Dia'),
-      (2, 987654321098, 'Leche', 'Leche entera 1L', 4 , 'Mercadona'),
-      (3, 555555555555, 'Pan', 'Pan integral', 5.99, 'Gadis');
-
+INSERT INTO productos (id, codBarras, nombre, descripcion, precio, supermercado)
+VALUES 
+    (4, 111111111111, 'Tomates', 'Tomates frescos', 3.49, 'Dia'),
+    (5, 222222222222, 'Arroz', 'Arroz blanco 1kg', 2.5, 'Mercadona'),
+    (6, 333333333333, 'Azúcar', 'Azúcar refinada', 1.99, 'Gadis'),
+    (7, 444444444444, 'Sal', 'Sal marina 1kg', 1.25, 'Dia'),
+    (8, 555555555556, 'Cereales', 'Cereales integrales', 3.99, 'Mercadona'),
+    (9, 666666666666, 'Aceite de oliva', 'Aceite de oliva virgen extra 1L', 5.99, 'Gadis'),
+    (10, 777777777777, 'Huevos', 'Huevos frescos (docena)', 2.99, 'Dia'),
+    (11, 888888888888, 'Queso', 'Queso manchego 200g', 4.5, 'Mercadona'),
+    (12, 999999999999, 'Lechuga', 'Lechuga iceberg', 1.49, 'Gadis'),
+    (13, 123456789013, 'Yogur', 'Yogur natural (pack de 4)', 3.0, 'Dia'),
+    (14, 987654321099, 'Zumo', 'Zumo de naranja 1L', 2.75, 'Mercadona'),
+    (15, 555557555556, 'Pasta', 'Pasta espagueti 500g', 2.25, 'Gadis'),
+    (16, 444444444445, 'Harina', 'Harina de trigo 1kg', 1.75, 'Dia'),
+    (17, 111111111112, 'Mantequilla', 'Mantequilla sin sal 250g', 3.25, 'Mercadona'),
+    (18, 333333333334, 'Café', 'Café molido 250g', 4.99, 'Gadis'),
+    (19, 888888888889, 'Pescado', 'Filetes de merluza 500g', 8.99, 'Dia'),
+    (20, 999999999998, 'Pollo', 'Pechuga de pollo 1kg', 6.5, 'Mercadona');
 ''');
   } catch (e) {
     debugPrint("Error al crear tablas: $e");

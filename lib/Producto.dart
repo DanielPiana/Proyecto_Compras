@@ -12,14 +12,14 @@ class Producto extends StatefulWidget {
 
 class _ProductoState extends State<Producto> {
   Map<String, List<Map<String, dynamic>>> _productosPorSupermercado = {};
-
+/*TODO-----------------INITIALIZE-----------------*/
   @override
   void initState() {
     super.initState();
     cargarProductos();
   }
 
-  // Método para cargar y agrupar los productos desde la base de datos
+  /*TODO-----------------METODO DE CARGAR-----------------*/
   Future<void> cargarProductos() async {
     final productos = await widget.database.query('productos');
     final Map<String, List<Map<String, dynamic>>> agrupados = {};
@@ -36,6 +36,67 @@ class _ProductoState extends State<Producto> {
       _productosPorSupermercado = agrupados;
     });
   }
+  /*TODO-----------------METODO DE ELIMINAR-----------------*/
+  Future<void> deleteProducto(int id) async {
+    try {
+      await widget.database.delete( // Cambia database por widget.database
+        'productos', // Nombre de la tabla
+        where: 'id = ?', // Condición para identificar el registro
+        whereArgs: [id], // Argumentos para la condición
+      );
+      debugPrint('Producto con id $id eliminado exitosamente.');
+
+      // Recarga los productos para reflejar el cambio
+      await cargarProductos();
+    } catch (e) {
+      debugPrint('Error al eliminar producto: $e');
+    }
+  }
+  /*TODO-----------------DIALOGO DE CONFIRMACION-----------------*/
+  void mostrarDialogoConfirmacion(BuildContext context, int idProducto) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            "Confirmar eliminación",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            "¿Estás seguro de que deseas eliminar este producto?",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el diálogo
+              },
+              child: const Text(
+                "Cancelar",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Llama al método para eliminar el producto
+                await deleteProducto(idProducto);
+
+                // Cierra el diálogo y actualiza la UI
+                Navigator.of(context).pop();
+                cargarProductos();
+              },
+              child: const Text(
+                "Eliminar",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +174,7 @@ class _ProductoState extends State<Producto> {
                         icon: const Icon(Icons.delete),
                         iconSize: 20.0,
                         onPressed: () {
-                          debugPrint('Eliminar producto');
+                          mostrarDialogoConfirmacion(context, producto["id"]);
                         },
                         padding: EdgeInsets.zero, // Elimina el relleno interno del botón
                       ),
@@ -128,3 +189,4 @@ class _ProductoState extends State<Producto> {
     );
   }
 }
+
