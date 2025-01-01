@@ -3,6 +3,8 @@ import 'package:proyectocompras/Gastos.dart';
 import 'package:proyectocompras/Compra.dart';
 import 'package:proyectocompras/Producto.dart';
 import 'package:proyectocompras/Recetas.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:path/path.dart';
 
 void main() {
   runApp(const MainApp());
@@ -61,6 +63,46 @@ class _MainState extends State<Main> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () {
+                debugPrint('Hacer layout de menu');
+              },
+            ),
+            Expanded(
+              child: Container(
+                height: 40, // Altura consistente con el AppBar
+                decoration: BoxDecoration(
+                  color: Colors.white, // Fondo blanco para el TextField
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: TextField(
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'Buscar...',
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.store, color: Colors.white),
+              onPressed: () {
+                debugPrint('Abrir layout para crear supermercado');
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onPressed: () {
+                debugPrint('Abrir layout/ventana de ajustes');
+              },
+            ),
+          ],
+        ),
+      ),
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
