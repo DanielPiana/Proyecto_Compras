@@ -218,6 +218,117 @@ class _ProductoState extends State<Producto> {
     );
   }
 
+  /*TODO-----------------DIALOGO DE CREACION-----------------*/
+  void dialogoCreacion(BuildContext context) {
+    final TextEditingController nombreController = TextEditingController();
+    final TextEditingController descripcionController = TextEditingController();
+    final TextEditingController precioController = TextEditingController();
+    final TextEditingController nuevoSupermercadoController = TextEditingController();
+
+    String? supermercadoSeleccionado;
+    bool creandoSupermercado = false; // Para controlar si se muestra el TextField
+
+    // Obtener supermercados únicos
+    final supermercados = _productosPorSupermercado.keys.toList();
+    supermercados.add("Nuevo supermercado"); // Agregar opción para crear
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text("Crear producto"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nombreController,
+                      decoration: const InputDecoration(labelText: 'Nombre'),
+                    ),
+                    TextField(
+                      controller: descripcionController,
+                      decoration: const InputDecoration(labelText: 'Descripción'),
+                    ),
+                    TextField(
+                      controller: precioController,
+                      decoration: const InputDecoration(labelText: 'Precio'),
+                      keyboardType: TextInputType.number,
+                    ),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      value: supermercadoSeleccionado,
+                      hint: const Text("Seleccionar supermercado"),
+                      items: supermercados.map((supermercado) {
+                        return DropdownMenuItem<String>(
+                          value: supermercado,
+                          child: Text(supermercado),
+                        );
+                      }).toList(),
+                      onChanged: (String? value) {
+                        setState(() {
+                          supermercadoSeleccionado = value;
+                          creandoSupermercado = (value == "Nuevo supermercado");
+                        });
+                      },
+                    ),
+                    if (creandoSupermercado)
+                      TextField(
+                        controller: nuevoSupermercadoController,
+                        decoration: const InputDecoration(labelText: 'Nombre del nuevo supermercado'),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Cerrar diálogo
+                  },
+                  child: const Text("Cancelar"),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    // Validar los campos
+                    final String nombre = nombreController.text;
+                    final String descripcion = descripcionController.text;
+                    final double precio = double.tryParse(precioController.text) ?? 0.0;
+                    final String supermercado = creandoSupermercado
+                        ? nuevoSupermercadoController.text
+                        : supermercadoSeleccionado ?? '';
+
+                    if (nombre.isEmpty || supermercado.isEmpty) {
+                      debugPrint("Nombre o supermercado no pueden estar vacíos");
+                      return;
+                    }
+
+                    // Crear el nuevo producto
+                    final nuevoProducto = {
+                      'nombre': nombre,
+                      'descripcion': descripcion,
+                      'precio': precio,
+                      'supermercado': supermercado,
+                    };
+
+                    // Insertar el producto en la base de datos
+                    await widget.database.insert('productos', nuevoProducto);
+
+                    // Cerrar el diálogo y recargar productos
+                    Navigator.of(context).pop();
+                    cargarProductos();
+                  },
+                  child: const Text("Guardar"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -228,86 +339,85 @@ class _ProductoState extends State<Producto> {
       ),
       body: _productosPorSupermercado.isEmpty
           ? const Center(
-              child: Text(
-                "No hay productos disponibles",
-                style: TextStyle(
-                  color: Color(0xFF212121),
-                  fontSize: 18,
-                ),
-              ),
-            )
+        child: Text(
+          "No hay productos disponibles",
+          style: TextStyle(
+            color: Color(0xFF212121), // Gris oscuro para el texto
+            fontSize: 18,
+          ),
+        ),
+      )
           : ListView(
-              children: _productosPorSupermercado.entries.map((entry) {
-                final supermercado = entry.key;
-                final productos = entry.value;
+        children: _productosPorSupermercado.entries.map((entry) {
+          final supermercado = entry.key;
+          final productos = entry.value;
 
-                return ExpansionTile(
-                  title: Text(
-                    supermercado,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  children: productos.map((producto) {
-                    return ListTile(
-                      leading: const Icon(Icons.fastfood),
-                      title: Text(producto['nombre'] ?? ''),
-                      subtitle: Text(producto['descripcion'] ?? ''),
-                      trailing: Row(
-                        // Ocupa el menor tamaño posible
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                '${double.tryParse(producto['precio'].toString())?.toStringAsFixed(2) ?? '0.00'} €',
-                              ),
-                            ],
-                          ),
-                          SizedBox(
-                            width: 25,
-                            height: 25,
-                            child: IconButton(
-                              icon: const Icon(Icons.add),
-                              iconSize: 20.0,
-                              onPressed: () {
-                                debugPrint('Añadir producto');
-                              },
-                              padding: EdgeInsets.zero, // Elimina el relleno interno del botón
-                            ),
-                          ),
-                          SizedBox(
-                            width: 25,
-                            height: 25,
-                            child: IconButton(
-                              icon: const Icon(Icons.edit), iconSize: 20.0,
-                              onPressed: () {
-                                dialogoEdicion(context,producto);
-                              },
-                              padding: EdgeInsets.zero, // Elimina el relleno interno del botón
-                            ),
-                          ),
-                          SizedBox(
-                            width: 25,
-                            height: 25,
-                            child: IconButton(
-                              icon: const Icon(Icons.delete),
-                              iconSize: 20.0,
-                              onPressed: () {
-                                dialogoEliminacion(context, producto["id"]);
-                              },
-                              padding: EdgeInsets.zero, // Elimina el relleno interno del botón
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                );
-              }).toList(),
+          return ExpansionTile(
+            title: Text(
+              supermercado,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
+            children: productos.map((producto) {
+              return ListTile(
+                leading: const Icon(Icons.fastfood),
+                title: Text(producto['nombre'] ?? ''),
+                subtitle: Text(producto['descripcion'] ?? ''),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 25,
+                      height: 25,
+                      child: IconButton(
+                        icon: const Icon(Icons.add),
+                        iconSize: 20.0,
+                        onPressed: () {
+                          debugPrint('Añadir producto');
+                        },
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 25,
+                      height: 25,
+                      child: IconButton(
+                        icon: const Icon(Icons.edit),
+                        iconSize: 20.0,
+                        onPressed: () {
+                          dialogoEdicion(context, producto);
+                        },
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 25,
+                      height: 25,
+                      child: IconButton(
+                        icon: const Icon(Icons.delete),
+                        iconSize: 20.0,
+                        onPressed: () {
+                          dialogoEliminacion(context, producto['id']);
+                        },
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          );
+        }).toList(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          dialogoCreacion(context);
+        },
+        child: const Icon(Icons.add),
+      ),
     );
+
   }
 }
