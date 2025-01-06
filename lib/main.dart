@@ -15,12 +15,13 @@ void main() async {
   final dbPath = join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
   final database = await databaseFactory.openDatabase(dbPath);
 
-/*  // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
+/* // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
   await database.execute('DROP TABLE IF EXISTS recetas');
   await database.execute('DROP TABLE IF EXISTS productos');
   await database.execute('DROP TABLE IF EXISTS receta_producto');
   await database.execute('DROP TABLE IF EXISTS facturas');
   await database.execute('DROP TABLE IF EXISTS producto_factura');
+  await database.execute('DROP TABLE IF EXISTS compra');
 */
   // CREAR TABLA DE TAREAS SI NO EXISTE.
   try {
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS producto_factura (
 );
 CREATE TABLE IF NOT EXISTS compra (
   idProducto INTEGER,
+  nombre TEXT,
   precio REAL,
   marcado INTEGER DEFAULT 0,
   FOREIGN KEY (idProducto) REFERENCES productos(id)
@@ -87,11 +89,11 @@ class MainApp extends StatelessWidget {
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF4CAF50), // Verde principal para el AppBar
           titleTextStyle: TextStyle(
-            color: Colors.white, // Texto en blanco para contraste
+            color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
-          iconTheme: IconThemeData(color: Colors.white), // Iconos en blanco
+          iconTheme: IconThemeData(color: Colors.white),
         ),
       ),
       home: Main(database: database),
@@ -160,9 +162,9 @@ class _MainState extends State<Main> {
             ),
             Expanded(
               child: Container(
-                height: 40, // Altura consistente con el AppBar
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white, // Fondo blanco para el TextField
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
@@ -173,12 +175,6 @@ class _MainState extends State<Main> {
                   ),
                 ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.store, color: Colors.white),
-              onPressed: () {
-                debugPrint('Abrir layout para crear supermercado');
-              },
             ),
             IconButton(
               icon: const Icon(Icons.settings, color: Colors.white),

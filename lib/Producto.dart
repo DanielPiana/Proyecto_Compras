@@ -26,8 +26,7 @@ class _ProductoState extends State<Producto> {
     final Map<String, List<Map<String, dynamic>>> agrupados = {};
 
     for (var producto in productos) {
-      final supermercado =
-          (producto['supermercado'] ?? 'Sin supermercado').toString();
+      final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
       if (!agrupados.containsKey(supermercado)) {
         agrupados[supermercado] = [];
       }
@@ -329,12 +328,13 @@ class _ProductoState extends State<Producto> {
   }
 
 /*TODO-----------------METODO AÑADIR PRODUCTO A LISTA DE LA COMPRA-----------------*/
-  Future<void> _agregarACompra(int idProducto, double precio) async {
+  Future<void> _agregarACompra(int idProducto, double precio,String nombre) async {
     try {
       await widget.database.insert(
         'compra',
         {
           'idProducto': idProducto,
+          'nombre' : nombre,
           'precio': precio,
           'marcado': 0,
         },
@@ -393,7 +393,7 @@ class _ProductoState extends State<Producto> {
                         icon: const Icon(Icons.add),
                         iconSize: 20.0,
                         onPressed: () {
-                          _agregarACompra(producto['id'], producto['precio']);
+                          _agregarACompra(producto['id'], producto['precio'], producto['nombre']);
                         },
                         padding: EdgeInsets.zero,
                       ),
