@@ -39,7 +39,7 @@ class _ProductoState extends State<Producto> {
     });
   }
 
-  /*TODO-----------------METODO DE ELIMINAR-----------------*/
+  /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
   Future<void> deleteProducto(int id) async {
     try {
       await widget.database.delete(
@@ -57,7 +57,7 @@ class _ProductoState extends State<Producto> {
     }
   }
 
-  /*TODO-----------------METODO DE EDITAR-----------------*/
+  /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
   Future<void> actualizarProducto(Map<String, dynamic> producto) async {
     try {
       await widget.database.update(
@@ -77,14 +77,14 @@ class _ProductoState extends State<Producto> {
     }
   }
 
-  /*TODO-----------------METODO DE LISTADO DE SUPERMERCADOS-----------------*/
+  /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
   Future<List<String>> obtenerSupermercados() async {
     final productos = await widget.database.query('productos');
     final supermercados = productos.map((producto) => producto['supermercado'] as String).toSet().toList();
     return supermercados;
   }
 
-  /*TODO-----------------DIALOGO DE ELIMINACION-----------------*/
+  /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
       context: context,
@@ -128,7 +128,7 @@ class _ProductoState extends State<Producto> {
     );
   }
 
-  /*TODO-----------------DIALOGO DE EDICION-----------------*/
+  /*TODO-----------------DIALOGO DE EDICION DE PRODUCTO-----------------*/
   void dialogoEdicion(BuildContext context, Map<String, dynamic> producto) async {
     // Creamos los controladores para los campos de texto
     final TextEditingController nombreController = TextEditingController(text: producto['nombre']);
@@ -218,7 +218,7 @@ class _ProductoState extends State<Producto> {
     );
   }
 
-  /*TODO-----------------DIALOGO DE CREACION-----------------*/
+  /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
   void dialogoCreacion(BuildContext context) {
     final TextEditingController nombreController = TextEditingController();
     final TextEditingController descripcionController = TextEditingController();
@@ -328,7 +328,25 @@ class _ProductoState extends State<Producto> {
     );
   }
 
-
+/*TODO-----------------METODO AÑADIR PRODUCTO A LISTA DE LA COMPRA-----------------*/
+  Future<void> _agregarACompra(int idProducto, double precio) async {
+    try {
+      await widget.database.insert(
+        'compra',
+        {
+          'idProducto': idProducto,
+          'precio': precio,
+          'marcado': 0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Producto añadido a la lista de compra')),
+      );
+    } catch (e) {
+      debugPrint('Error al añadir producto a la lista de compra: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -375,7 +393,7 @@ class _ProductoState extends State<Producto> {
                         icon: const Icon(Icons.add),
                         iconSize: 20.0,
                         onPressed: () {
-                          debugPrint('Añadir producto');
+                          _agregarACompra(producto['id'], producto['precio']);
                         },
                         padding: EdgeInsets.zero,
                       ),
