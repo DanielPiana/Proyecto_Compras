@@ -20,6 +20,7 @@ class _CompraState extends State<Compra> {
     _cargarCompra();
   }
 
+  /*TODO-----------------METODO DE CARGAR COMPRA-----------------*/
   Future<void> _cargarCompra() async {
     final productos = await widget.database.rawQuery('''
     SELECT compra.*, productos.supermercado 
@@ -50,8 +51,7 @@ class _CompraState extends State<Compra> {
     _calcularTotalMarcados(); // Actualizar el total marcado
   }
 
-
-
+  /*TODO-----------------METODO CALCULAR TOTAL MARCADO-----------------*/
   Future<void> _calcularTotalMarcados() async {
     // Consultar el total de los productos marcados
     final resultado = await widget.database.rawQuery(
@@ -65,6 +65,50 @@ class _CompraState extends State<Compra> {
     });
   }
 
+  /*TODO-----------------METODO GENERAR FACTURA-----------------*/
+  Future<void> _generarFactura() async {
+    // Consultar productos marcados
+    final productosMarcados = await widget.database.rawQuery(
+      'SELECT * FROM compra WHERE marcado = 1',
+    );
+
+    if (productosMarcados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay productos marcados para generar una factura.')),
+      );
+      return;
+    }
+
+    // Calcular el precio total de los productos marcados
+    double precioTotal = productosMarcados.fold(0.0, (sum, producto) {
+      return sum + (producto['precio'] as num).toDouble();
+    });
+
+    // Obtener solo la fecha actual (YYYY-MM-DD)
+    final fechaActual = DateTime.now().toIso8601String().split('T')[0];
+
+    // Insertar nueva factura
+    final idFactura = await widget.database.insert('facturas', {
+      'precio': precioTotal,
+      'fecha': fechaActual, // Usamos la fecha simplificada
+      'supermercado': 'Supermercado Desconocido', // Cambiar según corresponda
+    });
+
+    // Asociar productos marcados a la factura
+    for (var producto in productosMarcados) {
+      await widget.database.insert('producto_factura', {
+        'idProducto': producto['idProducto'],
+        'idFactura': idFactura,
+        'cantidad': 1, // Ajustar según la lógica de cantidades
+      });
+    }
+
+    // Mostrar mensaje de éxito
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Factura generada correctamente.')),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +116,13 @@ class _CompraState extends State<Compra> {
       appBar: AppBar(
         title: const Text("Lista de la Compra"),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt),
+            onPressed: _generarFactura,
+            tooltip: 'Generar Factura',
+          ),
+        ],
       ),
       body: Column(
         children: [
