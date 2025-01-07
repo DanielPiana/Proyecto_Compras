@@ -328,25 +328,40 @@ class _ProductoState extends State<Producto> {
   }
 
 /*TODO-----------------METODO AÑADIR PRODUCTO A LISTA DE LA COMPRA-----------------*/
-  Future<void> _agregarACompra(int idProducto, double precio,String nombre) async {
+  Future<void> _agregarACompra(int idProducto, double precio, String nombre) async {
     try {
-      await widget.database.insert(
-        'compra',
-        {
-          'idProducto': idProducto,
-          'nombre' : nombre,
-          'precio': precio,
-          'marcado': 0,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
+      // Verificar si el producto ya está en la tabla compra
+      final productosExistentes = await widget.database.rawQuery(
+        'SELECT * FROM compra WHERE idProducto = ?',
+        [idProducto],
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Producto añadido a la lista de compra')),
-      );
+
+      if (productosExistentes.isNotEmpty) {
+        // Si ya existe, mostramos un mensaje diciendo que ya está en la lista
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Este producto ya está en la lista de compra.')),
+        );
+      } else {
+        // Si no existe, lo añadimos
+        await widget.database.insert(
+          'compra',
+          {
+            'idProducto': idProducto,
+            'nombre': nombre,
+            'precio': precio,
+            'marcado': 0,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Producto añadido a la lista de compra')),
+        );
+      }
     } catch (e) {
       debugPrint('Error al añadir producto a la lista de compra: $e');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
