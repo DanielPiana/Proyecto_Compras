@@ -15,14 +15,14 @@ void main() async {
   final dbPath = join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
   final database = await databaseFactory.openDatabase(dbPath);
 
-/* // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
+ // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
   await database.execute('DROP TABLE IF EXISTS recetas');
   await database.execute('DROP TABLE IF EXISTS productos');
   await database.execute('DROP TABLE IF EXISTS receta_producto');
   await database.execute('DROP TABLE IF EXISTS facturas');
   await database.execute('DROP TABLE IF EXISTS producto_factura');
   await database.execute('DROP TABLE IF EXISTS compra');
-*/
+
   // CREAR TABLA DE TAREAS SI NO EXISTE.
   try {
     await database.execute('''
@@ -65,14 +65,32 @@ CREATE TABLE IF NOT EXISTS compra (
   marcado INTEGER DEFAULT 0,
   FOREIGN KEY (idProducto) REFERENCES productos(id)
 );
+INSERT INTO productos (id, codBarras, nombre, descripcion, precio, supermercado)
+VALUES
+(1, 123456, 'Manzanas', 'Manzanas rojas frescas', 1.50, 'Supermercado A'),
+(2, 234567, 'Leche', 'Leche entera de vaca', 0.90, 'Supermercado B'),
+(3, 345678, 'Pan', 'Pan de molde integral', 1.20, 'Supermercado A'),
+(4, 456789, 'Huevos', 'Huevos frescos de granja', 2.30, 'Supermercado C');
+INSERT INTO facturas (id, precio, fecha, supermercado)
+VALUES
+(1, 3.90, '2025-01-01', 'Supermercado A'),
+(2, 7.50, '2025-01-05', 'Supermercado C');
+
+-- Insertar productos en facturas
+INSERT INTO producto_factura (idProducto, idFactura, cantidad)
+VALUES
+(1, 1, 2), -- 2 Manzanas en factura 1
+(2, 1, 1), -- 1 Leche en factura 1
+(3, 2, 3), -- 3 Panes en factura 2
+(4, 2, 1); -- 1 Huevos en factura 2
 ''');
   } catch (e) {
     debugPrint("Error al crear tablas: $e");
   }
-
   // INICIAR APLICACIÓN CON BASE DE DATOS.
   runApp(MainApp(database: database));
 }
+
 /*---------------------------------------------------------------------------------------*/
 class MainApp extends StatelessWidget {
   final Database database;
@@ -123,7 +141,7 @@ class _MainState extends State<Main> {
      pages = [
       Producto(database: widget.database),
       Compra(database: widget.database),
-      Gastos(),
+      Gastos(database: widget.database),
       Recetas(),
     ];
   }
