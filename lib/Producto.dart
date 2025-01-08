@@ -332,8 +332,7 @@ class _ProductoState extends State<Producto> {
     try {
       // Verificar si el producto ya está en la tabla compra
       final productosExistentes = await widget.database.rawQuery(
-        'SELECT * FROM compra WHERE idProducto = ?',
-        [idProducto],
+        'SELECT * FROM compra WHERE idProducto = ?', [idProducto],
       );
 
       if (productosExistentes.isNotEmpty) {
@@ -375,7 +374,7 @@ class _ProductoState extends State<Producto> {
         child: Text(
           "No hay productos disponibles",
           style: TextStyle(
-            color: Color(0xFF212121), // Gris oscuro para el texto
+            color: Color(0xFF212121),
             fontSize: 18,
           ),
         ),
@@ -386,8 +385,7 @@ class _ProductoState extends State<Producto> {
           final productos = entry.value;
 
           return ExpansionTile(
-            title: Text(
-              supermercado,
+            title: Text(supermercado,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,

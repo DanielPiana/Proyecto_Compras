@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 
 class Compra extends StatefulWidget {
@@ -85,7 +86,8 @@ class _CompraState extends State<Compra> {
     });
 
     // Obtener solo la fecha actual (YYYY-MM-DD)
-    final fechaActual = DateTime.now().toIso8601String().split('T')[0];
+    final fechaString = DateTime.now().toIso8601String().split('T')[0];
+    final fechaActual = DateFormat("dd/MM/yyyy").format(DateTime.parse(fechaString));
 
     // Insertar nueva factura
     final idFactura = await widget.database.insert('facturas', {
@@ -135,7 +137,12 @@ class _CompraState extends State<Compra> {
                 final productos = grupo['productos'] as List<Map<String, dynamic>>;
 
                 return ExpansionTile(
-                  title: Text(supermercado),
+                  title: Text(supermercado,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                   children: productos.map((producto) {
                     return ListTile(
                       leading: IconButton(
