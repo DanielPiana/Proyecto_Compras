@@ -102,16 +102,15 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.green,
-        scaffoldBackgroundColor: const Color(0xFFF1F8E9), // Fondo del Scaffold global
+        scaffoldBackgroundColor: const Color(0xFFF1F8E9), // FONDO DEL SCAFFOLD GLOBAL (BODY)
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4CAF50), // Verde principal para el AppBar
+          backgroundColor: Color(0xFF4CAF50), // VERDE PRINCIPAL DEL AppBar
           titleTextStyle: TextStyle(
-            color: Colors.white,
+            color: Colors.white, //COLOR DEL TITULO DEL AppBar
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Colors.white), //COLOR ICONO CREAR FACTURA, DENTRO DEL AppBar
         ),
       ),
       home: Main(database: database),
@@ -129,16 +128,16 @@ class Main extends StatefulWidget {
 }
 /*---------------------------------------------------------------------------------------*/
 class _MainState extends State<Main> {
-  late List<Widget> pages;
+  late List<Widget> pages; // LISTA CON LAS DIFERENTES PAGINAS
 
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // VARIABLE PARA EL INDICE DEL BottomNavigationBar
 
   @override //INICIALIZADOR
   void initState() {
     super.initState();
 
-    // Inicializamos las paginas aqui, para que no de error el widget.database
-     pages = [
+    // INICIALIZAMOS LAS PAGINAS AQUI, PARA QUE NO DE ERROR EL WIDGET.DATABASE
+     pages = [ //DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
       Producto(database: widget.database),
       Compra(database: widget.database),
       Gastos(database: widget.database),
@@ -158,34 +157,26 @@ class _MainState extends State<Main> {
     }
   }
 */
-
-  // Método para cambiar la página seleccionada
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            IconButton(
+            IconButton( //ICONO MENU HAMBURGUESA
               icon: const Icon(Icons.menu, color: Colors.white),
               onPressed: () {
                 debugPrint('Hacer layout de menu');
               },
             ),
-            Expanded(
+            Expanded( //PERSONALIZACION DE LA BARRA DE BUSQUEDA
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: TextField(
+                child: const TextField(
                   decoration: InputDecoration(
                     prefixIcon: Icon(Icons.search),
                     hintText: 'Buscar...',
@@ -194,7 +185,7 @@ class _MainState extends State<Main> {
                 ),
               ),
             ),
-            IconButton(
+            IconButton( // ICONO DE SETTINGS
               icon: const Icon(Icons.settings, color: Colors.white),
               onPressed: () {
                 debugPrint('Abrir layout/ventana de ajustes');
@@ -203,34 +194,41 @@ class _MainState extends State<Main> {
           ],
         ),
       ),
-      body: pages[_selectedIndex],
+      body: pages[_selectedIndex], //CARGAMOS LA PAGINA DEPENDIENDO DEL INDICE EN EL QUE HAGAMOS CLICK
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFFE8F5E9), // Fondo de la barra de navegación
-        selectedItemColor: const Color(0xFF388E3C), // Verde oscuro para seleccionados
-        unselectedItemColor: const Color(0xFFA5D6A7), // Verde desaturado para no seleccionados
+        backgroundColor: const Color(0xFFE8F5E9), // FONDO DEL BottomNavigationBar
+        selectedItemColor: const Color(0xFF388E3C), // COLOR PARA EL ITEM SELECCIONADO
+        unselectedItemColor: const Color(0xFFA5D6A7), // COLOR PARA LOS NO SELECCIONADOS
         items: const [
-          BottomNavigationBarItem(
+          BottomNavigationBarItem( // PRODUCTOS
             icon: Icon(Icons.fastfood),
             label: "Productos",
           ),
-          BottomNavigationBarItem(
+          BottomNavigationBarItem( // COMPRA
             icon: Icon(Icons.shopping_cart_outlined),
             label: "Compra",
           ),
-          BottomNavigationBarItem(
+          BottomNavigationBarItem( // GASTOS
             icon: Icon(Icons.attach_money),
             label: "Gastos",
           ),
-          BottomNavigationBarItem(
+          BottomNavigationBarItem(// RECETAS
             icon: Icon(Icons.restaurant_menu),
             label: "Recetas",
           ),
         ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        currentIndex: _selectedIndex, // INDICE EN EL QUE HACEMOS CLICK
+        onTap: _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
       ),
     );
+  }
+  /*---------------------------------------------------------------------------------------*/
+  // METODO PARA CAMBIAR LA PAGINA SELECCIONADA CON EL INDEX DEL BottomNavigationBar
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 }
 /*---------------------------------------------------------------------------------------*/

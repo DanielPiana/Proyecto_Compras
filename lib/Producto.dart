@@ -11,45 +11,55 @@ class Producto extends StatefulWidget {
 }
 
 class _ProductoState extends State<Producto> {
-  Map<String, List<Map<String, dynamic>>> _productosPorSupermercado = {};
+  Map<String, List<Map<String, dynamic>>> _productosPorSupermercado = {}; // LISTA PARA GUARDAR LOS PRODUCTOS AGRUPADOS POR 1 SUPERMERCADO EN CONCRETO
 
   /*TODO-----------------INITIALIZE-----------------*/
   @override
   void initState() {
     super.initState();
-    cargarProductos();
+    cargarProductos(); // CARGAMOS LOS PRODUCTOS AL ABRIR LA PAGINA PRODUCTOS
   }
 
   /*TODO-----------------METODO DE CARGAR-----------------*/
   Future<void> cargarProductos() async {
+    // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
     final productos = await widget.database.query('productos');
-    final Map<String, List<Map<String, dynamic>>> agrupados = {};
 
+    // MAPA PARA AGRUPAR LOS PRODUCTOS POR NOMBRE DE SUPERMERCADO
+    final Map<String, List<Map<String, dynamic>>> productosAgrupados = {};
+
+    // ITERAMOS SOBRE CADA PRODUCTO OBTENIDO DE LA CONSULTA
     for (var producto in productos) {
+      // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
       final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
-      if (!agrupados.containsKey(supermercado)) {
-        agrupados[supermercado] = [];
+
+      // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO INICIALIZAMOS COMO UNA LISTA VACÍA
+      if (!productosAgrupados.containsKey(supermercado)) {
+        productosAgrupados[supermercado] = [];
       }
-      agrupados[supermercado]?.add(producto);
+
+      // AGREGAMOS EL PRODUCTO A LA LISTA CORRESPONDIENTE DENTRO DEL MAPA
+      productosAgrupados[supermercado]?.add(producto);
     }
 
+    // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
     setState(() {
-      _productosPorSupermercado = agrupados;
+      _productosPorSupermercado = productosAgrupados;
     });
   }
+
 
   /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
   Future<void> deleteProducto(int id) async {
     try {
       await widget.database.delete(
-        // Cambia database por widget.database
-        'productos', // Nombre de la tabla
-        where: 'id = ?', // Condición para identificar el registro
-        whereArgs: [id], // Argumentos para la condición
+        'productos', // NOMBRE DE LA TABLA
+        where: 'id = ?', // CONDICION PARA IDENTIFICAR LO QUE QUEREMOS BORRAR
+        whereArgs: [id], // DAMOS VALOR AL ARGUMENTO
       );
       debugPrint('Producto con id $id eliminado exitosamente.');
 
-      // Recarga los productos para reflejar el cambio
+      // RECARGAMOS LOS PRODUCTOS
       await cargarProductos();
     } catch (e) {
       debugPrint('Error al eliminar producto: $e');
@@ -60,16 +70,17 @@ class _ProductoState extends State<Producto> {
   Future<void> actualizarProducto(Map<String, dynamic> producto) async {
     try {
       await widget.database.update(
-        'productos',
-        {
+        'productos', // NOMBRE DE LA TABLA
+        { // ACTUALIZAMOS LOS DATOS CON EL producto PROPORCIONADO POR PARAMETRO
           'nombre': producto['nombre'],
           'descripcion': producto['descripcion'],
           'precio': producto['precio'],
           'supermercado': producto['supermercado'],
         },
-        where: 'id = ?',
-        whereArgs: [producto['id']],
+        where: 'id = ?', // CONDICION PARA IDENTIFICAR LO QUE QUEREMOS EDITAR
+        whereArgs: [producto['id']], // DAMOS VALOR AL ARGUMENTO
       );
+      cargarProductos();
       debugPrint('Producto actualizado exitosamente.');
     } catch (e) {
       debugPrint('Error al actualizar el producto: $e');
@@ -78,8 +89,13 @@ class _ProductoState extends State<Producto> {
 
   /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
   Future<List<String>> obtenerSupermercados() async {
+    // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
     final productos = await widget.database.query('productos');
+
+    //OBTENEMOS LOS NOMBRES DE LOS SUPERMERCADOS QUE HAY, LOS TRANSFORMAMOS EN SET PARA
+    // ELIMINAR DUPLICADOS Y LO TRANSFORMAMOS EN LISTA OTRA VEZ
     final supermercados = productos.map((producto) => producto['supermercado'] as String).toSet().toList();
+
     return supermercados;
   }
 
@@ -89,7 +105,7 @@ class _ProductoState extends State<Producto> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text(
+          title: const Text( // TITULO DE LA ALERTA
             "Confirmar eliminación",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
@@ -100,7 +116,7 @@ class _ProductoState extends State<Producto> {
           actions: [
             TextButton(
               onPressed: () {
-                // Cierra el diálogo
+                // CERRAMOS EL DIALOGO
                 Navigator.of(context).pop();
               },
               child: const Text(
@@ -110,11 +126,10 @@ class _ProductoState extends State<Producto> {
             ),
             TextButton(
               onPressed: () async {
-                // Borramos el producto
+                // BORRAMOS EL PRODUCTO
                 await deleteProducto(idProducto);
-                //Cerramos el diálogo y actualizamos los productos
+                // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
                 Navigator.of(context).pop();
-                cargarProductos();
               },
               child: const Text(
                 "Eliminar",
@@ -129,85 +144,88 @@ class _ProductoState extends State<Producto> {
 
   /*TODO-----------------DIALOGO DE EDICION DE PRODUCTO-----------------*/
   void dialogoEdicion(BuildContext context, Map<String, dynamic> producto) async {
-    // Creamos los controladores para los campos de texto
+    // CREAMOS LOS CONTROLADORES PARA LOS TextField Y LOS INICIALIZAMOS CON LOS DATOS DEL PRODUCTO AL QUE HA HECHO CLICK
     final TextEditingController nombreController = TextEditingController(text: producto['nombre']);
     final TextEditingController descripcionController = TextEditingController(text: producto['descripcion']);
     final TextEditingController precioController = TextEditingController(text: producto['precio'].toString());
 
-    // Obtenemos la lista de supermercados únicos
+    // OBTENEMOS LA LISTA DE SUPERMERCADOS QUE EXISTEN
     final List<String> supermercados = await obtenerSupermercados();
 
-    // Inicializamos el supermercado seleccionado
+    // INICIALIZAMOS LA LISTA CON EL SUPERMERCADO DEL PRODUCTO SELECCIONADO
     String supermercadoSeleccionado = producto['supermercado'];
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Editar producto"),
+          title: const Text("Editar producto"), // TITULO DE LA ALERTA
           content: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min, // PARA QUE VERTICALMENTE, OCUPE LO MINIMO
             children: [
-              TextField(
+              TextField( // TextField PARA EL NOMBRE
                 controller: nombreController,
                 decoration: const InputDecoration(labelText: 'Nombre'),
               ),
-              TextField(
+              TextField( // TextField PARA LA DESCRIPCION
                 controller: descripcionController,
                 decoration: const InputDecoration(labelText: 'Descripción'),
               ),
-              TextField(
+              TextField( // TextField PARA EL PRECIO
                 controller: precioController,
                 decoration: const InputDecoration(labelText: 'Precio'),
                 keyboardType: TextInputType.number,
               ),
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<String>( // DropdownButtonFormField DE Strings
+                // PONEMOS DE VALOR, EL SUPERMERCADO DEL PRODUCTO SELECCIONADO
                 value: supermercadoSeleccionado,
                 decoration: const InputDecoration(labelText: 'Supermercado'),
+                // PONEMOS LA LISTA DE SUPERMERCADOS COMO OPCIONES PARA EL DESPLEGABLE
                 items: supermercados.map((supermercado) {
-                  return DropdownMenuItem<String>(
+                  return DropdownMenuItem<String>( // CADA SUPERMERCADO SE CONVIERTE EN UN DropdownMenuItem
                     value: supermercado,
                     child: Text(supermercado),
                   );
-                }).toList(),
+                }).toList(), // CONVERTIDO A LISTA
+                // CUANDO EL USUARIO SELECCIONA UNA NUEVA OPCION DE LA LISTA SE EJECUTA EL onChanged
                 onChanged: (nuevoSupermercado) {
-                  if (nuevoSupermercado != null) {
-                    supermercadoSeleccionado = nuevoSupermercado;
+                  if (nuevoSupermercado != null) { // COMPROBAMOS QUE EL NUEVO VALOR NO SEA NULO
+                    supermercadoSeleccionado = nuevoSupermercado; // ACTUALIZAMOS LA VARIABLE CON EL NUEVO SUPERMERCADO
                   }
                 },
               ),
             ],
           ),
           actions: [
+            // BOTON PARA CANCELAR LA EDICION
             TextButton(
               onPressed: () {
-                // Cierra el diálogo
+                // CERRAMOS EL DIALOGO
                 Navigator.of(context).pop();
               },
               child: const Text("Cancelar"),
             ),
-            TextButton(
+            TextButton( // BOTON PARA CONFIRMAR LA EDICION Y GUARDAR CAMBIOS
               onPressed: () async {
-                // Cogemos los datos de los controladores
+                // COGEMOS LOS DATOS DE LOS CONTROLADORES
                 final String nuevoNombre = nombreController.text;
                 final String nuevaDescripcion = descripcionController.text;
                 final double nuevoPrecio = double.tryParse(precioController.text) ?? 0.0;
 
-                // Creamos un nuevo producto con los datos actualizados
+                // CREAMOS UN MAPA CON LOS DATOS NUEVOS
                 final nuevoProducto = {
-                  'id': producto['id'],
+                  'id': producto['id'], // MANTENEMOS EL ID DEL PRODUCTO ORIGINAL, ESO NO SE CAMBIA
                   'nombre': nuevoNombre,
                   'descripcion': nuevaDescripcion,
                   'precio': nuevoPrecio,
                   'supermercado': supermercadoSeleccionado,
                 };
 
-                // Actualizamos el producto
+                // ACTUALIZAMOS EL PRODUCTO
                 await actualizarProducto(nuevoProducto);
 
-                // Cierra el diálogo y recarga los productos
+                // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
                 Navigator.of(context).pop();
-                cargarProductos();
               },
               child: const Text("Guardar"),
             ),
@@ -219,17 +237,19 @@ class _ProductoState extends State<Producto> {
 
   /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
   void dialogoCreacion(BuildContext context) {
+    // CREAMOS LOS CONTROLADORES PARA LOS TextField
     final TextEditingController nombreController = TextEditingController();
     final TextEditingController descripcionController = TextEditingController();
     final TextEditingController precioController = TextEditingController();
     final TextEditingController nuevoSupermercadoController = TextEditingController();
 
+    // VARIABLES PARA CONTROLAR EL SUPERMERCADO SELECCIONADO Y SI ESTA CREANDO UNO NUEVO
     String? supermercadoSeleccionado;
-    bool creandoSupermercado = false; // Para controlar si se muestra el TextField
+    bool creandoSupermercado = false;
 
-    // Obtener supermercados únicos
+    // OBTENEMOS LA LISTA DE LOS SUPERMERCADOS QUE EXISTEN Y AÑADIMOS UNA NUEVA OPCION
     final supermercados = _productosPorSupermercado.keys.toList();
-    supermercados.add("Nuevo supermercado"); // Agregar opción para crear
+    supermercados.add("Nuevo supermercado");
 
     showDialog(
       context: context,
@@ -237,41 +257,46 @@ class _ProductoState extends State<Producto> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: const Text("Crear producto"),
+              title: const Text("Crear producto"), // TÍTULO DEL DIÁLOGO
               content: SingleChildScrollView(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min, // PARA QUE VERTICALMENTE, OCUPE LO MINIMO
                   children: [
-                    TextField(
+                    TextField( // TextField PARA EL NOMBRE
                       controller: nombreController,
                       decoration: const InputDecoration(labelText: 'Nombre'),
                     ),
-                    TextField(
+                    TextField( // TextField PARA LA DESCRIPCION
                       controller: descripcionController,
                       decoration: const InputDecoration(labelText: 'Descripción'),
                     ),
-                    TextField(
+                    TextField( // TextField PARA EL PRECIO
                       controller: precioController,
                       decoration: const InputDecoration(labelText: 'Precio'),
                       keyboardType: TextInputType.number,
                     ),
-                    DropdownButton<String>(
-                      isExpanded: true,
-                      value: supermercadoSeleccionado,
+                    DropdownButton<String>( // DropdownButton PARA SELECCIONAR EL SUPERMERCADO
+                      isExpanded: true, // OCUPA EL ESPACIO DISPONIBLE
+                      value: supermercadoSeleccionado, // VALOR SELECCIONADO INICIALMENTE
                       hint: const Text("Seleccionar supermercado"),
                       items: supermercados.map((supermercado) {
-                        return DropdownMenuItem<String>(
+                        // PONEMOS LA LISTA DE SUPERMERCADOS COMO OPCIONES PARA EL DESPLEGABLE
+                        return DropdownMenuItem<String>( // CADA SUPERMERCADO SE CONVIERTE EN UN DropdownMenuItem
                           value: supermercado,
                           child: Text(supermercado),
                         );
-                      }).toList(),
+                      }).toList(), // CONVERTIDO A LISTA
+                      // CUANDO EL USUARIO SELECCIONA UNA NUEVA OPCION DE LA LISTA SE EJECUTA EL onChanged
                       onChanged: (String? value) {
                         setState(() {
+                          // ACTUALIZAMOS EL SUPERMERCADO SELECCIONADO
                           supermercadoSeleccionado = value;
+                          // ACTIVAR CAMPO EXTRA SI ES "Nuevo supermercado"
                           creandoSupermercado = (value == "Nuevo supermercado");
                         });
                       },
                     ),
+                    // CAMPO PARA CREAR UN NUEVO SUPERMERCADO (VISIBLE SOLO SI SE SELECCIONÓ "Nuevo supermercado")
                     if (creandoSupermercado)
                       TextField(
                         controller: nuevoSupermercadoController,
@@ -281,28 +306,32 @@ class _ProductoState extends State<Producto> {
                 ),
               ),
               actions: [
+                // BOTON PARA CANCELAR LA EDICION
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Cerrar diálogo
+                    // CERRAMOS EL DIALOGO
+                    Navigator.of(context).pop();
                   },
                   child: const Text("Cancelar"),
                 ),
+                // BOTON PARA CONFIRMAR LA CREACION Y GUARDAR CAMBIOS
                 TextButton(
                   onPressed: () async {
-                    // Validar los campos
+                    // VALIDAMOS LOS CAMPOS
                     final String nombre = nombreController.text;
                     final String descripcion = descripcionController.text;
                     final double precio = double.tryParse(precioController.text) ?? 0.0;
                     final String supermercado = creandoSupermercado
-                        ? nuevoSupermercadoController.text
-                        : supermercadoSeleccionado ?? '';
+                        ? nuevoSupermercadoController.text // USAMOS EL NUEVO SUPERMERCADO
+                        : supermercadoSeleccionado ?? ''; // USAMOS EL SELECCIONADO
 
+                    // COMPROBAMOS QUE LOS CAMPOS REQUERIDOS NO ESTÉN VACÍOS
                     if (nombre.isEmpty || supermercado.isEmpty) {
                       debugPrint("Nombre o supermercado no pueden estar vacíos");
                       return;
                     }
 
-                    // Crear el nuevo producto
+                    // CREAR EL NUEVO PRODUCTO
                     final nuevoProducto = {
                       'nombre': nombre,
                       'descripcion': descripcion,
@@ -310,10 +339,10 @@ class _ProductoState extends State<Producto> {
                       'supermercado': supermercado,
                     };
 
-                    // Insertar el producto en la base de datos
+                    // INSERTAMOS EL PRODUCTO EN LA BASE DE DATOS
                     await widget.database.insert('productos', nuevoProducto);
 
-                    // Cerrar el diálogo y recargar productos
+                    // CERRAMOS EL DIÁLOGO Y RECARGAMOS LA LISTA DE PRODUCTOS
                     Navigator.of(context).pop();
                     cargarProductos();
                   },
@@ -330,28 +359,28 @@ class _ProductoState extends State<Producto> {
 /*TODO-----------------METODO AÑADIR PRODUCTO A LISTA DE LA COMPRA-----------------*/
   Future<void> _agregarACompra(int idProducto, double precio, String nombre) async {
     try {
-      // Verificar si el producto ya está en la tabla compra
+      // CONSUTLA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
       final productosExistentes = await widget.database.rawQuery(
         'SELECT * FROM compra WHERE idProducto = ?',
         [idProducto],
       );
 
       if (productosExistentes.isNotEmpty) {
-        // Si ya existe, mostramos un mensaje diciendo que ya está en la lista
+        // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTA REGISTRADO
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Este producto ya está en la lista de compra.')),
         );
       } else {
-        // Si no existe, lo añadimos
+        // SI NO EXISTE, LO AÑADIMOS
         await widget.database.insert(
-          'compra',
+          'compra', // NOMBRE DE LA TABLA
           {
             'idProducto': idProducto,
             'nombre': nombre,
             'precio': precio,
-            'marcado': 0,
+            'marcado': 0, // POR DEFECTO SE GUARDA COMO NO MARCADO
           },
-          conflictAlgorithm: ConflictAlgorithm.replace,
+          //conflictAlgorithm: ConflictAlgorithm.replace, SI EL ID DEL PRODUCTO A GUARDAR COINCIDE CON OTRO EXISTENTE, LO REEMPLAZA
         );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Producto añadido a la lista de compra')),
@@ -365,27 +394,27 @@ class _ProductoState extends State<Producto> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold( //BODY PRINCIPAL DE LA PAGINA PRODUCTO
       appBar: AppBar(
-        title: const Text("Productos"),
+        title: const Text("Productos"), // TITULO DEL AppBar
         centerTitle: true,
       ),
-      body: _productosPorSupermercado.isEmpty
+      body: _productosPorSupermercado.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS ESTE MENSAJE
           ? const Center(
         child: Text(
           "No hay productos disponibles",
           style: TextStyle(
-            color: Color(0xFF212121), // Gris oscuro para el texto
+            color: Color(0xFF212121), // GRIS OSCURO PARA EL TEXTO
             fontSize: 18,
           ),
         ),
       )
-          : ListView(
+          : ListView( // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
         children: _productosPorSupermercado.entries.map((entry) {
-          final supermercado = entry.key;
-          final productos = entry.value;
+          final supermercado = entry.key; // AQUI OBTENEMOS EL NOMBRE DEL SUPERMERCADO
+          final productos = entry.value; // AQUI OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
 
-          return ExpansionTile(
+          return ExpansionTile( // CARPETA EXPANSIBLE PARA GUARDAR CADA LISTA DE PRODUCTOS
             title: Text(
               supermercado,
               style: const TextStyle(
@@ -393,45 +422,50 @@ class _ProductoState extends State<Producto> {
                 fontSize: 16,
               ),
             ),
-            children: productos.map((producto) {
-              return ListTile(
+            children: productos.map((producto) { // LISTA DE PRODUCTOS DE CADA SUPERMERCADO (producto es el producto actual)
+              return ListTile( // CADA PRODUCTO SE MUESTRA COMO UN ListTile
                 leading: const Icon(Icons.fastfood),
                 title: Text(producto['nombre'] ?? ''),
                 subtitle: Text(producto['descripcion'] ?? ''),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
+                    SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON
                       width: 25,
                       height: 25,
                       child: IconButton(
                         icon: const Icon(Icons.add),
                         iconSize: 20.0,
                         onPressed: () {
+                           // AGREGAMOS EL PRODUCTO A LA TABLA COMPRA
                           _agregarACompra(producto['id'], producto['precio'], producto['nombre']);
                         },
-                        padding: EdgeInsets.zero,
+                        padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
                       ),
                     ),
-                    SizedBox(
+                    SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON
                       width: 25,
                       height: 25,
                       child: IconButton(
                         icon: const Icon(Icons.edit),
                         iconSize: 20.0,
                         onPressed: () {
+                          // ABRIMOS EL DIALOGO DE ELIMINACION Y LE PASAMOS EL CONTEXTO
+                          // Y EL PRODUCTO EN EL QUE HEMOS HECHO CLICK
                           dialogoEdicion(context, producto);
                         },
-                        padding: EdgeInsets.zero,
+                        padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
                       ),
                     ),
-                    SizedBox(
+                    SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON
                       width: 25,
                       height: 25,
                       child: IconButton(
                         icon: const Icon(Icons.delete),
                         iconSize: 20.0,
                         onPressed: () {
+                          // ABRIMOS EL DIALOGO DE ELIMINACION Y LE PASAMOS EL CONTEXTO
+                          // Y EL ID DEL PRODUCTO EN EL QUE HEMOS HECHO CLICK
                           dialogoEliminacion(context, producto['id']);
                         },
                         padding: EdgeInsets.zero,
@@ -444,13 +478,13 @@ class _ProductoState extends State<Producto> {
           );
         }).toList(),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton( // BOTON FLOTANTE PARA AÑADIR NUEVO PRODUCTO
         onPressed: () {
+          // ABRIMOS EL DIALOGO DE CREACION
           dialogoCreacion(context);
         },
         child: const Icon(Icons.add),
       ),
     );
-
   }
 }
