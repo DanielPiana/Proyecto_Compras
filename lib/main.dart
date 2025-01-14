@@ -73,8 +73,8 @@ VALUES
 (4, 456789, 'Huevos', 'Huevos frescos de granja', 2.30, 'Supermercado C');
 INSERT INTO facturas (id, precio, fecha, supermercado)
 VALUES
-(1, 3.90, '2025-01-01', 'Supermercado A'),
-(2, 7.50, '2025-01-05', 'Supermercado C');
+(1, 3.90, '01/01/2025', 'Supermercado A'),
+(2, 7.50, '05/01/2025', 'Supermercado C');
 
 -- Insertar productos en facturas
 INSERT INTO producto_factura (idProducto, idFactura, cantidad)

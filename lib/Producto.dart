@@ -414,7 +414,7 @@ class _ProductoState extends State<Producto> {
           final supermercado = entry.key; // AQUI OBTENEMOS EL NOMBRE DEL SUPERMERCADO
           final productos = entry.value; // AQUI OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
 
-          return ExpansionTile( // CARPETA EXPANSIBLE PARA GUARDAR CADA LISTA DE PRODUCTOS
+          return ExpansionTile(  // CARPETA EXPANSIBLE PARA GUARDAR CADA LISTA DE PRODUCTOS
             title: Text(
               supermercado,
               style: const TextStyle(

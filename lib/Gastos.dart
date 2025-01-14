@@ -21,7 +21,7 @@ class _GastosState extends State<Gastos> {
 
   Future<void> _cargarFacturas() async {
     // Obtener todas las facturas con su fecha
-    final facturas = await widget.database.rawQuery('SELECT * FROM facturas');
+    final facturas = await widget.database.rawQuery('SELECT * FROM facturas ORDER BY fecha DESC');
 
     // Preparar un mapa para agrupar productos por fecha de factura
     Map<String, List<Map<String, dynamic>>> agrupados = {};
@@ -66,7 +66,12 @@ class _GastosState extends State<Gastos> {
           final productos = entry.value;
 
           return ExpansionTile(
-            title: Text(fecha),
+            title: Text(fecha,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
             children: productos.map((producto) {
               return ListTile(
                 title: Text(producto['nombre']),
