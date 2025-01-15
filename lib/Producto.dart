@@ -33,7 +33,7 @@ class _ProductoState extends State<Producto> {
       // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
       final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
 
-      // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO INICIALIZAMOS COMO UNA LISTA VACÍA
+      // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS AL MAPA COMO UNA LISTA VACÍA
       if (!productosAgrupados.containsKey(supermercado)) {
         productosAgrupados[supermercado] = [];
       }
