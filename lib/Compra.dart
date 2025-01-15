@@ -18,6 +18,9 @@ class _CompraState extends State<Compra> {
   // VARIABLE PARA ALMACENAR EL PRECIO TOTAL DE LOS PRODUCTOS MARCADOS
   double _totalMarcados = 0.0;
 
+  // VARIABLE PARA ACTUALIZAR LA CANTIDAD DE PRODUCTO
+  int cantidad = 1;
+
   @override
   void initState() {
     super.initState();
@@ -187,15 +190,60 @@ class _CompraState extends State<Compra> {
                           _cargarCompra();
                         },
                       ),
-                      title: Text(producto['nombre']),
+                      title: Row(
+                        children: [
+                          Text(producto['nombre']),
+                          SizedBox(width: 20),
+                          Text('\$${(producto['precio']).toStringAsFixed(2)}', style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                              fontSize: 15
+                          )
+                          )
+                        ],
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min, // HACEMOS QUE OCUPE LO NECESARIO
                         children: [
+                          SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON -
+                            width: 25,
+                            height: 25,
+                            child: IconButton(
+                                icon: Icon(Icons.remove),
+                                iconSize: 20.0,
+                                onPressed: () {
+                                  setState(() {
+                                    if (cantidad != 1) {
+                                      cantidad--;
+                                    }
+                                  });
+                            },
+                              padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
+                            ),
+                          ),
+                          // TEXTO PARA VISUALIZAR LA CANTIDAD COMPRADA
+                          Text("$cantidad", style: TextStyle(fontSize: 15)),
+                          SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON +
+                            width: 25,
+                            height: 25,
+                            child: IconButton(
+                              icon: Icon(Icons.add),
+                              iconSize: 20.0,
+                              onPressed: () {
+                                setState(() {
+                                  cantidad++;
+                                });
+                              },
+                              padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
+                            ),
+                          ),
+                          SizedBox(width: 20), // SEPARADOR
                           Text( // FORMATEAMOS EL PRECIO A STRING PARA VISUALIZARLO BIEN
-                            '\$${producto['precio'].toStringAsFixed(2)}',
+                            '\$${(producto['precio'] * cantidad).toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
+                              fontSize: 15
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -234,9 +282,9 @@ class _CompraState extends State<Compra> {
                   ),
                 ),
                 Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                  '\$${_totalMarcados.toStringAsFixed(2)}',
+                  '\$${(_totalMarcados * cantidad).toStringAsFixed(2)}',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
                   ),
