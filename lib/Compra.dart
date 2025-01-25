@@ -15,11 +15,11 @@ class _CompraState extends State<Compra> {
   // LISTA PARA ALMACENAR LOS PRODUCTOS AGRUPADOS POR SUPERMERCADO
   List<Map<String, dynamic>> _productosCompra = [];
 
-  // VARIABLE PARA ALMACENAR EL PRECIO TOTAL DE LOS PRODUCTOS MARCADOS
-  double _totalMarcados = 0.0;
+  // LISTA PARA ALMACENAR LOS PRODUCTOS Y CAMBIAR VALORES
+  List<Map<String, dynamic>> productosMutables = [];
 
-  // VARIABLE PARA ACTUALIZAR LA CANTIDAD DE PRODUCTO
-  int cantidad = 1;
+  // VARIABLE PARA ALMACENAR EL PRECIO TOTAL DE LOS PRODUCTOS MARCADOS
+  double _precioTotalCompra = 0.0;
 
   @override
   void initState() {
@@ -32,20 +32,36 @@ class _CompraState extends State<Compra> {
   Future<void> _cargarCompra() async {
     // CONSULTA SQL QUE OBTIENE LOS PRODUCTOS DE LA COMPRA,
     // JUNTO CON EL SUPERMERCADO DE CADA PRODUCTO
-    final productos = await widget.database.rawQuery('''
+    final productosInmutables = await widget.database.rawQuery('''
     SELECT compra.*, productos.supermercado 
     FROM compra 
     INNER JOIN productos ON compra.idProducto = productos.id
   ''');
 
+    // TRANSFORMAMOS LA LISTA INMUTABLE QUE DEVUELVE EL rawQuery A MUTABLE PARA ACTUALIZAR LA CANTIDAD MAS FACILMENTE.
+    productosMutables = productosInmutables.map((producto) {
+      final mutableProducto = Map<String, dynamic>.from(producto);
+      mutableProducto['cantidad'] = 0; // Añadir el atributo
+      mutableProducto['marcado'] = 0; // Inicializar el campo marcado
+      return mutableProducto;
+    }).toList();
+
     // AGRUPAMOS LOS PRODUCTOS POR SUPERMERCADO
     final Map<String, List<Map<String, dynamic>>> agrupados = {};
 
     // ITERAMOS SOBRE CADA PRODUCTO OBTENIDO DE LA CONSULTA
-    for (var producto in productos) {
-
+    for (var producto in productosMutables) {
       // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
       final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
+
+
+      // AÑADIMOS A CADA PRODUCTO UN "ATRIBUTO" CANTIDAD POR DEFECTO DE 1 (QUE IREMOS ACTUALIZANDO INDIVIDUALMENTE EN LA INTERFAZ GRAFICA)
+      producto['cantidad'] = 1;
+
+      // ACTUALIZAMOS EL VALOR DE precioTotalCompra SOLO PARA LOS PRODUCTOS MARCADOS
+      if (producto['marcado'] == 1) {
+        _precioTotalCompra += producto["precio"];
+      }
 
       // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS AL MAPA COMO UNA LISTA VACÍA
       if (!agrupados.containsKey(supermercado)) {
@@ -65,10 +81,10 @@ class _CompraState extends State<Compra> {
       }).toList();
     });
 
-    _calcularTotalMarcados(); // ACTUALIZA EL TOTAL DE LOS PRODUCTOS MARCADOS
+    //_calcularTotalMarcados(); // ACTUALIZA EL TOTAL DE LOS PRODUCTOS MARCADOS
   }
 
-  /*TODO-----------------METODO CALCULAR TOTAL MARCADO-----------------*/
+  /*TODO-----------------METODO CALCULAR TOTAL MARCADO (NO USADO)-----------------*/
   Future<void> _calcularTotalMarcados() async {
     // CONSULTA PARA OBTENER LA SUMA DE LOS PRECIOS DE LOS PRODUCTOS MARCADOS
     final resultado = await widget.database.rawQuery(
@@ -76,7 +92,7 @@ class _CompraState extends State<Compra> {
     );
     setState(() {
       // SI NO HAY RESULTADOS EN LA CONSULTA, EL RESULTADO SERA 0.0
-      _totalMarcados = (resultado.isNotEmpty && resultado[0]['total'] != null)
+      _precioTotalCompra = (resultado.isNotEmpty && resultado[0]['total'] != null)
           ? (resultado[0]['total'] as num).toDouble()
           : 0.0;
     });
@@ -115,13 +131,13 @@ class _CompraState extends State<Compra> {
       'supermercado': 'Supermercado Desconocido',
     });
 
-    // ITERAMOS SOBRE CADA PRODUCTO MARCADO OBTENIDO DE LA CONSULTA
+    // ITERAMOS SOBRE CADA PRODUCTO MARCADO PARA INSERTARLO EN LA TABLA producto_factura
     for (var producto in productosMarcados) {
       await widget.database.insert(
           'producto_factura', { // NOMBRE DE LA TABLA DONDE INSERTAMOS
         'idProducto': producto['idProducto'], //idProducto no cambia
         'idFactura': idFactura, // LO ASOCIAMOS CON EL idFactura
-        'cantidad': 1, // TODO CANTIDAD EN LA SIGUIENTE ACTUALIZACION
+        'cantidad': producto["cantidad"], // LE ASIGNAMOS LA CANTIDAD COMPRADA
       });
     }
 
@@ -130,7 +146,6 @@ class _CompraState extends State<Compra> {
       const SnackBar(content: Text('Factura generada correctamente.')),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -186,8 +201,16 @@ class _CompraState extends State<Compra> {
                             'UPDATE compra SET marcado = ? WHERE idProducto = ?',
                             [nuevoEstado, producto['idProducto']],
                           );
-                          // ACTUALIZAMOS LA INTERFAZ
-                          _cargarCompra();
+                          // RECALCULAMOS EL TOTAL
+                          if (nuevoEstado == 1) {
+                            _precioTotalCompra += producto["precio"] * producto["cantidad"]; // SI SE MARCA, SUMAMOS EL PRECIO
+                          } else {
+                            _precioTotalCompra -= producto["precio"] * producto["cantidad"]; // SI SE DESMARCA, RESTAMOS EL PRECIO
+                          }
+                          setState(() {
+                            // ACTUALIZAMOS EL ESTADO DEL PRODUCTO EN LA INTERFAZ
+                            producto['marcado'] = nuevoEstado;
+                          });
                         },
                       ),
                       title: Row(
@@ -213,16 +236,22 @@ class _CompraState extends State<Compra> {
                                 iconSize: 20.0,
                                 onPressed: () {
                                   setState(() {
-                                    if (cantidad != 1) {
-                                      cantidad--;
+                                    if (producto['cantidad'] > 1) {
+                                      producto['cantidad']--; // RESTAMOS UNO DE LA CANTIDAD
                                     }
-                                  });
+                                    // SI EL PRODUCTO ESTA MARCADO Y ES MAYOR A 1
+                                    if (producto['marcado'] == 1) {
+                                      setState(() {
+                                        _precioTotalCompra -= producto["precio"]; // ACTUALIZAMOS EL PRECIO TOTAL
+                                      });
+                                    }
+                                });
                             },
                               padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
                             ),
                           ),
                           // TEXTO PARA VISUALIZAR LA CANTIDAD COMPRADA
-                          Text("$cantidad", style: TextStyle(fontSize: 15)),
+                          Text(producto["cantidad"].toString(), style: TextStyle(fontSize: 15)),
                           SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON +
                             width: 25,
                             height: 25,
@@ -231,7 +260,13 @@ class _CompraState extends State<Compra> {
                               iconSize: 20.0,
                               onPressed: () {
                                 setState(() {
-                                  cantidad++;
+                                  producto['cantidad']++;
+                                  // SI EL PRODUCTO ESTA MARCADO, LO SUMAMOS
+                                  if (producto['marcado'] == 1) {
+                                    setState(() {
+                                      _precioTotalCompra += producto["precio"]; // SUMAR SI EL PRECIO ESTA MARCADO
+                                    });
+                                  }
                                 });
                               },
                               padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
@@ -239,7 +274,7 @@ class _CompraState extends State<Compra> {
                           ),
                           SizedBox(width: 20), // SEPARADOR
                           Text( // FORMATEAMOS EL PRECIO A STRING PARA VISUALIZARLO BIEN
-                            '\$${(producto['precio'] * cantidad).toStringAsFixed(2)}',
+                            '\$${(producto['precio'] * producto["cantidad"]).toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
@@ -255,8 +290,20 @@ class _CompraState extends State<Compra> {
                                 'DELETE FROM compra WHERE idProducto = ?',
                                 [producto['idProducto']],
                               );
-                              // ACTUALIZAMOS LA INTERFAZ
-                              _cargarCompra();
+                              // ELIMINAMOS EL PRODUCTO DE LA LISTA EN MEMORIA (PARA NO PERDER PRODUCTOS MARCADOS)
+                              setState(() {
+                                _precioTotalCompra -= producto["precio"] * producto["cantidad"]; // RESTAMOS EL PRECIO TOTAL DEL PRODUCTO ELIMINADO
+                                // COGEMOS EL SUPERMERCADO DE ESE PRODUCTO
+                                final supermercado = _productosCompra.firstWhere(
+                                      (supermercado) => supermercado['productos'].any((p) => p['idProducto'] == producto['idProducto'])
+                                );
+                                // BORRAMOS EL PRODUCTO DE ESE SUPERMERCADO
+                                grupo['productos'].removeWhere((p) => p['idProducto'] == producto['idProducto']);
+                                // COMPROBAMOS SI EL SUPERMERCADO SIGUE TENIENDO PRODUCTOS, SI NO TIENE, LO BORRAMOS
+                                if (grupo['productos'].isEmpty) {
+                                  _productosCompra.remove(grupo);
+                                }
+                              });
                             },
                           ),
                         ],
@@ -282,7 +329,7 @@ class _CompraState extends State<Compra> {
                   ),
                 ),
                 Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                  '\$${(_totalMarcados * cantidad).toStringAsFixed(2)}',
+                  '\$${(_precioTotalCompra).toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

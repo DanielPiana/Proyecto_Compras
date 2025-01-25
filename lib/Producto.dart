@@ -21,6 +21,7 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------METODO DE CARGAR-----------------*/
+  /// METODO PARA CARGAR PRODUCTOS DE LA BASE DE DATOS
   Future<void> cargarProductos() async {
     // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
     final productos = await widget.database.query('productos');
@@ -50,6 +51,7 @@ class _ProductoState extends State<Producto> {
 
 
   /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
+  /// METODO PARA BORRAR PRODUCTO
   Future<void> deleteProducto(int id) async {
     try {
       await widget.database.delete(
@@ -67,6 +69,7 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
+  /// METODO PARA ACTUALIZAR PRODUCTO
   Future<void> actualizarProducto(Map<String, dynamic> producto) async {
     try {
       await widget.database.update(
@@ -88,6 +91,7 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
+  /// METODO PARA OBTENER TODOS LOS SUPERMERCADOS EXISTENTES
   Future<List<String>> obtenerSupermercados() async {
     // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
     final productos = await widget.database.query('productos');
@@ -100,6 +104,7 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
+  /// METODO QUE MUESTRA UN DIALOGO DE CONFIRMACION PARA ELIMINAR PRODUCTO
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
       context: context,
@@ -143,6 +148,7 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE EDICION DE PRODUCTO-----------------*/
+  /// METODO QUE MUESTRA UN DIALOGO PARA EDITAR UN PRODUCTO
   void dialogoEdicion(BuildContext context, Map<String, dynamic> producto) async {
     // CREAMOS LOS CONTROLADORES PARA LOS TextField Y LOS INICIALIZAMOS CON LOS DATOS DEL PRODUCTO AL QUE HA HECHO CLICK
     final TextEditingController nombreController = TextEditingController(text: producto['nombre']);
@@ -236,6 +242,7 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
+  /// METODO QUE MUESTRA UN DIALOGO  PARA CREAR PRODUCTO
   void dialogoCreacion(BuildContext context) {
     // CREAMOS LOS CONTROLADORES PARA LOS TextField
     final TextEditingController nombreController = TextEditingController();
@@ -357,7 +364,18 @@ class _ProductoState extends State<Producto> {
   }
 
 /*TODO-----------------METODO AÑADIR PRODUCTO A LISTA DE LA COMPRA-----------------*/
-  Future<void> _agregarACompra(int idProducto, double precio, String nombre) async {
+  /// Agrega un producto a la lista de compra en la base de datos.
+  ///
+  /// Si el producto ya existe en la lista, muestra un mensaje
+  /// informando al usuario. En caso contrario, lo añade como no marcado.
+  ///
+  /// Parámetros:
+  /// - [idProducto]: ID único del producto.
+  /// - [precio]: Precio del producto.
+  /// - [nombre]: Nombre del producto.
+  ///
+  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
+  Future<void> agregarACompra(int idProducto, double precio, String nombre) async {
     try {
       // CONSUTLA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
       final productosExistentes = await widget.database.rawQuery(
@@ -438,7 +456,7 @@ class _ProductoState extends State<Producto> {
                         iconSize: 20.0,
                         onPressed: () {
                            // AGREGAMOS EL PRODUCTO A LA TABLA COMPRA
-                          _agregarACompra(producto['id'], producto['precio'], producto['nombre']);
+                          agregarACompra(producto['id'], producto['precio'], producto['nombre']);
                         },
                         padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
                       ),

@@ -144,19 +144,6 @@ class _MainState extends State<Main> {
       Recetas(),
     ];
   }
-  /*
-  // Función para cargar los productos desde la base de datos
-  Future<void> _cargarProductos() async {
-    try {
-      final productos = await widget.database.query('productos');
-      setState(() {
-        _productos = productos;
-      });
-    } catch (e) {
-      debugPrint('Error al cargar productos: $e');
-    }
-  }
-*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
