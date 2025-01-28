@@ -11,7 +11,7 @@ class Gastos extends StatefulWidget {
 }
 
 class _GastosState extends State<Gastos> {
-  // LISTA PARA ALMACENAR LAS FACTURAS AGRUPADOS POR FECHA
+  // LISTA PARA ALMACENAR LAS FACTURAS AGRUPADAS POR FECHA Y ID
   Map<String, List<Map<String, dynamic>>> _facturasAgrupadas = {};
 
   @override
@@ -22,34 +22,36 @@ class _GastosState extends State<Gastos> {
   }
 
   Future<void> _cargarFacturas() async {
-    // CONSULTA PATA OBTENER LAS FACURAS ORDENADAS POR FECHA DESCENDIENTE
-    final facturas = await widget.database.rawQuery('SELECT * FROM facturas ORDER BY fecha DESC');
+    // CONSULTA PARA OBTENER LAS FACTURAS ORDENADAS POR FECHA DESCENDENTE
+    final facturas = await widget.database.rawQuery(
+      'SELECT * FROM facturas ORDER BY facturas.id DESC',
+    );
 
-    // MAPA PARA AGRUPAR LOS PRODUCTOS POR FECHA
+    // MAPA PARA AGRUPAR LAS FACTURAS USANDO UNA CLAVE ÚNICA (FECHA + ID)
     Map<String, List<Map<String, dynamic>>> agrupados = {};
 
-    // ITERAMOS SOBRE CADA PRODUCTO OBTENIDO DE LA CONSULTA
+    // ITERAMOS SOBRE CADA FACTURA OBTENIDA DE LA CONSULTA
     for (var factura in facturas) {
       // GUARDAMOS EL ID DE LA FACTURA
       final idFactura = factura['id'];
 
-      // GUARDAMOS LA FECHA DE LA FACTURA, SI NO TIENE FECHA PONEMOS Sin fecha
+      // GUARDAMOS LA FECHA DE LA FACTURA, SI NO TIENE FECHA PONEMOS "Sin fecha"
       final fecha = (factura['fecha'] ?? 'Sin fecha').toString();
 
-      // CONSULTA PARA OBTENER TODOS LOS PRODUCTOS DE ESA FECHA EN CONCRETO
+      // CONSULTA PARA OBTENER TODOS LOS PRODUCTOS DE ESA FACTURA EN CONCRETO
       final productos = await widget.database.rawQuery('''
-        SELECT p.nombre, pf.cantidad, p.precio 
+        SELECT p.nombre, pf.cantidad, pf.precioUnidad 
         FROM producto_factura pf
         JOIN productos p ON pf.idProducto = p.id
         WHERE pf.idFactura = ?
       ''', [idFactura]);
 
-      // ACTUALIZAMOS
-      agrupados[fecha] = productos;
+      // USAMOS UNA CLAVE ÚNICA (FECHA + ID) PARA EVITAR AGRUPAR FACTURAS INCORRECTAMENTE
+      agrupados['$fecha-$idFactura'] = productos;
     }
 
     setState(() {
-      // ACTUALIZAMOS
+      // ACTUALIZAMOS EL ESTADO CON LAS FACTURAS AGRUPADAS
       _facturasAgrupadas = agrupados;
     });
   }
@@ -58,7 +60,7 @@ class _GastosState extends State<Gastos> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Gastos"), // TITULO DEL AppBar
+        title: const Text("Gastos"), // TÍTULO DEL AppBar
         centerTitle: true,
       ),
       // SI NO HAY FACTURAS MOSTRAMOS UN MENSAJE
@@ -72,23 +74,28 @@ class _GastosState extends State<Gastos> {
           : ListView(
         // MAPEAMOS LAS FACTURAS AGRUPADAS
         children: _facturasAgrupadas.entries.map((entry) {
-          final fecha = entry.key; // COGEMOS LA FECHA
-          final productos = entry.value; // COGEMOS LA LISTA DE PRODUCTOS DE ESA FECHA
+          // DIVIDIMOS LA CLAVE ÚNICA PARA OBTENER FECHA E ID
+          final clave = entry.key.split('-'); // DIVIDIMOS EN [FECHA, ID]
+          final fecha = clave[0]; // PRIMERA PARTE: FECHA
+          final idFactura = clave[1]; // SEGUNDA PARTE: ID FACTURA
+          final productos = entry.value; // LISTA DE PRODUCTOS DE ESA FACTURA
 
           return ExpansionTile( // 'CARPETAS'
-            title: Text(fecha,
+            // MOSTRAMOS EL ID JUNTO CON LA FECHA
+            title: Text(
+              'Factura #$idFactura - $fecha',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
-            // MAPEAMOS LA LISTA PRODUCTOS PARA QUE CREE UN ListTile POR CADA PRODUCTO
+            // MAPEAMOS LA LISTA DE PRODUCTOS PARA QUE CREE UN ListTile POR CADA PRODUCTO
             children: productos.map((producto) {
               return ListTile(
                 title: Text(producto['nombre']),
                 subtitle: Text('Cantidad: ${producto['cantidad']}'),
                 trailing: Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                  '\$${producto['precio'].toStringAsFixed(2)}',
+                  '\$${producto['precioUnidad'].toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green,

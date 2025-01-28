@@ -16,12 +16,12 @@ void main() async {
   final database = await databaseFactory.openDatabase(dbPath);
 
  // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
-  await database.execute('DROP TABLE IF EXISTS recetas');
-  await database.execute('DROP TABLE IF EXISTS productos');
-  await database.execute('DROP TABLE IF EXISTS receta_producto');
-  await database.execute('DROP TABLE IF EXISTS facturas');
-  await database.execute('DROP TABLE IF EXISTS producto_factura');
-  await database.execute('DROP TABLE IF EXISTS compra');
+   await database.execute('DROP TABLE IF EXISTS recetas');
+   await database.execute('DROP TABLE IF EXISTS productos');
+   await database.execute('DROP TABLE IF EXISTS receta_producto');
+   await database.execute('DROP TABLE IF EXISTS facturas');
+   await database.execute('DROP TABLE IF EXISTS producto_factura');
+   await database.execute('DROP TABLE IF EXISTS compra');
 
   // CREAR TABLA DE TAREAS SI NO EXISTE.
   try {
@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS producto_factura (
   idProducto INTEGER,
   idFactura INTEGER,
   cantidad INTEGER,
+  precioUnidad REAL,
+  total REAL,
   FOREIGN KEY (idProducto) REFERENCES productos(id),
   FOREIGN KEY (idFactura) REFERENCES facturas(id)
 );
@@ -63,6 +65,8 @@ CREATE TABLE IF NOT EXISTS compra (
   nombre TEXT,
   precio REAL,
   marcado INTEGER DEFAULT 0,
+  cantidad INTEGER DEFAULT 1,
+  total REAL,
   FOREIGN KEY (idProducto) REFERENCES productos(id)
 );
 INSERT INTO productos (id, codBarras, nombre, descripcion, precio, supermercado)
@@ -71,18 +75,27 @@ VALUES
 (2, 234567, 'Leche', 'Leche entera de vaca', 0.90, 'Supermercado B'),
 (3, 345678, 'Pan', 'Pan de molde integral', 1.20, 'Supermercado A'),
 (4, 456789, 'Huevos', 'Huevos frescos de granja', 2.30, 'Supermercado C');
+
 INSERT INTO facturas (id, precio, fecha, supermercado)
 VALUES
 (1, 3.90, '01/01/2025', 'Supermercado A'),
 (2, 7.50, '05/01/2025', 'Supermercado C');
 
 -- Insertar productos en facturas
-INSERT INTO producto_factura (idProducto, idFactura, cantidad)
+INSERT INTO producto_factura (idProducto, idFactura, cantidad, precioUnidad, total)
 VALUES
-(1, 1, 2), -- 2 Manzanas en factura 1
-(2, 1, 1), -- 1 Leche en factura 1
-(3, 2, 3), -- 3 Panes en factura 2
-(4, 2, 1); -- 1 Huevos en factura 2
+(1, 1, 2, 1.50, 3.00), -- 2 Manzanas en factura 1, 1.50 cada una, total 3.00
+(2, 1, 1, 0.90, 0.90), -- 1 Leche en factura 1, 0.90 cada una, total 0.90
+(3, 2, 3, 1.20, 3.60), -- 3 Panes en factura 2, 1.20 cada uno, total 3.60
+(4, 2, 1, 2.30, 2.30); -- 1 Huevos en factura 2, 2.30 cada uno, total 2.30
+
+-- Insertar productos en la lista de compra
+INSERT INTO compra (idProducto, nombre, precio, marcado, cantidad, total)
+VALUES
+(1, 'Manzanas', 1.50, 1, 2, 3.00), -- 2 Manzanas marcadas, total 3.00
+(2, 'Leche', 0.90, 0, 1, 0.90),    -- 1 Leche no marcada, total 0.90
+(3, 'Pan', 1.20, 1, 3, 3.60),     -- 3 Panes marcados, total 3.60
+(4, 'Huevos', 2.30, 0, 1, 2.30);  -- 1 Huevos no marcado, total 2.30
 ''');
   } catch (e) {
     debugPrint("Error al crear tablas: $e");

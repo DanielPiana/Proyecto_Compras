@@ -40,10 +40,7 @@ class _CompraState extends State<Compra> {
 
     // TRANSFORMAMOS LA LISTA INMUTABLE QUE DEVUELVE EL rawQuery A MUTABLE PARA ACTUALIZAR LA CANTIDAD MAS FACILMENTE.
     productosMutables = productosInmutables.map((producto) {
-      final mutableProducto = Map<String, dynamic>.from(producto);
-      mutableProducto['cantidad'] = 0; // Añadir el atributo
-      mutableProducto['marcado'] = 0; // Inicializar el campo marcado
-      return mutableProducto;
+      return Map<String, dynamic>.from(producto);
     }).toList();
 
     // AGRUPAMOS LOS PRODUCTOS POR SUPERMERCADO
@@ -55,12 +52,9 @@ class _CompraState extends State<Compra> {
       final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
 
 
-      // AÑADIMOS A CADA PRODUCTO UN "ATRIBUTO" CANTIDAD POR DEFECTO DE 1 (QUE IREMOS ACTUALIZANDO INDIVIDUALMENTE EN LA INTERFAZ GRAFICA)
-      producto['cantidad'] = 1;
-
       // ACTUALIZAMOS EL VALOR DE precioTotalCompra SOLO PARA LOS PRODUCTOS MARCADOS
       if (producto['marcado'] == 1) {
-        _precioTotalCompra += producto["precio"];
+        _precioTotalCompra += producto["precio"] * producto["cantidad"];
       }
 
       // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS AL MAPA COMO UNA LISTA VACÍA
@@ -96,6 +90,17 @@ class _CompraState extends State<Compra> {
           ? (resultado[0]['total'] as num).toDouble()
           : 0.0;
     });
+  }
+
+  Future<void> _sumar1Cantidad(int idProducto) async {
+    await widget.database.rawUpdate('''
+    UPDATE compra set cantidad = cantidad + 1 WHERE idProducto = ?
+    ''', [idProducto]);
+  }
+  Future<void> _restar1Cantidad(int idProducto) async {
+    await widget.database.rawUpdate('''
+    UPDATE compra set cantidad = cantidad - 1 WHERE idProducto = ?
+    ''', [idProducto]);
   }
 
   /*TODO-----------------METODO GENERAR FACTURA-----------------*/
@@ -138,6 +143,8 @@ class _CompraState extends State<Compra> {
         'idProducto': producto['idProducto'], //idProducto no cambia
         'idFactura': idFactura, // LO ASOCIAMOS CON EL idFactura
         'cantidad': producto["cantidad"], // LE ASIGNAMOS LA CANTIDAD COMPRADA
+        'precioUnidad': producto['precio'],
+        'total': precioTotal
       });
     }
 
@@ -244,6 +251,7 @@ class _CompraState extends State<Compra> {
                                       setState(() {
                                         _precioTotalCompra -= producto["precio"]; // ACTUALIZAMOS EL PRECIO TOTAL
                                       });
+                                      _restar1Cantidad(producto["idProducto"]);
                                     }
                                 });
                             },
@@ -266,6 +274,7 @@ class _CompraState extends State<Compra> {
                                     setState(() {
                                       _precioTotalCompra += producto["precio"]; // SUMAR SI EL PRECIO ESTA MARCADO
                                     });
+                                    _sumar1Cantidad(producto["idProducto"]);
                                   }
                                 });
                               },
