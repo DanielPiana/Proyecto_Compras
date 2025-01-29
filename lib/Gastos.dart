@@ -131,37 +131,62 @@ class _GastosState extends State<Gastos> {
           final idFactura = clave[1]; // SEGUNDA PARTE: ID FACTURA
           final productos = entry.value; // LISTA DE PRODUCTOS DE ESA FACTURA
 
+          // CALCULAMOS EL PRECIO TOTAL DE LA FACTURA
+          double precioTotal = 0;
+          for (var producto in productos) {
+            precioTotal += producto['precioUnidad'] * producto['cantidad'];
+          }
+
           return ExpansionTile( // 'CARPETAS'
             // MOSTRAMOS EL ID JUNTO CON LA FECHA
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Factura #$idFactura - $fecha',
+                  fecha,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                IconButton(onPressed: () {
-                  dialogoEliminacion(context,int.parse(idFactura));
-                }, icon: Icon(Icons.delete))
+                IconButton(
+                  onPressed: () {
+                    dialogoEliminacion(context, int.parse(idFactura));
+                  },
+                  icon: const Icon(Icons.delete),
+                ),
               ],
             ),
             // MAPEAMOS LA LISTA DE PRODUCTOS PARA QUE CREE UN ListTile POR CADA PRODUCTO
-            children: productos.map((producto) {
-              return ListTile(
-                title: Text(producto['nombre']),
-                subtitle: Text('Cantidad: ${producto['cantidad']}'),
-                trailing: Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                  '\$${producto['precioUnidad'].toStringAsFixed(2)}',
+            children: [
+              ...productos.map((producto) {
+                return ListTile(
+                  title: Text(producto['nombre']),
+                  subtitle: Text('Cantidad: ${producto['cantidad']}'),
+                  trailing: Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
+                    '\$${producto['precioUnidad'].toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                );
+              }).toList(),
+              ListTile(
+                title: const Text(
+                  'Precio Total:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                trailing: Text(
+                  '\$${precioTotal.toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
+                    fontSize: 20
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           );
         }).toList(),
       ),
