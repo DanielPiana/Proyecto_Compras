@@ -154,6 +154,78 @@ class _CompraState extends State<Compra> {
     );
   }
 
+  /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
+  /// METODO QUE MUESTRA UN DIALOGO DE CONFIRMACION PARA ELIMINAR PRODUCTO DE LA LISTA DE LA COMPRA
+  void dialogoEliminacion(BuildContext context, int idProducto,double precio, int cantidad) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text( // TITULO DE LA ALERTA
+            "Confirmar eliminación",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          content: const Text(
+            "¿Estás seguro de que deseas eliminar este producto? \n"
+                "Este producto solo se borrará de la lista de la compra",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // CERRAMOS EL DIALOGO
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                "Cancelar",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                // BORRAMOS EL PRODUCTO
+                await deleteProducto(idProducto);
+                actualizarPrecio(idProducto,precio,cantidad);
+                // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                "Eliminar",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  // METODO PARA ELIMINAR PRODUCTO DE LA LISTA DE LA COMPRA
+  Future<void> deleteProducto(int idProducto) async{
+    await widget.database.rawDelete(
+      'DELETE FROM compra WHERE idProducto = ?', [idProducto],
+    );
+  }
+
+  void actualizarPrecio(int idProducto, double precio, int cantidad) {
+    // ELIMINAMOS EL PRODUCTO DE LA LISTA EN MEMORIA (PARA NO PERDER PRODUCTOS MARCADOS)
+    setState(() {
+      _precioTotalCompra -= precio * cantidad; // RESTAMOS EL PRECIO TOTAL DEL PRODUCTO ELIMINADO
+
+      // COGEMOS EL SUPERMERCADO DE ESE PRODUCTO (firstWhere DEVUELVE LA PRIMERA COINCIDENCIA)
+      final supermercado = _productosCompra.firstWhere(
+              (supermercado) => supermercado['productos'].any((p) => p['idProducto'] == idProducto)
+      );
+
+      // BORRAMOS EL PRODUCTO DE ESE SUPERMERCADO
+      supermercado['productos'].removeWhere((p) => p['idProducto'] == idProducto);
+
+      // COMPROBAMOS SI EL SUPERMERCADO SIGUE TENIENDO PRODUCTOS, SI NO TIENE, LO BORRAMOS
+      if (supermercado['productos'].isEmpty) {
+        _productosCompra.remove(supermercado);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,13 +317,13 @@ class _CompraState extends State<Compra> {
                                   setState(() {
                                     if (producto['cantidad'] > 1) {
                                       producto['cantidad']--; // RESTAMOS UNO DE LA CANTIDAD
-                                    }
-                                    // SI EL PRODUCTO ESTA MARCADO Y ES MAYOR A 1
-                                    if (producto['marcado'] == 1) {
-                                      setState(() {
-                                        _precioTotalCompra -= producto["precio"]; // ACTUALIZAMOS EL PRECIO TOTAL
-                                      });
-                                      _restar1Cantidad(producto["idProducto"]);
+                                      // SI EL PRODUCTO ESTA MARCADO Y ES MAYOR A 1
+                                      if (producto['marcado'] == 1) {
+                                        setState(() {
+                                          _precioTotalCompra -= producto["precio"]; // ACTUALIZAMOS EL PRECIO TOTAL
+                                        });
+                                        _restar1Cantidad(producto["idProducto"]);
+                                      }
                                     }
                                 });
                             },
@@ -294,25 +366,7 @@ class _CompraState extends State<Compra> {
                           IconButton( // ICONO PARA BORRAR EL PRODUCTO DE LA LISTA DE LA COMPRA
                             icon: const Icon(Icons.delete),
                             onPressed: () async {
-                              // CONSULTA PARA BORRAR EL PRODUCTO DE LA TABLA
-                              await widget.database.rawDelete(
-                                'DELETE FROM compra WHERE idProducto = ?',
-                                [producto['idProducto']],
-                              );
-                              // ELIMINAMOS EL PRODUCTO DE LA LISTA EN MEMORIA (PARA NO PERDER PRODUCTOS MARCADOS)
-                              setState(() {
-                                _precioTotalCompra -= producto["precio"] * producto["cantidad"]; // RESTAMOS EL PRECIO TOTAL DEL PRODUCTO ELIMINADO
-                                // COGEMOS EL SUPERMERCADO DE ESE PRODUCTO
-                                final supermercado = _productosCompra.firstWhere(
-                                      (supermercado) => supermercado['productos'].any((p) => p['idProducto'] == producto['idProducto'])
-                                );
-                                // BORRAMOS EL PRODUCTO DE ESE SUPERMERCADO
-                                grupo['productos'].removeWhere((p) => p['idProducto'] == producto['idProducto']);
-                                // COMPROBAMOS SI EL SUPERMERCADO SIGUE TENIENDO PRODUCTOS, SI NO TIENE, LO BORRAMOS
-                                if (grupo['productos'].isEmpty) {
-                                  _productosCompra.remove(grupo);
-                                }
-                              });
+                              dialogoEliminacion(context, producto["idProducto"], producto["precio"], producto["cantidad"]);
                             },
                           ),
                         ],

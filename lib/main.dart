@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS producto_factura (
   idFactura INTEGER,
   cantidad INTEGER,
   precioUnidad REAL,
-  total REAL,
   FOREIGN KEY (idProducto) REFERENCES productos(id),
   FOREIGN KEY (idFactura) REFERENCES facturas(id)
 );

@@ -56,6 +56,57 @@ class _GastosState extends State<Gastos> {
     });
   }
 
+  /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
+  /// METODO QUE MUESTRA UN DIALOGO DE CONFIRMACION PARA ELIMINAR PRODUCTO DE LA LISTA DE LA COMPRA
+  void dialogoEliminacion(BuildContext context, int idFactura) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text( // TITULO DE LA ALERTA
+            "Confirmar eliminación",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          content: const Text(
+            "¿Estás seguro de que deseas eliminar esta factura? \n"
+                "Los productos asociados no se borrarán",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // CERRAMOS EL DIALOGO
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                "Cancelar",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                // BORRAMOS LA FACTURA
+                borrarFactura(idFactura);
+                _cargarFacturas();
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                "Eliminar",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> borrarFactura (int idFactura) async{
+    await widget.database.rawDelete('''
+    DELETE FROM facturas WHERE id = ?
+    ''', [idFactura]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,12 +133,20 @@ class _GastosState extends State<Gastos> {
 
           return ExpansionTile( // 'CARPETAS'
             // MOSTRAMOS EL ID JUNTO CON LA FECHA
-            title: Text(
-              'Factura #$idFactura - $fecha',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Factura #$idFactura - $fecha',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                IconButton(onPressed: () {
+                  dialogoEliminacion(context,int.parse(idFactura));
+                }, icon: Icon(Icons.delete))
+              ],
             ),
             // MAPEAMOS LA LISTA DE PRODUCTOS PARA QUE CREE UN ListTile POR CADA PRODUCTO
             children: productos.map((producto) {
