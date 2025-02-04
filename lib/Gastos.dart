@@ -7,21 +7,21 @@ class Gastos extends StatefulWidget {
   const Gastos({super.key, required this.database});
 
   @override
-  State<Gastos> createState() => _GastosState();
+  State<Gastos> createState() => GastosState();
 }
 
-class _GastosState extends State<Gastos> {
+class GastosState extends State<Gastos> {
   // LISTA PARA ALMACENAR LAS FACTURAS AGRUPADAS POR FECHA Y ID
-  Map<String, List<Map<String, dynamic>>> _facturasAgrupadas = {};
+  Map<String, List<Map<String, dynamic>>> facturasAgrupadas = {};
 
   @override
   void initState() {
     super.initState();
     // CARGAMOS LAS FACTURAS AL ABRIR LA PAGINA
-    _cargarFacturas();
+    cargarFacturas();
   }
 
-  Future<void> _cargarFacturas() async {
+  Future<void> cargarFacturas() async {
     // CONSULTA PARA OBTENER LAS FACTURAS ORDENADAS POR FECHA DESCENDENTE
     final facturas = await widget.database.rawQuery(
       'SELECT * FROM facturas ORDER BY facturas.id DESC',
@@ -52,7 +52,7 @@ class _GastosState extends State<Gastos> {
 
     setState(() {
       // ACTUALIZAMOS EL ESTADO CON LAS FACTURAS AGRUPADAS
-      _facturasAgrupadas = agrupados;
+      facturasAgrupadas = agrupados;
     });
   }
 
@@ -87,7 +87,7 @@ class _GastosState extends State<Gastos> {
               onPressed: () async {
                 // BORRAMOS LA FACTURA
                 borrarFactura(idFactura);
-                _cargarFacturas();
+                cargarFacturas();
                 Navigator.of(context).pop();
               },
               child: const Text(
@@ -115,7 +115,7 @@ class _GastosState extends State<Gastos> {
         centerTitle: true,
       ),
       // SI NO HAY FACTURAS MOSTRAMOS UN MENSAJE
-      body: _facturasAgrupadas.isEmpty
+      body: facturasAgrupadas.isEmpty
           ? const Center(
         child: Text(
           "No hay facturas registradas",
@@ -124,7 +124,7 @@ class _GastosState extends State<Gastos> {
       )
           : ListView(
         // MAPEAMOS LAS FACTURAS AGRUPADAS
-        children: _facturasAgrupadas.entries.map((entry) {
+        children: facturasAgrupadas.entries.map((entry) {
           // DIVIDIMOS LA CLAVE ÚNICA PARA OBTENER FECHA E ID
           final clave = entry.key.split('-'); // DIVIDIMOS EN [FECHA, ID]
           final fecha = clave[0]; // PRIMERA PARTE: FECHA

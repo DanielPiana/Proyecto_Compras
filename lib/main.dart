@@ -137,18 +137,17 @@ class Main extends StatefulWidget {
   const Main({super.key,required this.database});
 
   @override
-  State<Main> createState() => _MainState();
+  State<Main> createState() => MainState();
 }
 /*---------------------------------------------------------------------------------------*/
-class _MainState extends State<Main> {
+class MainState extends State<Main> {
   late List<Widget> pages; // LISTA CON LAS DIFERENTES PAGINAS
 
-  int _selectedIndex = 0; // VARIABLE PARA EL INDICE DEL BottomNavigationBar
+  int selectedIndex = 0; // VARIABLE PARA EL INDICE DEL BottomNavigationBar
 
   @override //INICIALIZADOR
   void initState() {
     super.initState();
-
     // INICIALIZAMOS LAS PAGINAS AQUI, PARA QUE NO DE ERROR EL WIDGET.DATABASE
      pages = [ //DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
       Producto(database: widget.database),
@@ -194,7 +193,7 @@ class _MainState extends State<Main> {
           ],
         ),
       ),
-      body: pages[_selectedIndex], //CARGAMOS LA PAGINA DEPENDIENDO DEL INDICE EN EL QUE HAGAMOS CLICK
+      body: pages[selectedIndex], //CARGAMOS LA PAGINA DEPENDIENDO DEL INDICE EN EL QUE HAGAMOS CLICK
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFFE8F5E9), // FONDO DEL BottomNavigationBar
@@ -218,7 +217,7 @@ class _MainState extends State<Main> {
             label: "Recetas",
           ),
         ],
-        currentIndex: _selectedIndex, // INDICE EN EL QUE HACEMOS CLICK
+        currentIndex: selectedIndex, // INDICE EN EL QUE HACEMOS CLICK
         onTap: _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
       ),
     );
@@ -227,7 +226,7 @@ class _MainState extends State<Main> {
   // METODO PARA CAMBIAR LA PAGINA SELECCIONADA CON EL INDEX DEL BottomNavigationBar
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index;
+      selectedIndex = index;
     });
   }
 }

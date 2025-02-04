@@ -8,28 +8,35 @@ class Compra extends StatefulWidget {
   const Compra({super.key, required this.database});
 
   @override
-  State<Compra> createState() => _CompraState();
+  State<Compra> createState() => CompraState();
 }
 
-class _CompraState extends State<Compra> {
+class CompraState extends State<Compra> {
   // LISTA PARA ALMACENAR LOS PRODUCTOS AGRUPADOS POR SUPERMERCADO
-  List<Map<String, dynamic>> _productosCompra = [];
+  List<Map<String, dynamic>> productosCompra = [];
 
   // LISTA PARA ALMACENAR LOS PRODUCTOS Y CAMBIAR VALORES
   List<Map<String, dynamic>> productosMutables = [];
 
   // VARIABLE PARA ALMACENAR EL PRECIO TOTAL DE LOS PRODUCTOS MARCADOS
-  double _precioTotalCompra = 0.0;
+  double precioTotalCompra = 0.0;
 
   @override
   void initState() {
     super.initState();
     // CARGAR LOS PRODUCTOS Y CALCULAR EL TOTAL DE LOS PRODUCTOS MARCADOS AL INICIAR
-    _cargarCompra();
+    cargarCompra();
   }
 
   /*TODO-----------------METODO DE CARGAR COMPRA-----------------*/
-  Future<void> _cargarCompra() async {
+  /// Carga los productos de la compra y los agrupa por supermercado.
+  ///
+  /// - Obtiene los productos desde la base de datos.
+  /// - Convierte la lista inmutable en mutable para facilitar modificaciones.
+  /// - Agrupa los productos por supermercado.
+  /// - Calcula el total de los productos marcados.
+  /// - Actualiza el estado para reflejar los cambios en la interfaz.
+  Future<void> cargarCompra() async {
     // CONSULTA SQL QUE OBTIENE LOS PRODUCTOS DE LA COMPRA,
     // JUNTO CON EL SUPERMERCADO DE CADA PRODUCTO
     final productosInmutables = await widget.database.rawQuery('''
@@ -54,7 +61,7 @@ class _CompraState extends State<Compra> {
 
       // ACTUALIZAMOS EL VALOR DE precioTotalCompra SOLO PARA LOS PRODUCTOS MARCADOS
       if (producto['marcado'] == 1) {
-        _precioTotalCompra += producto["precio"] * producto["cantidad"];
+        precioTotalCompra += producto["precio"] * producto["cantidad"];
       }
 
       // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS AL MAPA COMO UNA LISTA VACÍA
@@ -67,7 +74,7 @@ class _CompraState extends State<Compra> {
 
     // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
     setState(() {
-      _productosCompra = agrupados.entries.map((entry) {
+      productosCompra = agrupados.entries.map((entry) {
         return {
           'supermercado': entry.key, // NOMBRE DEL SUPERMERCADO
           'productos': entry.value, // LISTA DE PRODUCTOS DE ESE SUPERMERCADO
@@ -75,36 +82,53 @@ class _CompraState extends State<Compra> {
       }).toList();
     });
 
-    //_calcularTotalMarcados(); // ACTUALIZA EL TOTAL DE LOS PRODUCTOS MARCADOS
+    //calcularTotalMarcados(); // ACTUALIZA EL TOTAL DE LOS PRODUCTOS MARCADOS
   }
 
-  /*TODO-----------------METODO CALCULAR TOTAL MARCADO (NO USADO)-----------------*/
-  Future<void> _calcularTotalMarcados() async {
-    // CONSULTA PARA OBTENER LA SUMA DE LOS PRECIOS DE LOS PRODUCTOS MARCADOS
-    final resultado = await widget.database.rawQuery(
-      'SELECT SUM(precio) as total FROM compra WHERE marcado = 1',
-    );
-    setState(() {
-      // SI NO HAY RESULTADOS EN LA CONSULTA, EL RESULTADO SERA 0.0
-      _precioTotalCompra = (resultado.isNotEmpty && resultado[0]['total'] != null)
-          ? (resultado[0]['total'] as num).toDouble()
-          : 0.0;
-    });
-  }
-
-  Future<void> _sumar1Cantidad(int idProducto) async {
+  // /*TODO-----------------METODO CALCULAR TOTAL MARCADO (NO USADO)-----------------*/
+  // Future<void> calcularTotalMarcados() async {
+  //   // CONSULTA PARA OBTENER LA SUMA DE LOS PRECIOS DE LOS PRODUCTOS MARCADOS
+  //   final resultado = await widget.database.rawQuery(
+  //     'SELECT SUM(precio) as total FROM compra WHERE marcado = 1',
+  //   );
+  //   setState(() {
+  //     // SI NO HAY RESULTADOS EN LA CONSULTA, EL RESULTADO SERA 0.0
+  //     precioTotalCompra = (resultado.isNotEmpty && resultado[0]['total'] != null)
+  //         ? (resultado[0]['total'] as num).toDouble()
+  //         : 0.0;
+  //   });
+  // }
+  /// Aumenta la cantidad de un producto en la compra en 1
+  ///
+  /// - Realiza una consulta SQL para incrementar la cantidad de un producto específico
+  ///   identificado por `idProducto` en la base de datos.
+  Future<void> sumar1Cantidad(int idProducto) async {
     await widget.database.rawUpdate('''
     UPDATE compra set cantidad = cantidad + 1 WHERE idProducto = ?
     ''', [idProducto]);
   }
-  Future<void> _restar1Cantidad(int idProducto) async {
+  /// Disminuye la cantidad de un producto en la compra en 1
+  ///
+  /// - Realiza una consulta SQL para disminuir la cantidad de un producto específico
+  ///   identificado por `idProducto` en la base de datos.
+  Future<void> restar1Cantidad(int idProducto) async {
     await widget.database.rawUpdate('''
     UPDATE compra set cantidad = cantidad - 1 WHERE idProducto = ?
     ''', [idProducto]);
   }
 
   /*TODO-----------------METODO GENERAR FACTURA-----------------*/
-  Future<void> _generarFactura() async {
+  /// Genera una factura con los productos marcados
+  ///
+  /// - Obtiene los productos marcados en la lista de compra.
+  /// - Si no hay productos marcados, muestra un mensaje de error al usuario.
+  /// - Calcula el precio total de los productos marcados.
+  /// - Crea una nueva factura en la base de datos con el total calculado.
+  /// - Inserta los productos correspondientes a la factura en la tabla `producto_factura`.
+  /// - Muestra un mensaje de confirmación al usuario.
+  ///
+  /// Si el proceso es exitoso, la factura se genera correctamente con los productos seleccionados.
+  Future<void> generarFactura() async {
     // CONSULTA PARA OBTENER TODOS LOS PRODUCTOS MARCADOS
     final productosMarcados = await widget.database.rawQuery(
       'SELECT * FROM compra WHERE marcado = 1',
@@ -209,10 +233,10 @@ class _CompraState extends State<Compra> {
   void actualizarPrecio(int idProducto, double precio, int cantidad) {
     // ELIMINAMOS EL PRODUCTO DE LA LISTA EN MEMORIA (PARA NO PERDER PRODUCTOS MARCADOS)
     setState(() {
-      _precioTotalCompra -= precio * cantidad; // RESTAMOS EL PRECIO TOTAL DEL PRODUCTO ELIMINADO
+      precioTotalCompra -= precio * cantidad; // RESTAMOS EL PRECIO TOTAL DEL PRODUCTO ELIMINADO
 
       // COGEMOS EL SUPERMERCADO DE ESE PRODUCTO (firstWhere DEVUELVE LA PRIMERA COINCIDENCIA)
-      final supermercado = _productosCompra.firstWhere(
+      final supermercado = productosCompra.firstWhere(
               (supermercado) => supermercado['productos'].any((p) => p['idProducto'] == idProducto)
       );
 
@@ -221,7 +245,7 @@ class _CompraState extends State<Compra> {
 
       // COMPROBAMOS SI EL SUPERMERCADO SIGUE TENIENDO PRODUCTOS, SI NO TIENE, LO BORRAMOS
       if (supermercado['productos'].isEmpty) {
-        _productosCompra.remove(supermercado);
+        productosCompra.remove(supermercado);
       }
     });
   }
@@ -235,7 +259,7 @@ class _CompraState extends State<Compra> {
         actions: [
           IconButton( // ICONO PARA GENERAR FACTURAS
             icon: const Icon(Icons.receipt),
-            onPressed: _generarFactura,
+            onPressed: generarFactura,
             tooltip: 'Generar Factura',
           ),
         ],
@@ -245,10 +269,10 @@ class _CompraState extends State<Compra> {
           Expanded( // EXPANDED PARA QUE EL ListView.Builder NO DE ERROR
             child: ListView.builder(
               // TAMAÑO EN BASE A LA CANTIDAD DE SUPERMERCADOS QUE HAY
-              itemCount: _productosCompra.length,
+              itemCount: productosCompra.length,
               itemBuilder: (context, index) {
                 // OBTENEMOS UN ELEMENTO DE LA LISTA BASANDONOS EN EL INDICE
-                final grupo = _productosCompra[index];
+                final grupo = productosCompra[index];
                 // OBTENEMOS EL SUPERMERCADO DE ESE ELEMENTO
                 final supermercado = grupo['supermercado'];
                 // OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
@@ -282,9 +306,9 @@ class _CompraState extends State<Compra> {
                           );
                           // RECALCULAMOS EL TOTAL
                           if (nuevoEstado == 1) {
-                            _precioTotalCompra += producto["precio"] * producto["cantidad"]; // SI SE MARCA, SUMAMOS EL PRECIO
+                            precioTotalCompra += producto["precio"] * producto["cantidad"]; // SI SE MARCA, SUMAMOS EL PRECIO
                           } else {
-                            _precioTotalCompra -= producto["precio"] * producto["cantidad"]; // SI SE DESMARCA, RESTAMOS EL PRECIO
+                            precioTotalCompra -= producto["precio"] * producto["cantidad"]; // SI SE DESMARCA, RESTAMOS EL PRECIO
                           }
                           setState(() {
                             // ACTUALIZAMOS EL ESTADO DEL PRODUCTO EN LA INTERFAZ
@@ -320,9 +344,9 @@ class _CompraState extends State<Compra> {
                                       // SI EL PRODUCTO ESTA MARCADO Y ES MAYOR A 1
                                       if (producto['marcado'] == 1) {
                                         setState(() {
-                                          _precioTotalCompra -= producto["precio"]; // ACTUALIZAMOS EL PRECIO TOTAL
+                                          precioTotalCompra -= producto["precio"]; // ACTUALIZAMOS EL PRECIO TOTAL
                                         });
-                                        _restar1Cantidad(producto["idProducto"]);
+                                        restar1Cantidad(producto["idProducto"]);
                                       }
                                     }
                                 });
@@ -344,9 +368,9 @@ class _CompraState extends State<Compra> {
                                   // SI EL PRODUCTO ESTA MARCADO, LO SUMAMOS
                                   if (producto['marcado'] == 1) {
                                     setState(() {
-                                      _precioTotalCompra += producto["precio"]; // SUMAR SI EL PRECIO ESTA MARCADO
+                                      precioTotalCompra += producto["precio"]; // SUMAR SI EL PRECIO ESTA MARCADO
                                     });
-                                    _sumar1Cantidad(producto["idProducto"]);
+                                    sumar1Cantidad(producto["idProducto"]);
                                   }
                                 });
                               },
@@ -392,7 +416,7 @@ class _CompraState extends State<Compra> {
                   ),
                 ),
                 Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                  '\$${(_precioTotalCompra).toStringAsFixed(2)}',
+                  '\$${(precioTotalCompra).toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

@@ -7,11 +7,11 @@ class Producto extends StatefulWidget {
   const Producto({super.key, required this.database});
 
   @override
-  State<Producto> createState() => _ProductoState();
+  State<Producto> createState() => ProductoState();
 }
 
-class _ProductoState extends State<Producto> {
-  Map<String, List<Map<String, dynamic>>> _productosPorSupermercado = {}; // LISTA PARA GUARDAR LOS PRODUCTOS AGRUPADOS POR 1 SUPERMERCADO EN CONCRETO
+class ProductoState extends State<Producto> {
+  Map<String, List<Map<String, dynamic>>> productosPorSupermercado = {}; // LISTA PARA GUARDAR LOS PRODUCTOS AGRUPADOS POR 1 SUPERMERCADO EN CONCRETO
 
   /*TODO-----------------INITIALIZE-----------------*/
   @override
@@ -21,7 +21,14 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------METODO DE CARGAR-----------------*/
-  /// METODO PARA CARGAR PRODUCTOS DE LA BASE DE DATOS
+  /// Carga los productos desde la base de datos y los agrupa por supermercado.
+  ///
+  /// Consulta todos los registros de la tabla 'productos' y los organiza en un mapa,
+  /// donde la clave es el nombre del supermercado y el valor es una lista de productos
+  /// pertenecientes a ese supermercado. Si un producto no tiene supermercado, se
+  /// agrupa bajo 'Sin supermercado'.
+  ///
+  /// Actualiza el estado para reflejar los cambios en la interfaz.
   Future<void> cargarProductos() async {
     // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
     final productos = await widget.database.query('productos');
@@ -45,13 +52,21 @@ class _ProductoState extends State<Producto> {
 
     // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
     setState(() {
-      _productosPorSupermercado = productosAgrupados;
+      productosPorSupermercado = productosAgrupados;
     });
   }
 
 
   /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
-  /// METODO PARA BORRAR PRODUCTO
+  /// Elimina un producto de la base de datos según su ID.
+  ///
+  /// Si el producto existe en la tabla 'productos' con el ID proporcionado,
+  /// se elimina y luego se recargan los productos para reflejar los cambios en la UI.
+  ///
+  /// Parámetros:
+  /// - [id]: ID único del producto a eliminar.
+  ///
+  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
   Future<void> deleteProducto(int id) async {
     try {
       await widget.database.delete(
@@ -69,7 +84,17 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
-  /// METODO PARA ACTUALIZAR PRODUCTO
+  /// Actualiza un producto en la base de datos con los nuevos valores proporcionados.
+  ///
+  /// Parámetros:
+  /// - [producto]: Mapa con los datos actualizados del producto, incluyendo:
+  ///   - `id`: ID único del producto a actualizar.
+  ///   - `nombre`: Nuevo nombre del producto.
+  ///   - `descripcion`: Nueva descripción del producto.
+  ///   - `precio`: Nuevo precio del producto.
+  ///   - `supermercado`: Nuevo supermercado asociado al producto.
+  ///
+  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
   Future<void> actualizarProducto(Map<String, dynamic> producto) async {
     try {
       await widget.database.update(
@@ -91,7 +116,12 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
-  /// METODO PARA OBTENER TODOS LOS SUPERMERCADOS EXISTENTES
+  /// Obtiene una lista de todos los supermercados existentes en la base de datos.
+  ///
+  /// Consulta la tabla 'productos' para extraer los nombres de los supermercados,
+  /// eliminando duplicados mediante un `Set` y convirtiéndolos nuevamente en una lista.
+  ///
+  /// @return Future<List<String>> Lista de nombres de supermercados sin duplicados.
   Future<List<String>> obtenerSupermercados() async {
     // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
     final productos = await widget.database.query('productos');
@@ -104,7 +134,14 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
-  /// METODO QUE MUESTRA UN DIALOGO DE CONFIRMACION PARA ELIMINAR PRODUCTO
+  /// Muestra un cuadro de diálogo de confirmación antes de eliminar un producto.
+  ///
+  /// Parámetros:
+  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
+  /// - [idProducto]: ID del producto que se desea eliminar.
+  ///
+  /// Si el usuario confirma la eliminación, se llama al método `deleteProducto(idProducto)`
+  /// y se cierra el diálogo.
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
       context: context,
@@ -148,7 +185,14 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE EDICION DE PRODUCTO-----------------*/
-  /// METODO QUE MUESTRA UN DIALOGO PARA EDITAR UN PRODUCTO
+  /// Muestra un cuadro de diálogo para editar un producto.
+  ///
+  /// Parámetros:
+  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
+  /// - [producto]: Mapa con los datos actuales del producto a editar.
+  ///
+  /// Permite modificar el nombre, la descripción, el precio y el supermercado del producto.
+  /// Una vez confirmados los cambios, se actualiza el producto en la base de datos.
   void dialogoEdicion(BuildContext context, Map<String, dynamic> producto) async {
     // CREAMOS LOS CONTROLADORES PARA LOS TextField Y LOS INICIALIZAMOS CON LOS DATOS DEL PRODUCTO AL QUE HA HECHO CLICK
     final TextEditingController nombreController = TextEditingController(text: producto['nombre']);
@@ -242,7 +286,14 @@ class _ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
-  /// METODO QUE MUESTRA UN DIALOGO  PARA CREAR PRODUCTO
+  /// Muestra un cuadro de diálogo para crear un nuevo producto.
+  ///
+  /// Parámetros:
+  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
+  ///
+  /// Permite ingresar el nombre, la descripción y el precio del producto.
+  /// También permite seleccionar un supermercado existente o crear uno nuevo.
+  /// Una vez confirmados los datos, el producto se guarda en la base de datos.
   void dialogoCreacion(BuildContext context) {
     // CREAMOS LOS CONTROLADORES PARA LOS TextField
     final TextEditingController nombreController = TextEditingController();
@@ -255,7 +306,7 @@ class _ProductoState extends State<Producto> {
     bool creandoSupermercado = false;
 
     // OBTENEMOS LA LISTA DE LOS SUPERMERCADOS QUE EXISTEN Y AÑADIMOS UNA NUEVA OPCION
-    final supermercados = _productosPorSupermercado.keys.toList();
+    final supermercados = productosPorSupermercado.keys.toList();
     supermercados.add("Nuevo supermercado");
 
     showDialog(
@@ -417,7 +468,7 @@ class _ProductoState extends State<Producto> {
         title: const Text("Productos"), // TITULO DEL AppBar
         centerTitle: true,
       ),
-      body: _productosPorSupermercado.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS ESTE MENSAJE
+      body: productosPorSupermercado.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS ESTE MENSAJE
           ? const Center(
         child: Text(
           "No hay productos disponibles",
@@ -428,7 +479,7 @@ class _ProductoState extends State<Producto> {
         ),
       )
           : ListView( // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
-        children: _productosPorSupermercado.entries.map((entry) {
+        children: productosPorSupermercado.entries.map((entry) {
           final supermercado = entry.key; // AQUI OBTENEMOS EL NOMBRE DEL SUPERMERCADO
           final productos = entry.value; // AQUI OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
 
