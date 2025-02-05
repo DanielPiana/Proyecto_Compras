@@ -20,7 +20,22 @@ class GastosState extends State<Gastos> {
     // CARGAMOS LAS FACTURAS AL ABRIR LA PAGINA
     cargarFacturas();
   }
-
+  /// Carga las facturas desde la base de datos y agrupa los productos por id.
+  ///
+  /// Realiza una consulta a la base de datos para obtener todas las facturas ordenadas
+  /// por id en orden descendente. Luego, para cada factura, se realiza una segunda
+  /// consulta para obtener todos los productos asociados a dicha factura. Los productos
+  /// se agrupan utilizando una clave única que combina la fecha y el ID de la factura.
+  /// Si una factura no tiene fecha, se asigna el valor "Sin fecha".
+  ///
+  /// Los productos de cada factura se almacenan en un mapa, donde la clave es la combinación
+  /// de la fecha y el ID de la factura, y el valor es una lista de los productos correspondientes
+  /// a esa factura.
+  ///
+  /// Finalmente, se actualiza el estado de la interfaz con las facturas agrupadas y sus productos.
+  ///
+  /// Este proceso de carga y agrupación es asincrónico y se realiza de manera eficiente para
+  /// evitar bloquear la interfaz de usuario mientras se obtiene la información de la base de datos.
   Future<void> cargarFacturas() async {
     // CONSULTA PARA OBTENER LAS FACTURAS ORDENADAS POR FECHA DESCENDENTE
     final facturas = await widget.database.rawQuery(
@@ -57,7 +72,17 @@ class GastosState extends State<Gastos> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
-  /// METODO QUE MUESTRA UN DIALOGO DE CONFIRMACION PARA ELIMINAR PRODUCTO DE LA LISTA DE LA COMPRA
+  /// Muestra un cuadro de diálogo de confirmación para la eliminación de una factura.
+  ///
+  /// Este método muestra un 'AlertDialog' en el que se le pregunta al usuario si está
+  /// seguro de eliminar una factura específica. El cuadro de diálogo contiene dos botones:
+  /// - "Cancelar": Cierra el cuadro de diálogo sin realizar ninguna acción.
+  /// - "Eliminar": Elimina la factura especificada por el 'idFactura' y recarga las facturas.
+  ///
+  /// Además, se informa al usuario de que los productos asociados a la factura no serán eliminados.
+  ///
+  /// El cuadro de diálogo se muestra de forma asincrónica y se cierra automáticamente al
+  /// confirmar la eliminación o al cancelar la acción.
   void dialogoEliminacion(BuildContext context, int idFactura) {
     showDialog(
       context: context,
@@ -101,6 +126,12 @@ class GastosState extends State<Gastos> {
     );
   }
 
+  /// Elimina un producto de la base de datos según su ID.
+  ///
+  /// Si el producto existe en la tabla 'productos' con el ID proporcionado se elimina
+  ///
+  /// Parámetros:
+  /// - [id]: ID único de la factura a eliminar.
   Future<void> borrarFactura (int idFactura) async{
     await widget.database.rawDelete('''
     DELETE FROM facturas WHERE id = ?

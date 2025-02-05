@@ -88,11 +88,11 @@ class ProductoState extends State<Producto> {
   ///
   /// Parámetros:
   /// - [producto]: Mapa con los datos actualizados del producto, incluyendo:
-  ///   - `id`: ID único del producto a actualizar.
-  ///   - `nombre`: Nuevo nombre del producto.
-  ///   - `descripcion`: Nueva descripción del producto.
-  ///   - `precio`: Nuevo precio del producto.
-  ///   - `supermercado`: Nuevo supermercado asociado al producto.
+  ///   - 'id': ID único del producto a actualizar.
+  ///   - 'nombre': Nuevo nombre del producto.
+  ///   - 'descripcion': Nueva descripción del producto.
+  ///   - 'precio': Nuevo precio del producto.
+  ///   - 'supermercado': Nuevo supermercado asociado al producto.
   ///
   /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
   Future<void> actualizarProducto(Map<String, dynamic> producto) async {
@@ -119,7 +119,7 @@ class ProductoState extends State<Producto> {
   /// Obtiene una lista de todos los supermercados existentes en la base de datos.
   ///
   /// Consulta la tabla 'productos' para extraer los nombres de los supermercados,
-  /// eliminando duplicados mediante un `Set` y convirtiéndolos nuevamente en una lista.
+  /// eliminando duplicados mediante un 'Set' y convirtiéndolos nuevamente en una lista.
   ///
   /// @return Future<List<String>> Lista de nombres de supermercados sin duplicados.
   Future<List<String>> obtenerSupermercados() async {
@@ -140,7 +140,7 @@ class ProductoState extends State<Producto> {
   /// - [context]: Contexto de la aplicación para mostrar el diálogo.
   /// - [idProducto]: ID del producto que se desea eliminar.
   ///
-  /// Si el usuario confirma la eliminación, se llama al método `deleteProducto(idProducto)`
+  /// Si el usuario confirma la eliminación, se llama al método 'deleteProducto(idProducto)'
   /// y se cierra el diálogo.
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(

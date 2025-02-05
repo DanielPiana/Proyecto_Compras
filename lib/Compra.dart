@@ -101,7 +101,7 @@ class CompraState extends State<Compra> {
   /// Aumenta la cantidad de un producto en la compra en 1
   ///
   /// - Realiza una consulta SQL para incrementar la cantidad de un producto específico
-  ///   identificado por `idProducto` en la base de datos.
+  ///   identificado por 'idProducto' en la base de datos.
   Future<void> sumar1Cantidad(int idProducto) async {
     await widget.database.rawUpdate('''
     UPDATE compra set cantidad = cantidad + 1 WHERE idProducto = ?
@@ -110,7 +110,7 @@ class CompraState extends State<Compra> {
   /// Disminuye la cantidad de un producto en la compra en 1
   ///
   /// - Realiza una consulta SQL para disminuir la cantidad de un producto específico
-  ///   identificado por `idProducto` en la base de datos.
+  ///   identificado por 'idProducto' en la base de datos.
   Future<void> restar1Cantidad(int idProducto) async {
     await widget.database.rawUpdate('''
     UPDATE compra set cantidad = cantidad - 1 WHERE idProducto = ?
@@ -124,7 +124,7 @@ class CompraState extends State<Compra> {
   /// - Si no hay productos marcados, muestra un mensaje de error al usuario.
   /// - Calcula el precio total de los productos marcados.
   /// - Crea una nueva factura en la base de datos con el total calculado.
-  /// - Inserta los productos correspondientes a la factura en la tabla `producto_factura`.
+  /// - Inserta los productos correspondientes a la factura en la tabla 'producto_factura'.
   /// - Muestra un mensaje de confirmación al usuario.
   ///
   /// Si el proceso es exitoso, la factura se genera correctamente con los productos seleccionados.
@@ -179,7 +179,12 @@ class CompraState extends State<Compra> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
-  /// METODO QUE MUESTRA UN DIALOGO DE CONFIRMACION PARA ELIMINAR PRODUCTO DE LA LISTA DE LA COMPRA
+  /// Muestra un cuadro de diálogo de confirmacion antes de eliminar un producto de la lista de la compra
+  ///
+  /// Si el usuario confirma la eliminación, llama al método 'deleteProducto(idProducto)' y luego
+  /// actualizarPrecio(idProducto,precio,cantidad) para actualizar el precio de los productos marcados
+  ///
+  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
   void dialogoEliminacion(BuildContext context, int idProducto,double precio, int cantidad) {
     showDialog(
       context: context,
@@ -224,12 +229,21 @@ class CompraState extends State<Compra> {
     );
   }
   // METODO PARA ELIMINAR PRODUCTO DE LA LISTA DE LA COMPRA
+
+  /// Elimina un producto de la lista de la compra según su ID.
+  /// identificado por 'idProducto' en la base de datos.
   Future<void> deleteProducto(int idProducto) async{
     await widget.database.rawDelete(
       'DELETE FROM compra WHERE idProducto = ?', [idProducto],
     );
   }
 
+  /// Actualiza el precio de los productos marcados
+  ///
+  /// Parámetros:
+  /// - idProducto: ID único del producto a eliminar.
+  /// - precio: precio del producto para restarlo del total
+  /// - cantidad: cantidad del producto para restar el precio total de manera acorde
   void actualizarPrecio(int idProducto, double precio, int cantidad) {
     // ELIMINAMOS EL PRODUCTO DE LA LISTA EN MEMORIA (PARA NO PERDER PRODUCTOS MARCADOS)
     setState(() {
