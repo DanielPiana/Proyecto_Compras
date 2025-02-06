@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Gastos extends StatefulWidget {
   final Database database;
@@ -88,13 +90,12 @@ class GastosState extends State<Gastos> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text( // TITULO DE LA ALERTA
-            "Confirmar eliminación",
+          title: Text( // TITULO DE LA ALERTA
+            AppLocalizations.of(context)!.titleConfirmDialog,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          content: const Text(
-            "¿Estás seguro de que deseas eliminar esta factura? \n"
-                "Los productos asociados no se borrarán",
+          content:  Text(
+            AppLocalizations.of(context)!.deleteConfirmationR,
             style: TextStyle(fontSize: 16),
           ),
           actions: [
@@ -103,8 +104,8 @@ class GastosState extends State<Gastos> {
                 // CERRAMOS EL DIALOGO
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                "Cancelar",
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
                 style: TextStyle(color: Colors.grey),
               ),
             ),
@@ -115,8 +116,8 @@ class GastosState extends State<Gastos> {
                 cargarFacturas();
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                "Eliminar",
+              child: Text(
+                AppLocalizations.of(context)!.delete,
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -142,7 +143,7 @@ class GastosState extends State<Gastos> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Gastos"), // TÍTULO DEL AppBar
+        title: Text((AppLocalizations.of(context)!.receipt)), // TÍTULO DEL AppBar
         centerTitle: true,
       ),
       // SI NO HAY FACTURAS MOSTRAMOS UN MENSAJE
@@ -193,7 +194,7 @@ class GastosState extends State<Gastos> {
               ...productos.map((producto) {
                 return ListTile(
                   title: Text(producto['nombre']),
-                  subtitle: Text('Cantidad: ${producto['cantidad']}'),
+                  subtitle: Text('${AppLocalizations.of(context)!.quantity}: ${producto['cantidad']}'),
                   trailing: Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
                     '\$${producto['precioUnidad'].toStringAsFixed(2)}',
                     style: const TextStyle(
@@ -204,8 +205,8 @@ class GastosState extends State<Gastos> {
                 );
               }).toList(),
               ListTile(
-                title: const Text(
-                  'Precio Total:',
+                title: Text(
+                  AppLocalizations.of(context)!.totalPrice,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 trailing: Text(

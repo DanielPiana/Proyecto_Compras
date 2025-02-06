@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Producto extends StatefulWidget {
   final Database database;
@@ -147,12 +149,12 @@ class ProductoState extends State<Producto> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text( // TITULO DE LA ALERTA
-            "Confirmar eliminación",
+          title: Text( // TITULO DE LA ALERTA
+            AppLocalizations.of(context)!.titleConfirmDialog,
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          content: const Text(
-            "¿Estás seguro de que deseas eliminar este producto?",
+          content: Text(
+            AppLocalizations.of(context)!.deleteConfirmationP,
             style: TextStyle(fontSize: 16),
           ),
           actions: [
@@ -161,8 +163,8 @@ class ProductoState extends State<Producto> {
                 // CERRAMOS EL DIALOGO
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                "Cancelar",
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
                 style: TextStyle(color: Colors.grey),
               ),
             ),
@@ -173,8 +175,8 @@ class ProductoState extends State<Producto> {
                 // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                "Eliminar",
+              child: Text(
+                AppLocalizations.of(context)!.delete,
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -209,27 +211,27 @@ class ProductoState extends State<Producto> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Editar producto"), // TITULO DE LA ALERTA
+          title:Text(AppLocalizations.of(context)!.editProduct), // TITULO DE LA ALERTA
           content: Column(
             mainAxisSize: MainAxisSize.min, // PARA QUE VERTICALMENTE, OCUPE LO MINIMO
             children: [
               TextField( // TextField PARA EL NOMBRE
                 controller: nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
+                decoration:  InputDecoration(labelText:AppLocalizations.of(context)!.name),
               ),
               TextField( // TextField PARA LA DESCRIPCION
                 controller: descripcionController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
+                decoration: InputDecoration(labelText:AppLocalizations.of(context)!.description),
               ),
               TextField( // TextField PARA EL PRECIO
                 controller: precioController,
-                decoration: const InputDecoration(labelText: 'Precio'),
+                decoration: InputDecoration(labelText: AppLocalizations.of(context)!.price),
                 keyboardType: TextInputType.number,
               ),
               DropdownButtonFormField<String>( // DropdownButtonFormField DE Strings
                 // PONEMOS DE VALOR, EL SUPERMERCADO DEL PRODUCTO SELECCIONADO
                 value: supermercadoSeleccionado,
-                decoration: const InputDecoration(labelText: 'Supermercado'),
+                decoration: InputDecoration(labelText:AppLocalizations.of(context)!.supermarket),
                 // PONEMOS LA LISTA DE SUPERMERCADOS COMO OPCIONES PARA EL DESPLEGABLE
                 items: supermercados.map((supermercado) {
                   return DropdownMenuItem<String>( // CADA SUPERMERCADO SE CONVIERTE EN UN DropdownMenuItem
@@ -253,7 +255,7 @@ class ProductoState extends State<Producto> {
                 // CERRAMOS EL DIALOGO
                 Navigator.of(context).pop();
               },
-              child: const Text("Cancelar"),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton( // BOTON PARA CONFIRMAR LA EDICION Y GUARDAR CAMBIOS
               onPressed: () async {
@@ -277,7 +279,7 @@ class ProductoState extends State<Producto> {
                 // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
                 Navigator.of(context).pop();
               },
-              child: const Text("Guardar"),
+              child:Text(AppLocalizations.of(context)!.save),
             ),
           ],
         );
@@ -307,7 +309,7 @@ class ProductoState extends State<Producto> {
 
     // OBTENEMOS LA LISTA DE LOS SUPERMERCADOS QUE EXISTEN Y AÑADIMOS UNA NUEVA OPCION
     final supermercados = productosPorSupermercado.keys.toList();
-    supermercados.add("Nuevo supermercado");
+    supermercados.add(AppLocalizations.of(context)!.selectSupermarketNameDDB);
 
     showDialog(
       context: context,
@@ -315,28 +317,28 @@ class ProductoState extends State<Producto> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: const Text("Crear producto"), // TÍTULO DEL DIÁLOGO
+              title: Text(AppLocalizations.of(context)!.createProduct), // TÍTULO DEL DIÁLOGO
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min, // PARA QUE VERTICALMENTE, OCUPE LO MINIMO
                   children: [
                     TextField( // TextField PARA EL NOMBRE
                       controller: nombreController,
-                      decoration: const InputDecoration(labelText: 'Nombre'),
+                      decoration:  InputDecoration(labelText: AppLocalizations.of(context)!.name),
                     ),
                     TextField( // TextField PARA LA DESCRIPCION
                       controller: descripcionController,
-                      decoration: const InputDecoration(labelText: 'Descripción'),
+                      decoration:  InputDecoration(labelText: AppLocalizations.of(context)!.description),
                     ),
                     TextField( // TextField PARA EL PRECIO
                       controller: precioController,
-                      decoration: const InputDecoration(labelText: 'Precio'),
+                      decoration:  InputDecoration(labelText: AppLocalizations.of(context)!.price),
                       keyboardType: TextInputType.number,
                     ),
                     DropdownButton<String>( // DropdownButton PARA SELECCIONAR EL SUPERMERCADO
                       isExpanded: true, // OCUPA EL ESPACIO DISPONIBLE
                       value: supermercadoSeleccionado, // VALOR SELECCIONADO INICIALMENTE
-                      hint: const Text("Seleccionar supermercado"),
+                      hint: Text(AppLocalizations.of(context)!.selectSupermarket),
                       items: supermercados.map((supermercado) {
                         // PONEMOS LA LISTA DE SUPERMERCADOS COMO OPCIONES PARA EL DESPLEGABLE
                         return DropdownMenuItem<String>( // CADA SUPERMERCADO SE CONVIERTE EN UN DropdownMenuItem
@@ -350,7 +352,7 @@ class ProductoState extends State<Producto> {
                           // ACTUALIZAMOS EL SUPERMERCADO SELECCIONADO
                           supermercadoSeleccionado = value;
                           // ACTIVAR CAMPO EXTRA SI ES "Nuevo supermercado"
-                          creandoSupermercado = (value == "Nuevo supermercado");
+                          creandoSupermercado = (value == "Nuevo supermercado" || value == "New supermarket");
                         });
                       },
                     ),
@@ -358,7 +360,7 @@ class ProductoState extends State<Producto> {
                     if (creandoSupermercado)
                       TextField(
                         controller: nuevoSupermercadoController,
-                        decoration: const InputDecoration(labelText: 'Nombre del nuevo supermercado'),
+                        decoration: InputDecoration(labelText: AppLocalizations.of(context)!.selectSupermarketName),
                       ),
                   ],
                 ),
@@ -370,7 +372,7 @@ class ProductoState extends State<Producto> {
                     // CERRAMOS EL DIALOGO
                     Navigator.of(context).pop();
                   },
-                  child: const Text("Cancelar"),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
                 // BOTON PARA CONFIRMAR LA CREACION Y GUARDAR CAMBIOS
                 TextButton(
@@ -404,7 +406,7 @@ class ProductoState extends State<Producto> {
                     Navigator.of(context).pop();
                     cargarProductos();
                   },
-                  child: const Text("Guardar"),
+                  child: Text(AppLocalizations.of(context)!.save),
                 ),
               ],
             );
@@ -437,7 +439,7 @@ class ProductoState extends State<Producto> {
       if (productosExistentes.isNotEmpty) {
         // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTA REGISTRADO
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Este producto ya está en la lista de compra.')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.snackBarRepeatedProduct)),
         );
       } else {
         // SI NO EXISTE, LO AÑADIMOS
@@ -452,11 +454,11 @@ class ProductoState extends State<Producto> {
           //conflictAlgorithm: ConflictAlgorithm.replace, SI EL ID DEL PRODUCTO A GUARDAR COINCIDE CON OTRO EXISTENTE, LO REEMPLAZA
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Producto añadido a la lista de compra')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
         );
       }
     } catch (e) {
-      debugPrint('Error al añadir producto a la lista de compra: $e');
+      debugPrint("${AppLocalizations.of(context)!.snackBarErrorAddingProduct}: $e");
     }
   }
 
@@ -465,7 +467,7 @@ class ProductoState extends State<Producto> {
   Widget build(BuildContext context) {
     return Scaffold( //BODY PRINCIPAL DE LA PAGINA PRODUCTO
       appBar: AppBar(
-        title: const Text("Productos"), // TITULO DEL AppBar
+        title: Text(AppLocalizations.of(context)!.products), // TITULO DEL AppBar
         centerTitle: true,
       ),
       body: productosPorSupermercado.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS ESTE MENSAJE

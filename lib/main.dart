@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:proyectocompras/Gastos.dart';
-import 'package:proyectocompras/Compra.dart';
-import 'package:proyectocompras/Producto.dart';
-import 'package:proyectocompras/Recetas.dart';
+import 'package:proyectocompras/gastos.dart';
+import 'package:proyectocompras/compra.dart';
+import 'package:proyectocompras/producto.dart';
+import 'package:proyectocompras/recetas.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
+import 'ThemeProvider.dart';
+import 'languageProvider.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 /*---------------------------------------------------------------------------------------*/
 void main() async {
   // INICIALIZAR SQLITE PARA APLICACIONES DE ESCRITORIO.
@@ -12,16 +18,17 @@ void main() async {
   final databaseFactory = databaseFactoryFfi;
 
   // CONFIGURAR RUTA DE LA BASE DE DATOS.
-  final dbPath = join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
+  final dbPath =
+      join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
   final database = await databaseFactory.openDatabase(dbPath);
 
- // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
-   await database.execute('DROP TABLE IF EXISTS recetas');
-   await database.execute('DROP TABLE IF EXISTS productos');
-   await database.execute('DROP TABLE IF EXISTS receta_producto');
-   await database.execute('DROP TABLE IF EXISTS facturas');
-   await database.execute('DROP TABLE IF EXISTS producto_factura');
-   await database.execute('DROP TABLE IF EXISTS compra');
+  // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
+  await database.execute('DROP TABLE IF EXISTS recetas');
+  await database.execute('DROP TABLE IF EXISTS productos');
+  await database.execute('DROP TABLE IF EXISTS receta_producto');
+  await database.execute('DROP TABLE IF EXISTS facturas');
+  await database.execute('DROP TABLE IF EXISTS producto_factura');
+  await database.execute('DROP TABLE IF EXISTS compra');
 
   // CREAR TABLA DE TAREAS SI NO EXISTE.
   try {
@@ -101,21 +108,32 @@ VALUES
     debugPrint("Error al crear tablas: $e");
   }
   // INICIAR APLICACIÓN CON BASE DE DATOS.
-  runApp(MainApp(database: database));
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => LanguageProvider()),
+      ChangeNotifierProvider(create: (_) => ThemeProvider())
+    ],
+    child: MainApp(database: database),
+  ));
 }
 
 /*---------------------------------------------------------------------------------------*/
 class MainApp extends StatelessWidget {
   final Database database;
 
-  const MainApp({super.key,required this.database});
+  const MainApp({super.key, required this.database});
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LanguageProvider>().locale;
+    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF1F8E9), // FONDO DEL SCAFFOLD GLOBAL (BODY)
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF1F8E9),
+        // FONDO DEL SCAFFOLD GLOBAL (BODY)
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF4CAF50), // VERDE PRINCIPAL DEL AppBar
           titleTextStyle: TextStyle(
@@ -123,22 +141,45 @@ class MainApp extends StatelessWidget {
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
-          iconTheme: IconThemeData(color: Colors.white), //COLOR ICONO CREAR FACTURA, DENTRO DEL AppBar
+          iconTheme: IconThemeData(color: Colors.white),
         ),
       ),
+      darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: const Color(0xFF303030),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF2C6B31),
+            titleTextStyle: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            iconTheme: IconThemeData(color: Colors.white),
+          )),
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      supportedLocales: const [Locale("es"), Locale("en")],
+      locale: Locale('$locale'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: Main(database: database),
     );
   }
 }
+
 /*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
   final Database database;
 
-  const Main({super.key,required this.database});
+  const Main({super.key, required this.database});
 
   @override
   State<Main> createState() => MainState();
 }
+
 /*---------------------------------------------------------------------------------------*/
 class MainState extends State<Main> {
   late List<Widget> pages; // LISTA CON LAS DIFERENTES PAGINAS
@@ -149,79 +190,144 @@ class MainState extends State<Main> {
   void initState() {
     super.initState();
     // INICIALIZAMOS LAS PAGINAS AQUI, PARA QUE NO DE ERROR EL WIDGET.DATABASE
-     pages = [ //DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
+    pages = [
+      //DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
       Producto(database: widget.database),
       Compra(database: widget.database),
       Gastos(database: widget.database),
       Recetas(),
     ];
   }
+
   @override
   Widget build(BuildContext context) {
+    // CREAMOS LA VARIABLE AQUI, PORQUE COMO VA A TENER UN .watch NECESITA ESTAR DENTRO DE UN build.
+    final bottomNavColors = context.watch<ThemeProvider>().isDarkMode
+        ? {
+            "background": const Color(0xFF424242),
+            "selectedItem": const Color(0xFF81C784),
+            "unselectedItem": const Color(0xFF757575),
+          }
+        : {
+            "background": const Color(0xFFE8F5E9),
+            "selectedItem": const Color(0xFF388E3C),
+            "unselectedItem": const Color(0xFFA5D6A7),
+          };
+
+    String languageSelected = "en";
+
+    List<DropdownMenuItem> language = [
+      DropdownMenuItem(
+        value: "en",
+        child: Text("English"),
+      ),
+      DropdownMenuItem(
+        value: "es",
+        child: Text("Español"),
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            IconButton( //ICONO MENU HAMBURGUESA
-              icon: const Icon(Icons.menu, color: Colors.white),
-              onPressed: () {
-                debugPrint('Hacer layout de menu');
-              },
-            ),
-            Expanded( //PERSONALIZACION DE LA BARRA DE BUSQUEDA
+            Expanded(
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const TextField(
+                child: TextField(
                   decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: 'Buscar...',
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: (AppLocalizations.of(context)!.search),
                     border: InputBorder.none,
                   ),
                 ),
               ),
             ),
-            IconButton( // ICONO DE SETTINGS
-              icon: const Icon(Icons.settings, color: Colors.white),
-              onPressed: () {
-                debugPrint('Abrir layout/ventana de ajustes');
-              },
-            ),
           ],
         ),
       ),
-      body: pages[selectedIndex], //CARGAMOS LA PAGINA DEPENDIENDO DEL INDICE EN EL QUE HAGAMOS CLICK
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text(AppLocalizations.of(context)!.menuSettings),
+            ),
+            ListTile(
+                title: Text(AppLocalizations.of(context)!.language),
+                trailing: DropdownButton(
+                    items: language, // Lista de opciones para el dropdownButton
+                    onChanged: (value) {
+                      //es te value es el valor que vas a cambiar
+                      setState(() {
+                        languageSelected =
+                            value; // cambiamos el valor de languageSelected al valor seleccionado en el dropdownbutton
+                        print(languageSelected);
+                      });
+                      context
+                          .read<LanguageProvider>()
+                          .setLocale(Locale("$value"));
+                    },
+                    value:
+                        context.watch<LanguageProvider>().locale.languageCode)),
+            SwitchListTile(
+              title: Text(AppLocalizations.of(context)!.darkTheme),
+              value: context.watch<ThemeProvider>().isDarkMode,
+              onChanged: (bool value) {
+                context.read<ThemeProvider>().toggleTheme();
+              },
+            )
+            // Añade más opciones según sea necesario
+          ],
+        ),
+      ),
+      body: pages[selectedIndex],
+      //CARGAMOS LA PAGINA DEPENDIENDO DEL INDICE EN EL QUE HAGAMOS CLICK
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFFE8F5E9), // FONDO DEL BottomNavigationBar
-        selectedItemColor: const Color(0xFF388E3C), // COLOR PARA EL ITEM SELECCIONADO
-        unselectedItemColor: const Color(0xFFA5D6A7), // COLOR PARA LOS NO SELECCIONADOS
-        items: const [
-          BottomNavigationBarItem( // PRODUCTOS
+        backgroundColor: bottomNavColors["background"],
+        // Usar el color de fondo de acuerdo al modo
+        selectedItemColor: bottomNavColors["selectedItem"],
+        // Usar el color para el ítem seleccionado
+        unselectedItemColor: bottomNavColors["unselectedItem"],
+        // Usar el color para los ítems no seleccionados
+        items: [
+          BottomNavigationBarItem(
+            // PRODUCTOS
             icon: Icon(Icons.fastfood),
-            label: "Productos",
+            label: (AppLocalizations.of(context)!.products).toString(),
           ),
-          BottomNavigationBarItem( // COMPRA
+          BottomNavigationBarItem(
+            // COMPRA
             icon: Icon(Icons.shopping_cart_outlined),
-            label: "Compra",
+            label: (AppLocalizations.of(context)!.shoppingList).toString(),
           ),
-          BottomNavigationBarItem( // GASTOS
+          BottomNavigationBarItem(
+            // GASTOS
             icon: Icon(Icons.attach_money),
-            label: "Gastos",
+            label: (AppLocalizations.of(context)!.receipt).toString(),
           ),
-          BottomNavigationBarItem(// RECETAS
+          BottomNavigationBarItem(
+            // RECETAS
             icon: Icon(Icons.restaurant_menu),
-            label: "Recetas",
+            label: (AppLocalizations.of(context)!.recipes).toString(),
           ),
         ],
-        currentIndex: selectedIndex, // INDICE EN EL QUE HACEMOS CLICK
-        onTap: _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
+        currentIndex: selectedIndex,
+        // INDICE EN EL QUE HACEMOS CLICK
+        onTap:
+            _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
       ),
     );
   }
+
   /*---------------------------------------------------------------------------------------*/
   // METODO PARA CAMBIAR LA PAGINA SELECCIONADA CON EL INDEX DEL BottomNavigationBar
   void _onItemTapped(int index) {
@@ -229,5 +335,4 @@ class MainState extends State<Main> {
       selectedIndex = index;
     });
   }
-}
-/*---------------------------------------------------------------------------------------*/
+} /*---------------------------------------------------------------------------------------*/

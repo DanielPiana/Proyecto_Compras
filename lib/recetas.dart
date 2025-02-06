@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Recetas extends StatelessWidget {
   const Recetas({super.key});
@@ -7,7 +9,7 @@ class Recetas extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Recetas"),
+        title: Text(AppLocalizations.of(context)!.recipes),
         centerTitle: true,
       ),
       body: const Center(

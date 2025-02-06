@@ -10,9 +10,13 @@ dependencies:
   flutter:
     sdk: flutter
   sqflite: ^2.2.7
-  intl:
+
   path: ^1.8.3
   shared_preferences: ^2.4.0
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  provider: ^6.1.2
 
 dev_dependencies:
   flutter_test:
@@ -21,4 +25,5 @@ dev_dependencies:
   sqflite_common_ffi: ^2.3.3 # Mantener esto en "dev_dependencies" para pruebas en escritorio
 
 flutter:
+  generate: true
   uses-material-design: true

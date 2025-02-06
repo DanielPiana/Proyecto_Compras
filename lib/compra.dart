@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import 'ThemeProvider.dart';
 
 class Compra extends StatefulWidget {
   final Database database;
@@ -174,7 +179,7 @@ class CompraState extends State<Compra> {
 
     // MOSTRAMOS MENSAJE DE CONFIRMACION
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Factura generada correctamente.')),
+       SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedReceipt)),
     );
   }
 
@@ -190,13 +195,12 @@ class CompraState extends State<Compra> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text( // TITULO DE LA ALERTA
-            "Confirmar eliminación",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          title: Text( // TITULO DE LA ALERTA
+            AppLocalizations.of(context)!.titleConfirmDialog,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          content: const Text(
-            "¿Estás seguro de que deseas eliminar este producto? \n"
-                "Este producto solo se borrará de la lista de la compra",
+          content: Text(
+            AppLocalizations.of(context)!.deleteConfirmationSP,
             style: TextStyle(fontSize: 16),
           ),
           actions: [
@@ -205,9 +209,9 @@ class CompraState extends State<Compra> {
                 // CERRAMOS EL DIALOGO
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                "Cancelar",
-                style: TextStyle(color: Colors.grey),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: const TextStyle(color: Colors.grey),
               ),
             ),
             TextButton(
@@ -218,9 +222,9 @@ class CompraState extends State<Compra> {
                 // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                "Eliminar",
-                style: TextStyle(color: Colors.red),
+              child: Text(
+                AppLocalizations.of(context)!.delete,
+                style: const TextStyle(color: Colors.red),
               ),
             ),
           ],
@@ -268,13 +272,13 @@ class CompraState extends State<Compra> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Lista de la Compra"), // TITULO DEL AppBar
+        title: Text((AppLocalizations.of(context)!.shoppingList)), // TITULO DEL AppBar
         centerTitle: true,
         actions: [
           IconButton( // ICONO PARA GENERAR FACTURAS
             icon: const Icon(Icons.receipt),
             onPressed: generarFactura,
-            tooltip: 'Generar Factura',
+            tooltip: (AppLocalizations.of(context)!.generateReceipt),
           ),
         ],
       ),
@@ -416,15 +420,17 @@ class CompraState extends State<Compra> {
             ),
           ),
           Container(
-            color: Colors.grey[200],
+            color: context.watch<ThemeProvider>().isDarkMode
+                ? Color(0xFF424242) // Fondo más oscuro en modo oscuro
+                : Color(0xFFE8F5E9), // Fondo claro en modo claro
             padding: const EdgeInsets.all(16),
             child: Row(
               // USAMOS spaceBetween PARA QUE SALGA UN Text AL PRINCIPIO Y OTRO AL FINAL
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Total marcado:",
-                  style: TextStyle(
+                Text(
+                  (AppLocalizations.of(context)!.totalMarked),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
