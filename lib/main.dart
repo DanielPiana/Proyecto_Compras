@@ -125,19 +125,15 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = context.watch<LanguageProvider>().locale;
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: const Color(0xFFF1F8E9),
-        // FONDO DEL SCAFFOLD GLOBAL (BODY)
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4CAF50), // VERDE PRINCIPAL DEL AppBar
+          backgroundColor: Color(0xFF4CAF50),
           titleTextStyle: TextStyle(
-            color: Colors.white, //COLOR DEL TITULO DEL AppBar
+            color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -145,20 +141,21 @@ class MainApp extends StatelessWidget {
         ),
       ),
       darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF303030),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF2C6B31),
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            iconTheme: IconThemeData(color: Colors.white),
-          )),
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF303030),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF2C6B31),
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+      ),
+      themeMode: context.watch<ThemeProvider>().isDarkMode ? ThemeMode.dark : ThemeMode.light,
       supportedLocales: const [Locale("es"), Locale("en")],
-      locale: Locale('$locale'),
+      locale: context.watch<LanguageProvider>().locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -169,7 +166,6 @@ class MainApp extends StatelessWidget {
     );
   }
 }
-
 /*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
   final Database database;
