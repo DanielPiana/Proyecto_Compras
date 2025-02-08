@@ -45,9 +45,9 @@ void main() async {
     final databaseFactory = databaseFactoryFfi;
     dbPath = join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
     database = await databaseFactory.openDatabase(dbPath);
-    await _borrarTablas(database);
-    await _crearTablas(database);
-    await _insertarDatos(database);
+    // await _borrarTablas(database);
+    // await _crearTablas(database);
+    // await _insertarDatos(database);
   }
 
   runApp(MultiProvider(
