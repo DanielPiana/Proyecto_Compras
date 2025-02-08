@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:proyectocompras/gastos.dart';
-import 'package:proyectocompras/compra.dart';
-import 'package:proyectocompras/producto.dart';
-import 'package:proyectocompras/recetas.dart';
+import 'package:provider/provider.dart';
+import 'package:proyectocompras/View/gastos.dart';
+import 'package:proyectocompras/View/compra.dart';
+import 'package:proyectocompras/View/producto.dart';
+import 'package:proyectocompras/View/recetas.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
-import 'ThemeProvider.dart';
-import 'languageProvider.dart';
-import 'package:provider/provider.dart';
+import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import 'Providers/themeProvider.dart';
 
 /*---------------------------------------------------------------------------------------*/
 void main() async {

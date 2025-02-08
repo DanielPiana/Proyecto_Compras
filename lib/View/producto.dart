@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class Producto extends StatefulWidget {
@@ -151,11 +150,11 @@ class ProductoState extends State<Producto> {
         return AlertDialog(
           title: Text( // TITULO DE LA ALERTA
             AppLocalizations.of(context)!.titleConfirmDialog,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
           content: Text(
             AppLocalizations.of(context)!.deleteConfirmationP,
-            style: TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: 12),
           ),
           actions: [
             TextButton(
@@ -476,7 +475,7 @@ class ProductoState extends State<Producto> {
           "No hay productos disponibles",
           style: TextStyle(
             color: Color(0xFF212121), // GRIS OSCURO PARA EL TEXTO
-            fontSize: 18,
+            fontSize: 16,
           ),
         ),
       )
@@ -496,8 +495,8 @@ class ProductoState extends State<Producto> {
             children: productos.map((producto) { // LISTA DE PRODUCTOS DE CADA SUPERMERCADO (producto es el producto actual)
               return ListTile( // CADA PRODUCTO SE MUESTRA COMO UN ListTile
                 leading: const Icon(Icons.fastfood),
-                title: Text(producto['nombre'] ?? ''),
-                subtitle: Text(producto['descripcion'] ?? ''),
+                title: Text(producto['nombre'] ?? '',style: TextStyle(fontSize: 14)),
+                subtitle: Text(producto['descripcion'] ?? '',style: TextStyle(fontSize: 12)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

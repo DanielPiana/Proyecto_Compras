@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import 'ThemeProvider.dart';
+import '../Providers/themeProvider.dart';
+
 
 class Compra extends StatefulWidget {
   final Database database;
@@ -305,6 +305,8 @@ class CompraState extends State<Compra> {
                   ),
                   children: productos.map((producto) {
                     return ListTile(
+                      visualDensity: VisualDensity(horizontal: -4), // HACE QUE HAYA MENOS ESPACIO ENTRE EL LEADING Y EL TITLE
+                      contentPadding: EdgeInsets.symmetric(horizontal: 4), // REDUCE EL PADDING LATERAL
                       leading: IconButton( // BOTON PARA MARCAR Y DESMARCAR PRODUCTO
                         icon: Icon( // SI producto['marcado'] ES 1, PONEMOS UN ESTILO Y SI NO, OTRO
                           producto['marcado'] == 1
@@ -334,14 +336,14 @@ class CompraState extends State<Compra> {
                           });
                         },
                       ),
-                      title: Row(
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(producto['nombre']),
-                          SizedBox(width: 20),
                           Text('\$${(producto['precio']).toStringAsFixed(2)}', style: TextStyle(
                             color: Colors.green,
                             fontWeight: FontWeight.bold,
-                              fontSize: 15
+                              fontSize: 12
                           )
                           )
                         ],
@@ -350,11 +352,11 @@ class CompraState extends State<Compra> {
                         mainAxisSize: MainAxisSize.min, // HACEMOS QUE OCUPE LO NECESARIO
                         children: [
                           SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON -
-                            width: 25,
-                            height: 25,
+                            width: 15,
+                            height: 15,
                             child: IconButton(
                                 icon: Icon(Icons.remove),
-                                iconSize: 20.0,
+                                iconSize: 15.0,
                                 onPressed: () {
                                   setState(() {
                                     if (producto['cantidad'] > 1) {
@@ -373,13 +375,13 @@ class CompraState extends State<Compra> {
                             ),
                           ),
                           // TEXTO PARA VISUALIZAR LA CANTIDAD COMPRADA
-                          Text(producto["cantidad"].toString(), style: TextStyle(fontSize: 15)),
+                          Text(producto["cantidad"].toString(), style: TextStyle(fontSize: 14)),
                           SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON +
-                            width: 25,
-                            height: 25,
+                            width: 15,
+                            height: 15,
                             child: IconButton(
                               icon: Icon(Icons.add),
-                              iconSize: 20.0,
+                              iconSize: 15.0,
                               onPressed: () {
                                 setState(() {
                                   producto['cantidad']++;
@@ -395,16 +397,16 @@ class CompraState extends State<Compra> {
                               padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
                             ),
                           ),
-                          SizedBox(width: 20), // SEPARADOR
+                          const SizedBox(width: 8), // SEPARADOR
                           Text( // FORMATEAMOS EL PRECIO A STRING PARA VISUALIZARLO BIEN
                             '\$${(producto['precio'] * producto["cantidad"]).toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
-                              fontSize: 15
+                              fontSize: 13
                             ),
                           ),
-                          const SizedBox(width: 8),
+
                           IconButton( // ICONO PARA BORRAR EL PRODUCTO DE LA LISTA DE LA COMPRA
                             icon: const Icon(Icons.delete),
                             onPressed: () async {
@@ -438,7 +440,7 @@ class CompraState extends State<Compra> {
                 Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
                   '\$${(precioTotalCompra).toStringAsFixed(2)}',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
                   ),

@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:proyectocompras/languageProvider.dart';
+import 'package:proyectocompras/Providers/languageProvider.dart';
 
 
 void main() {
