@@ -150,11 +150,11 @@ class ProductoState extends State<Producto> {
         return AlertDialog(
           title: Text( // TITULO DE LA ALERTA
             AppLocalizations.of(context)!.titleConfirmDialog,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           content: Text(
             AppLocalizations.of(context)!.deleteConfirmationP,
-            style: TextStyle(fontSize: 12),
+            style: TextStyle(fontSize: 14),
           ),
           actions: [
             TextButton(
@@ -489,14 +489,14 @@ class ProductoState extends State<Producto> {
               supermercado,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 18,
               ),
             ),
             children: productos.map((producto) { // LISTA DE PRODUCTOS DE CADA SUPERMERCADO (producto es el producto actual)
               return ListTile( // CADA PRODUCTO SE MUESTRA COMO UN ListTile
                 leading: const Icon(Icons.fastfood),
-                title: Text(producto['nombre'] ?? '',style: TextStyle(fontSize: 14)),
-                subtitle: Text(producto['descripcion'] ?? '',style: TextStyle(fontSize: 12)),
+                title: Text(producto['nombre'] ?? '',style: TextStyle(fontSize: 16)),
+                subtitle: Text(producto['descripcion'] ?? '',style: TextStyle(fontSize: 14)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

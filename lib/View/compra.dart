@@ -352,11 +352,11 @@ class CompraState extends State<Compra> {
                         mainAxisSize: MainAxisSize.min, // HACEMOS QUE OCUPE LO NECESARIO
                         children: [
                           SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON -
-                            width: 15,
-                            height: 15,
+                            width: 25,
+                            height: 25,
                             child: IconButton(
                                 icon: Icon(Icons.remove),
-                                iconSize: 15.0,
+                                iconSize: 25.0,
                                 onPressed: () {
                                   setState(() {
                                     if (producto['cantidad'] > 1) {
@@ -375,13 +375,13 @@ class CompraState extends State<Compra> {
                             ),
                           ),
                           // TEXTO PARA VISUALIZAR LA CANTIDAD COMPRADA
-                          Text(producto["cantidad"].toString(), style: TextStyle(fontSize: 14)),
+                          Text(producto["cantidad"].toString(), style: TextStyle(fontSize: 16)),
                           SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON +
-                            width: 15,
-                            height: 15,
+                            width: 25,
+                            height: 25,
                             child: IconButton(
                               icon: Icon(Icons.add),
-                              iconSize: 15.0,
+                              iconSize: 25.0,
                               onPressed: () {
                                 setState(() {
                                   producto['cantidad']++;
@@ -403,7 +403,7 @@ class CompraState extends State<Compra> {
                             style: const TextStyle(
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
-                              fontSize: 13
+                              fontSize: 16
                             ),
                           ),
 

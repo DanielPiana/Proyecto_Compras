@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/View/gastos.dart';
@@ -9,106 +11,45 @@ import 'package:path/path.dart';
 import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-
 import 'Providers/themeProvider.dart';
 
 /*---------------------------------------------------------------------------------------*/
 void main() async {
-  // INICIALIZAR SQLITE PARA APLICACIONES DE ESCRITORIO.
-  sqfliteFfiInit();
-  final databaseFactory = databaseFactoryFfi;
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // CONFIGURAR RUTA DE LA BASE DE DATOS.
-  final dbPath =
-      join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
-  final database = await databaseFactory.openDatabase(dbPath);
+  Database database;
+  String dbPath;
 
-  // ELIMINAR TABLAS EXISTENTES Y VOLVER A CREARLAS.
-  await database.execute('DROP TABLE IF EXISTS recetas');
-  await database.execute('DROP TABLE IF EXISTS productos');
-  await database.execute('DROP TABLE IF EXISTS receta_producto');
-  await database.execute('DROP TABLE IF EXISTS facturas');
-  await database.execute('DROP TABLE IF EXISTS producto_factura');
-  await database.execute('DROP TABLE IF EXISTS compra');
-
-  // CREAR TABLA DE TAREAS SI NO EXISTE.
-  try {
-    await database.execute('''
- CREATE TABLE IF NOT EXISTS recetas (
-  id INTEGER PRIMARY KEY,
-  nombre TEXT
-);
-CREATE TABLE IF NOT EXISTS productos (
-  id INTEGER PRIMARY KEY,
-  codBarras INTEGER UNIQUE,
-  nombre TEXT,
-  descripcion TEXT,
-  precio REAL,
-  supermercado TEXT
-);
-CREATE TABLE IF NOT EXISTS receta_producto (
-  idReceta INTEGER,
-  idProducto INTEGER,
-  cantidad TEXT,
-  FOREIGN KEY (idReceta) REFERENCES recetas(id),
-  FOREIGN KEY (idProducto) REFERENCES productos(id)
-);
-CREATE TABLE IF NOT EXISTS facturas (
-  id INTEGER PRIMARY KEY,
-  precio REAL,
-  fecha TEXT,
-  supermercado TEXT
-);
-CREATE TABLE IF NOT EXISTS producto_factura (
-  idProducto INTEGER,
-  idFactura INTEGER,
-  cantidad INTEGER,
-  precioUnidad REAL,
-  total REAL,
-  FOREIGN KEY (idProducto) REFERENCES productos(id),
-  FOREIGN KEY (idFactura) REFERENCES facturas(id)
-);
-CREATE TABLE IF NOT EXISTS compra (
-  idProducto INTEGER,
-  nombre TEXT,
-  precio REAL,
-  marcado INTEGER DEFAULT 0,
-  cantidad INTEGER DEFAULT 1,
-  total REAL,
-  FOREIGN KEY (idProducto) REFERENCES productos(id)
-);
-INSERT INTO productos (id, codBarras, nombre, descripcion, precio, supermercado)
-VALUES
-(1, 123456, 'Manzanas', 'Manzanas rojas frescas', 1.50, 'Supermercado A'),
-(2, 234567, 'Leche', 'Leche entera de vaca', 0.90, 'Supermercado B'),
-(3, 345678, 'Pan', 'Pan de molde integral', 1.20, 'Supermercado A'),
-(4, 456789, 'Huevos', 'Huevos frescos de granja', 2.30, 'Supermercado C');
-
-INSERT INTO facturas (id, precio, fecha, supermercado)
-VALUES
-(1, 3.90, '01/01/2025', 'Supermercado A'),
-(2, 7.50, '05/01/2025', 'Supermercado C');
-
--- Insertar productos en facturas
-INSERT INTO producto_factura (idProducto, idFactura, cantidad, precioUnidad, total)
-VALUES
-(1, 1, 2, 1.50, 3.00), -- 2 Manzanas en factura 1, 1.50 cada una, total 3.00
-(2, 1, 1, 0.90, 0.90), -- 1 Leche en factura 1, 0.90 cada una, total 0.90
-(3, 2, 3, 1.20, 3.60), -- 3 Panes en factura 2, 1.20 cada uno, total 3.60
-(4, 2, 1, 2.30, 2.30); -- 1 Huevos en factura 2, 2.30 cada uno, total 2.30
-
--- Insertar productos en la lista de compra
-INSERT INTO compra (idProducto, nombre, precio, marcado, cantidad, total)
-VALUES
-(1, 'Manzanas', 1.50, 1, 2, 3.00), -- 2 Manzanas marcadas, total 3.00
-(2, 'Leche', 0.90, 0, 1, 0.90),    -- 1 Leche no marcada, total 0.90
-(3, 'Pan', 1.20, 1, 3, 3.60),     -- 3 Panes marcados, total 3.60
-(4, 'Huevos', 2.30, 0, 1, 2.30);  -- 1 Huevos no marcado, total 2.30
-''');
-  } catch (e) {
-    debugPrint("Error al crear tablas: $e");
+  if (Platform.isAndroid || Platform.isIOS) {
+    dbPath = join(await getDatabasesPath(), 'gestioncompras.db');
+    database = await openDatabase(
+      dbPath,
+      version: 1,
+      onCreate: (db, version) async {
+        print("Creando base de datos en el móvil...");
+        await _crearTablas(db); // Crear las tablas cuando la base de datos se cree por primera vez
+      },
+      onOpen: (db) async {
+        print("Base de datos abierta en el móvil...");
+        bool tablesExist = await _verificarTablas(db);
+        if (!tablesExist) {
+          print("Tablas no encontradas, creando...");
+          await _crearTablas(db); // Crear tablas si no existen
+        } else {
+          print("Las tablas ya existen.");
+        }
+      },
+    );
+  } else {
+    sqfliteFfiInit();
+    final databaseFactory = databaseFactoryFfi;
+    dbPath = join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
+    database = await databaseFactory.openDatabase(dbPath);
+    await _borrarTablas(database);
+    await _crearTablas(database);
+    await _insertarDatos(database);
   }
-  // INICIAR APLICACIÓN CON BASE DE DATOS.
+
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => LanguageProvider()),
@@ -118,6 +59,63 @@ VALUES
   ));
 }
 
+Future<void> _crearTablas(Database db) async {
+  print("Creando las tablas usando batch...");
+  var batch = db.batch();
+
+  batch.execute('CREATE TABLE IF NOT EXISTS recetas (id INTEGER PRIMARY KEY, nombre TEXT)');
+  batch.execute('CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY, codBarras INTEGER UNIQUE, nombre TEXT, descripcion TEXT, precio REAL, supermercado TEXT)');
+  batch.execute('CREATE TABLE IF NOT EXISTS receta_producto (idReceta INTEGER, idProducto INTEGER, cantidad TEXT, FOREIGN KEY (idReceta) REFERENCES recetas(id), FOREIGN KEY (idProducto) REFERENCES productos(id))');
+  batch.execute('CREATE TABLE IF NOT EXISTS facturas (id INTEGER PRIMARY KEY, precio REAL, fecha TEXT, supermercado TEXT)');
+  batch.execute('CREATE TABLE IF NOT EXISTS producto_factura (idProducto INTEGER, idFactura INTEGER, cantidad INTEGER, precioUnidad REAL, total REAL, FOREIGN KEY (idProducto) REFERENCES productos(id), FOREIGN KEY (idFactura) REFERENCES facturas(id))');
+  batch.execute('CREATE TABLE IF NOT EXISTS compra (idProducto INTEGER, nombre TEXT, precio REAL, marcado INTEGER DEFAULT 0, cantidad INTEGER DEFAULT 1, total REAL, FOREIGN KEY (idProducto) REFERENCES productos(id))');
+
+  await batch.commit();
+}
+
+
+Future<bool> _verificarTablas(Database db) async {
+  print("Verificando existencia de las tablas...");
+  var result = await db.rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="productos"');
+  return result.isNotEmpty;
+}
+
+Future<void> _borrarTablas(Database db) async {
+  print("Borrando tablas...");
+  await db.execute('DROP TABLE IF EXISTS recetas');
+  await db.execute('DROP TABLE IF EXISTS productos');
+  await db.execute('DROP TABLE IF EXISTS receta_producto');
+  await db.execute('DROP TABLE IF EXISTS facturas');
+  await db.execute('DROP TABLE IF EXISTS producto_factura');
+  await db.execute('DROP TABLE IF EXISTS compra');
+}
+
+Future<void> _insertarDatos(Database db) async {
+  print("Insertando datos en la base de datos...");
+  await db.execute('''
+    INSERT INTO productos (id, codBarras, nombre, descripcion, precio, supermercado) VALUES
+    (1, 123456, 'Manzanas', 'Manzanas rojas frescas', 1.50, 'Supermercado A'),
+    (2, 234567, 'Leche', 'Leche entera de vaca', 0.90, 'Supermercado B'),
+    (3, 345678, 'Pan', 'Pan de molde integral', 1.20, 'Supermercado A'),
+    (4, 456789, 'Huevos', 'Huevos frescos de granja', 2.30, 'Supermercado C');
+
+    INSERT INTO facturas (id, precio, fecha, supermercado) VALUES
+    (1, 3.90, '01/01/2025', 'Supermercado A'),
+    (2, 7.50, '05/01/2025', 'Supermercado C');
+
+    INSERT INTO producto_factura (idProducto, idFactura, cantidad, precioUnidad, total) VALUES
+    (1, 1, 2, 1.50, 3.00),
+    (2, 1, 1, 0.90, 0.90),
+    (3, 2, 3, 1.20, 3.60),
+    (4, 2, 1, 2.30, 2.30);
+
+    INSERT INTO compra (idProducto, nombre, precio, marcado, cantidad, total) VALUES
+    (1, 'Manzanas', 1.50, 1, 2, 3.00),
+    (2, 'Leche', 0.90, 0, 1, 0.90),
+    (3, 'Pan', 1.20, 1, 3, 3.60),
+    (4, 'Huevos', 2.30, 0, 1, 2.30);
+  ''');
+}
 /*---------------------------------------------------------------------------------------*/
 class MainApp extends StatelessWidget {
   final Database database;
@@ -154,7 +152,9 @@ class MainApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Colors.white),
         ),
       ),
-      themeMode: context.watch<ThemeProvider>().isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: context.watch<ThemeProvider>().isDarkMode
+          ? ThemeMode.dark
+          : ThemeMode.light,
       supportedLocales: const [Locale("es"), Locale("en")],
       locale: context.watch<LanguageProvider>().locale,
       localizationsDelegates: const [
@@ -167,6 +167,7 @@ class MainApp extends StatelessWidget {
     );
   }
 }
+
 /*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
   final Database database;

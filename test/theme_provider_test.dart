@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:proyectocompras/ThemeProvider.dart';
+import 'package:proyectocompras/Providers/themeProvider.dart';
+
 
 void main() {
   test("El valor inicial debería ser modo claro", () {
