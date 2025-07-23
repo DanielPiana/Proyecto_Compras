@@ -31,6 +31,7 @@
   "snackBarAddedProduct": "Producto añadido a la lista de compra",
   "snackBarErrorAddingProduct": "Error al añadir producto a la lista de compra:",
   "snackBarAddedReceipt": "Factura generada",
+  "snackBarReceiptQuantityError": "No hay productos marcados para generar una factura",
   "totalPrice": "Precio total",
   "quantity": "Cantidad: "
 }

@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/View/gastos.dart';
 import 'package:proyectocompras/View/compra.dart';
 import 'package:proyectocompras/View/producto.dart';
 import 'package:proyectocompras/View/recetas.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:path/path.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -17,110 +17,31 @@ import 'Providers/themeProvider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Database database;
-  String dbPath;
+  // CARGAMOS EL ARCHIVO .env
+  await dotenv.load(fileName: ".env");
 
-  if (Platform.isAndroid || Platform.isIOS) {
-    dbPath = join(await getDatabasesPath(), 'gestioncompras.db');
-    database = await openDatabase(
-      dbPath,
-      version: 1,
-      onCreate: (db, version) async {
-        print("Creando base de datos en el móvil...");
-        await _crearTablas(db); // Crear las tablas cuando la base de datos se cree por primera vez
-      },
-      onOpen: (db) async {
-        print("Base de datos abierta en el móvil...");
-        bool tablesExist = await _verificarTablas(db);
-        if (!tablesExist) {
-          print("Tablas no encontradas, creando...");
-          await _crearTablas(db); // Crear tablas si no existen
-        } else {
-          print("Las tablas ya existen.");
-        }
-      },
-    );
-  } else {
-    sqfliteFfiInit();
-    final databaseFactory = databaseFactoryFfi;
-    dbPath = join(await databaseFactory.getDatabasesPath(), 'gestioncompras.db');
-    database = await databaseFactory.openDatabase(dbPath);
-    // await _borrarTablas(database);
-    // await _crearTablas(database);
-    // await _insertarDatos(database);
-  }
+  // INICIALIZAMOS Supabase CON LAS VARIABLES DE ENTORNO
+  await Supabase.initialize(
+    url: dotenv.env['PROJECT_URL']!,
+    anonKey: dotenv.env['API_KEY']!,
+  );
+
+  SupabaseClient database = Supabase.instance.client;
 
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ChangeNotifierProvider(create: (_) => ThemeProvider())
     ],
-    child: MainApp(database: database),
+    child: MainApp(),
   ));
 }
 
-Future<void> _crearTablas(Database db) async {
-  print("Creando las tablas usando batch...");
-  var batch = db.batch();
-
-  batch.execute('CREATE TABLE IF NOT EXISTS recetas (id INTEGER PRIMARY KEY, nombre TEXT)');
-  batch.execute('CREATE TABLE IF NOT EXISTS productos (id INTEGER PRIMARY KEY, codBarras INTEGER UNIQUE, nombre TEXT, descripcion TEXT, precio REAL, supermercado TEXT)');
-  batch.execute('CREATE TABLE IF NOT EXISTS receta_producto (idReceta INTEGER, idProducto INTEGER, cantidad TEXT, FOREIGN KEY (idReceta) REFERENCES recetas(id), FOREIGN KEY (idProducto) REFERENCES productos(id))');
-  batch.execute('CREATE TABLE IF NOT EXISTS facturas (id INTEGER PRIMARY KEY, precio REAL, fecha TEXT, supermercado TEXT)');
-  batch.execute('CREATE TABLE IF NOT EXISTS producto_factura (idProducto INTEGER, idFactura INTEGER, cantidad INTEGER, precioUnidad REAL, total REAL, FOREIGN KEY (idProducto) REFERENCES productos(id), FOREIGN KEY (idFactura) REFERENCES facturas(id))');
-  batch.execute('CREATE TABLE IF NOT EXISTS compra (idProducto INTEGER, nombre TEXT, precio REAL, marcado INTEGER DEFAULT 0, cantidad INTEGER DEFAULT 1, total REAL, FOREIGN KEY (idProducto) REFERENCES productos(id))');
-
-  await batch.commit();
-}
-
-
-Future<bool> _verificarTablas(Database db) async {
-  print("Verificando existencia de las tablas...");
-  var result = await db.rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name="productos"');
-  return result.isNotEmpty;
-}
-
-Future<void> _borrarTablas(Database db) async {
-  print("Borrando tablas...");
-  await db.execute('DROP TABLE IF EXISTS recetas');
-  await db.execute('DROP TABLE IF EXISTS productos');
-  await db.execute('DROP TABLE IF EXISTS receta_producto');
-  await db.execute('DROP TABLE IF EXISTS facturas');
-  await db.execute('DROP TABLE IF EXISTS producto_factura');
-  await db.execute('DROP TABLE IF EXISTS compra');
-}
-
-Future<void> _insertarDatos(Database db) async {
-  print("Insertando datos en la base de datos...");
-  await db.execute('''
-    INSERT INTO productos (id, codBarras, nombre, descripcion, precio, supermercado) VALUES
-    (1, 123456, 'Manzanas', 'Manzanas rojas frescas', 1.50, 'Supermercado A'),
-    (2, 234567, 'Leche', 'Leche entera de vaca', 0.90, 'Supermercado B'),
-    (3, 345678, 'Pan', 'Pan de molde integral', 1.20, 'Supermercado A'),
-    (4, 456789, 'Huevos', 'Huevos frescos de granja', 2.30, 'Supermercado C');
-
-    INSERT INTO facturas (id, precio, fecha, supermercado) VALUES
-    (1, 3.90, '01/01/2025', 'Supermercado A'),
-    (2, 7.50, '05/01/2025', 'Supermercado C');
-
-    INSERT INTO producto_factura (idProducto, idFactura, cantidad, precioUnidad, total) VALUES
-    (1, 1, 2, 1.50, 3.00),
-    (2, 1, 1, 0.90, 0.90),
-    (3, 2, 3, 1.20, 3.60),
-    (4, 2, 1, 2.30, 2.30);
-
-    INSERT INTO compra (idProducto, nombre, precio, marcado, cantidad, total) VALUES
-    (1, 'Manzanas', 1.50, 1, 2, 3.00),
-    (2, 'Leche', 0.90, 0, 1, 0.90),
-    (3, 'Pan', 1.20, 1, 3, 3.60),
-    (4, 'Huevos', 2.30, 0, 1, 2.30);
-  ''');
-}
 /*---------------------------------------------------------------------------------------*/
 class MainApp extends StatelessWidget {
-  final Database database;
 
-  const MainApp({super.key, required this.database});
+
+  const MainApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -163,16 +84,16 @@ class MainApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: Main(database: database),
+      home: Main()
     );
   }
 }
 
 /*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
-  final Database database;
 
-  const Main({super.key, required this.database});
+
+  const Main({super.key});
 
   @override
   State<Main> createState() => MainState();
@@ -190,9 +111,9 @@ class MainState extends State<Main> {
     // INICIALIZAMOS LAS PAGINAS AQUI, PARA QUE NO DE ERROR EL WIDGET.DATABASE
     pages = [
       //DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
-      Producto(database: widget.database),
-      Compra(database: widget.database),
-      Gastos(database: widget.database),
+      Producto(),
+      Compra(),
+      Gastos(),
       Recetas(),
     ];
   }

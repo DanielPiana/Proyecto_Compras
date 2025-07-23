@@ -7,6 +7,8 @@ environment:
   sdk: ^3.5.3
 
 dependencies:
+  supabase_flutter: ^2.8.4
+  flutter_dotenv: ^5.2.1
   flutter:
     sdk: flutter
   sqflite: ^2.2.7
@@ -28,5 +30,7 @@ dev_dependencies:
 
 
 flutter:
+  assets:
+    - .env
   generate: true
   uses-material-design: true

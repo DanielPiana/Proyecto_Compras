@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../Providers/themeProvider.dart';
 
 
 class Compra extends StatefulWidget {
-  final Database database;
 
-  const Compra({super.key, required this.database});
+  const Compra({super.key});
 
   @override
   State<Compra> createState() => CompraState();
 }
 
 class CompraState extends State<Compra> {
+
+  SupabaseClient database = Supabase.instance.client;
+
   // LISTA PARA ALMACENAR LOS PRODUCTOS AGRUPADOS POR SUPERMERCADO
   List<Map<String, dynamic>> productosCompra = [];
 
@@ -42,15 +44,15 @@ class CompraState extends State<Compra> {
   /// - Calcula el total de los productos marcados.
   /// - Actualiza el estado para reflejar los cambios en la interfaz.
   Future<void> cargarCompra() async {
-    // CONSULTA SQL QUE OBTIENE LOS PRODUCTOS DE LA COMPRA,
-    // JUNTO CON EL SUPERMERCADO DE CADA PRODUCTO
-    final productosInmutables = await widget.database.rawQuery('''
-    SELECT compra.*, productos.supermercado 
-    FROM compra 
-    INNER JOIN productos ON compra.idProducto = productos.id
-  ''');
+    // CONSULTA QUE OBTIENE LOS PRODUCTOS DE LA COMPRA, JUNTO CON EL SUPERMERCADO DE CADA PRODUCTO
+    final response = await database
+        .from('compra')
+        .select('*, productos(supermercado)');
 
-    // TRANSFORMAMOS LA LISTA INMUTABLE QUE DEVUELVE EL rawQuery A MUTABLE PARA ACTUALIZAR LA CANTIDAD MAS FACILMENTE.
+    // response ya es la lista de datos (no viene envuelto en objeto con .data)
+    final productosInmutables = (response as List).cast<Map<String, dynamic>>();
+
+    // TRANSFORMAMOS LA LISTA INMUTABLE PARA PODER MODIFICARLA
     productosMutables = productosInmutables.map((producto) {
       return Map<String, dynamic>.from(producto);
     }).toList();
@@ -58,69 +60,75 @@ class CompraState extends State<Compra> {
     // AGRUPAMOS LOS PRODUCTOS POR SUPERMERCADO
     final Map<String, List<Map<String, dynamic>>> agrupados = {};
 
-    // ITERAMOS SOBRE CADA PRODUCTO OBTENIDO DE LA CONSULTA
     for (var producto in productosMutables) {
-      // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
-      final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
+      final supermercado = (producto['productos']?['supermercado'] ?? 'Sin supermercado').toString();
 
-
-      // ACTUALIZAMOS EL VALOR DE precioTotalCompra SOLO PARA LOS PRODUCTOS MARCADOS
       if (producto['marcado'] == 1) {
         precioTotalCompra += producto["precio"] * producto["cantidad"];
       }
 
-      // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS AL MAPA COMO UNA LISTA VACÍA
       if (!agrupados.containsKey(supermercado)) {
         agrupados[supermercado] = [];
       }
-      // AGREGAMOS EL PRODUCTO A LA LISTA CORRESPONDIENTE DENTRO DEL MAPA
       agrupados[supermercado]?.add(producto);
     }
 
-    // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
+    // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA LA INTERFAZ
     setState(() {
       productosCompra = agrupados.entries.map((entry) {
         return {
-          'supermercado': entry.key, // NOMBRE DEL SUPERMERCADO
-          'productos': entry.value, // LISTA DE PRODUCTOS DE ESE SUPERMERCADO
+          'supermercado': entry.key,
+          'productos': entry.value,
         };
       }).toList();
     });
-
-    //calcularTotalMarcados(); // ACTUALIZA EL TOTAL DE LOS PRODUCTOS MARCADOS
   }
 
-  // /*TODO-----------------METODO CALCULAR TOTAL MARCADO (NO USADO)-----------------*/
-  // Future<void> calcularTotalMarcados() async {
-  //   // CONSULTA PARA OBTENER LA SUMA DE LOS PRECIOS DE LOS PRODUCTOS MARCADOS
-  //   final resultado = await widget.database.rawQuery(
-  //     'SELECT SUM(precio) as total FROM compra WHERE marcado = 1',
-  //   );
-  //   setState(() {
-  //     // SI NO HAY RESULTADOS EN LA CONSULTA, EL RESULTADO SERA 0.0
-  //     precioTotalCompra = (resultado.isNotEmpty && resultado[0]['total'] != null)
-  //         ? (resultado[0]['total'] as num).toDouble()
-  //         : 0.0;
-  //   });
-  // }
+
+
   /// Aumenta la cantidad de un producto en la compra en 1
   ///
   /// - Realiza una consulta SQL para incrementar la cantidad de un producto específico
   ///   identificado por 'idProducto' en la base de datos.
   Future<void> sumar1Cantidad(int idProducto) async {
-    await widget.database.rawUpdate('''
-    UPDATE compra set cantidad = cantidad + 1 WHERE idProducto = ?
-    ''', [idProducto]);
+    try {
+      // LLAMAMOS A LA FUNCION SQL QUE INCREMENTA LA CANTIDAD DEL PRODUCTO
+      await database.rpc('incrementar_cantidad', params: {'p_id_producto': idProducto});
+    } catch (e) {
+      debugPrint('Error al incrementar la cantidad: $e');
+    }
   }
+
+
+
   /// Disminuye la cantidad de un producto en la compra en 1
   ///
   /// - Realiza una consulta SQL para disminuir la cantidad de un producto específico
   ///   identificado por 'idProducto' en la base de datos.
   Future<void> restar1Cantidad(int idProducto) async {
-    await widget.database.rawUpdate('''
-    UPDATE compra set cantidad = cantidad - 1 WHERE idProducto = ?
-    ''', [idProducto]);
+    try {
+      await database.rpc('restar_cantidad', params: {'p_id_producto': idProducto});
+    } catch (e) {
+      debugPrint('Error al decrementar la cantidad: $e');
+    }
   }
+
+
+  /// Desmarca todos los productos que estaban marcados (cambia `marcado` de 1 a 0)
+  /// y resetea la cantidad de **todos** los productos a 1.
+  ///
+  /// Esto simula un reseteo general donde se limpia la selección y se establecen
+  /// las cantidades por defecto a 1, independientemente de su estado previo.
+  Future<void> resetearProductosListaCompra() async {
+    try {
+      await database.rpc('resetear_productos_lista_compra');
+      debugPrint('Lista de la compra reseteada');
+    } catch (e) {
+      debugPrint('Error al resetear productos: $e');
+    }
+  }
+
+
 
   /*TODO-----------------METODO GENERAR FACTURA-----------------*/
   /// Genera una factura con los productos marcados
@@ -134,54 +142,84 @@ class CompraState extends State<Compra> {
   ///
   /// Si el proceso es exitoso, la factura se genera correctamente con los productos seleccionados.
   Future<void> generarFactura() async {
-    // CONSULTA PARA OBTENER TODOS LOS PRODUCTOS MARCADOS
-    final productosMarcados = await widget.database.rawQuery(
-      'SELECT * FROM compra WHERE marcado = 1',
-    );
-    // SI NO HAY RESULTADOS EN LA CONSULTA MOSTRAMOS UN MENSAJE DE ERROR
-    if (productosMarcados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay productos marcados para generar una factura.')),
-      );
-      return;
-    }
+    try {
+      // CONSULTA PARA OBTENER TODOS LOS PRODUCTOS MARCADOS
+      final response = await database
+          .from('compra')
+          .select()
+          .eq('marcado', 1);
 
-    // CALCULAMOS EL PRECIO TOTAL DE LOS PRODUCTOS MARCADOS
-    double precioTotal = productosMarcados.fold(0.0, (sum, producto) {
-      return sum + (producto['precio'] as num).toDouble();
-    });
+      final productosMarcados = response as List<dynamic>?;
 
-    // OBTENEMOS SOLO LA FECHA DEL DateTime.now
-    // ([0] INDICA EL PRIMER INDICE DE LA LISTA QUE SE GENERA AL USAR SPLIT)
-    final fechaString = DateTime.now().toIso8601String().split('T')[0];
+      // SI NO HAY RESULTADOS EN LA CONSULTA MOSTRAMOS UN MENSAJE DE ERROR
+      if (productosMarcados == null || productosMarcados.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.snackBarReceiptQuantityError)),
+        );
+        return;
+      }
 
-    // PARSEAMOS A UN FORMATO CON SENTIDO PARA EL 90% DE LA POBLACION
-    final fechaActual = DateFormat("dd/MM/yyyy").format(DateTime.parse(fechaString));
-
-    // INSERTAMOS LA NUEVA FACTURA
-    final idFactura = await widget.database.insert('facturas', {
-      'precio': precioTotal,
-      'fecha': fechaActual, // INSERTAMOS LA FECHA SIMPLIFICADA
-      'supermercado': 'Supermercado Desconocido',
-    });
-
-    // ITERAMOS SOBRE CADA PRODUCTO MARCADO PARA INSERTARLO EN LA TABLA producto_factura
-    for (var producto in productosMarcados) {
-      await widget.database.insert(
-          'producto_factura', { // NOMBRE DE LA TABLA DONDE INSERTAMOS
-        'idProducto': producto['idProducto'], //idProducto no cambia
-        'idFactura': idFactura, // LO ASOCIAMOS CON EL idFactura
-        'cantidad': producto["cantidad"], // LE ASIGNAMOS LA CANTIDAD COMPRADA
-        'precioUnidad': producto['precio'],
-        'total': precioTotal
+      // CALCULAMOS EL PRECIO TOTAL DE LOS PRODUCTOS MARCADOS
+      double precioTotal = productosMarcados.fold(0.0, (sum, producto) {
+        return sum +
+            (producto['precio'] as num).toDouble() *
+                (producto['cantidad'] as num).toDouble();
       });
-    }
 
-    // MOSTRAMOS MENSAJE DE CONFIRMACION
-    ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedReceipt)),
-    );
+      // OBTENEMOS SOLO LA FECHA DEL DateTime.now
+      final fechaString = DateTime.now().toIso8601String().split('T')[0];
+
+      // PARSEAMOS A UN FORMATO CON SENTIDO PARA EL 90% DE LA POBLACION
+      final fechaActual = DateFormat("dd/MM/yyyy").format(DateTime.parse(fechaString));
+
+      // OBTENEMOS EL idProducto DEL PRIMER PRODUCTO MARCADO
+      final int idPrimero = productosMarcados.first['idproducto'];
+
+      // CONSULTAMOS EL SUPERMERCADO DE ESE PRODUCTO DESDE LA TABLA productos
+      final respuestaSupermercado = await database
+          .from('productos')
+          .select('supermercado')
+          .eq('id', idPrimero)
+          .single();
+
+      final supermercado = respuestaSupermercado['supermercado'] ?? 'Supermercado Desconocido';
+
+
+      // INSERTAMOS LA NUEVA FACTURA Y OBTENEMOS SU ID
+      final insertFactura = await database.from('facturas').insert({
+        'precio': precioTotal,
+        'fecha': fechaActual,
+        'supermercado': supermercado,
+      }).select().single();
+
+      final idFactura = insertFactura['id'];
+
+      // ITERAMOS SOBRE CADA PRODUCTO MARCADO PARA INSERTARLO EN LA TABLA producto_factura
+      for (var producto in productosMarcados) {
+        await database.from('producto_factura').insert({
+          'idproducto': producto['idproducto'],
+          'idfactura': idFactura,
+          'cantidad': producto['cantidad'],
+          'preciounidad': producto['precio'],
+          'total': (producto['precio'] as num).toDouble() *
+              (producto['cantidad'] as num).toDouble(),
+        });
+      }
+
+      // DESMARCAMOS TODOS LOS PRODUCTOS Y RECARGAMOS
+      await resetearProductosListaCompra();
+      await cargarCompra();
+
+      // MOSTRAMOS MENSAJE DE CONFIRMACION
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedReceipt)),
+      );
+    } catch (e) {
+      debugPrint('Error al generar factura: $e');
+    }
   }
+
+
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
   /// Muestra un cuadro de diálogo de confirmacion antes de eliminar un producto de la lista de la compra
@@ -236,11 +274,18 @@ class CompraState extends State<Compra> {
 
   /// Elimina un producto de la lista de la compra según su ID.
   /// identificado por 'idProducto' en la base de datos.
-  Future<void> deleteProducto(int idProducto) async{
-    await widget.database.rawDelete(
-      'DELETE FROM compra WHERE idProducto = ?', [idProducto],
-    );
+  Future<void> deleteProducto(int idProducto) async {
+    try {
+      final response = await database
+          .from('compra')
+          .delete()
+          .eq('idproducto', idProducto);
+      // Puedes chequear response para ver si borró algo si quieres
+    } catch (e) {
+      debugPrint('Error al borrar producto: $e');
+    }
   }
+
 
   /// Actualiza el precio de los productos marcados
   ///
@@ -255,11 +300,11 @@ class CompraState extends State<Compra> {
 
       // COGEMOS EL SUPERMERCADO DE ESE PRODUCTO (firstWhere DEVUELVE LA PRIMERA COINCIDENCIA)
       final supermercado = productosCompra.firstWhere(
-              (supermercado) => supermercado['productos'].any((p) => p['idProducto'] == idProducto)
+              (supermercado) => supermercado['productos'].any((p) => p['idproducto'] == idProducto)
       );
 
       // BORRAMOS EL PRODUCTO DE ESE SUPERMERCADO
-      supermercado['productos'].removeWhere((p) => p['idProducto'] == idProducto);
+      supermercado['productos'].removeWhere((p) => p['idproducto'] == idProducto);
 
       // COMPROBAMOS SI EL SUPERMERCADO SIGUE TENIENDO PRODUCTOS, SI NO TIENE, LO BORRAMOS
       if (supermercado['productos'].isEmpty) {
@@ -320,10 +365,10 @@ class CompraState extends State<Compra> {
                           // ALTERNA EL ESTADO MARCADO DEL PRODUCTO
                           final nuevoEstado = producto['marcado'] == 1 ? 0 : 1;
                           // ACTUALIZAMOS EN LA BASE DE DATOS EL ATRIBUTO MARCADO DEL PRODUCTO
-                          await widget.database.rawUpdate(
-                            'UPDATE compra SET marcado = ? WHERE idProducto = ?',
-                            [nuevoEstado, producto['idProducto']],
-                          );
+                          await database
+                              .from('compra')
+                              .update({'marcado': nuevoEstado})
+                              .eq('idproducto', producto['idproducto']);
                           // RECALCULAMOS EL TOTAL
                           if (nuevoEstado == 1) {
                             precioTotalCompra += producto["precio"] * producto["cantidad"]; // SI SE MARCA, SUMAMOS EL PRECIO
@@ -366,7 +411,7 @@ class CompraState extends State<Compra> {
                                         setState(() {
                                           precioTotalCompra -= producto["precio"]; // ACTUALIZAMOS EL PRECIO TOTAL
                                         });
-                                        restar1Cantidad(producto["idProducto"]);
+                                        restar1Cantidad(producto["idproducto"]);
                                       }
                                     }
                                 });
@@ -390,7 +435,7 @@ class CompraState extends State<Compra> {
                                     setState(() {
                                       precioTotalCompra += producto["precio"]; // SUMAR SI EL PRECIO ESTA MARCADO
                                     });
-                                    sumar1Cantidad(producto["idProducto"]);
+                                    sumar1Cantidad(producto["idproducto"]);
                                   }
                                 });
                               },
@@ -410,7 +455,7 @@ class CompraState extends State<Compra> {
                           IconButton( // ICONO PARA BORRAR EL PRODUCTO DE LA LISTA DE LA COMPRA
                             icon: const Icon(Icons.delete),
                             onPressed: () async {
-                              dialogoEliminacion(context, producto["idProducto"], producto["precio"], producto["cantidad"]);
+                              dialogoEliminacion(context, producto["idproducto"], producto["precio"], producto["cantidad"]);
                             },
                           ),
                         ],

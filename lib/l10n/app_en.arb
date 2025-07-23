@@ -31,6 +31,7 @@
   "snackBarAddedProduct": "Product added to the shopping list",
   "snackBarErrorAddingProduct": "Error adding producto to the shopping list",
   "snackBarAddedReceipt": "Recepit created",
+  "snackBarReceiptQuantityError": "There are no marked products to generate a receipt.",
   "totalPrice": "Total price",
   "quantity": "Quantity: "
 }

@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Gastos extends StatefulWidget {
-  final Database database;
 
-  const Gastos({super.key, required this.database});
+  const Gastos({super.key});
 
   @override
   State<Gastos> createState() => GastosState();
 }
 
 class GastosState extends State<Gastos> {
+
+  SupabaseClient database = Supabase.instance.client;
+
   // LISTA PARA ALMACENAR LAS FACTURAS AGRUPADAS POR FECHA Y ID
   Map<String, List<Map<String, dynamic>>> facturasAgrupadas = {};
 
@@ -38,39 +40,43 @@ class GastosState extends State<Gastos> {
   /// Este proceso de carga y agrupación es asincrónico y se realiza de manera eficiente para
   /// evitar bloquear la interfaz de usuario mientras se obtiene la información de la base de datos.
   Future<void> cargarFacturas() async {
-    // CONSULTA PARA OBTENER LAS FACTURAS ORDENADAS POR FECHA DESCENDENTE
-    final facturas = await widget.database.rawQuery(
-      'SELECT * FROM facturas ORDER BY facturas.id DESC',
-    );
+    try {
+      final facturas = await database
+          .from('facturas')
+          .select()
+          .order('id', ascending: false);
 
-    // MAPA PARA AGRUPAR LAS FACTURAS USANDO UNA CLAVE ÚNICA (FECHA + ID)
-    Map<String, List<Map<String, dynamic>>> agrupados = {};
+      Map<String, List<Map<String, dynamic>>> agrupados = {};
 
-    // ITERAMOS SOBRE CADA FACTURA OBTENIDA DE LA CONSULTA
-    for (var factura in facturas) {
-      // GUARDAMOS EL ID DE LA FACTURA
-      final idFactura = factura['id'];
+      for (var factura in facturas) {
+        final idFactura = factura['id'];
+        final fecha = (factura['fecha'] ?? 'Sin fecha').toString();
 
-      // GUARDAMOS LA FECHA DE LA FACTURA, SI NO TIENE FECHA PONEMOS "Sin fecha"
-      final fecha = (factura['fecha'] ?? 'Sin fecha').toString();
+        final productos = await database
+            .from('producto_factura')
+            .select('cantidad, preciounidad, productos(nombre)')
+            .eq('idfactura', idFactura);
 
-      // CONSULTA PARA OBTENER TODOS LOS PRODUCTOS DE ESA FACTURA EN CONCRETO
-      final productos = await widget.database.rawQuery('''
-        SELECT p.nombre, pf.cantidad, pf.precioUnidad 
-        FROM producto_factura pf
-        JOIN productos p ON pf.idProducto = p.id
-        WHERE pf.idFactura = ?
-      ''', [idFactura]);
+        final productosList = (productos as List).map<Map<String, dynamic>>((item) {
+          return {
+            'nombre': item['productos']['nombre'],
+            'cantidad': item['cantidad'],
+            'preciounidad': item['preciounidad'],
+          };
+        }).toList();
 
-      // USAMOS UNA CLAVE ÚNICA (FECHA + ID) PARA EVITAR AGRUPAR FACTURAS INCORRECTAMENTE
-      agrupados['$fecha-$idFactura'] = productos;
+        agrupados['$fecha-$idFactura'] = productosList;
+      }
+
+      setState(() {
+        facturasAgrupadas = agrupados;
+      });
+    } catch (e) {
+      debugPrint('Error al cargar facturas: $e');
     }
-
-    setState(() {
-      // ACTUALIZAMOS EL ESTADO CON LAS FACTURAS AGRUPADAS
-      facturasAgrupadas = agrupados;
-    });
   }
+
+
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
   /// Muestra un cuadro de diálogo de confirmación para la eliminación de una factura.
@@ -111,8 +117,8 @@ class GastosState extends State<Gastos> {
             TextButton(
               onPressed: () async {
                 // BORRAMOS LA FACTURA
-                borrarFactura(idFactura);
-                cargarFacturas();
+                await borrarFactura(idFactura);
+                await cargarFacturas();
                 Navigator.of(context).pop();
               },
               child: Text(
@@ -132,11 +138,29 @@ class GastosState extends State<Gastos> {
   ///
   /// Parámetros:
   /// - [id]: ID único de la factura a eliminar.
-  Future<void> borrarFactura (int idFactura) async{
-    await widget.database.rawDelete('''
-    DELETE FROM facturas WHERE id = ?
-    ''', [idFactura]);
+  Future<void> borrarFactura(int idFactura) async {
+    try {
+      // Primero borramos los productos asociados a la factura
+      await database
+          .from('producto_factura')
+          .delete()
+          .eq('idfactura', idFactura);
+
+      // Luego borramos la factura en sí
+      await database
+          .from('facturas')
+          .delete()
+          .eq('id', idFactura);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Factura eliminada correctamente')),
+      );
+    } catch (e) {
+      debugPrint('Error al borrar factura: $e');
+    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +189,7 @@ class GastosState extends State<Gastos> {
           // CALCULAMOS EL PRECIO TOTAL DE LA FACTURA
           double precioTotal = 0;
           for (var producto in productos) {
-            precioTotal += producto['precioUnidad'] * producto['cantidad'];
+            precioTotal += producto['preciounidad'] * producto['cantidad'];
           }
 
           return ExpansionTile( // 'CARPETAS'
@@ -195,7 +219,7 @@ class GastosState extends State<Gastos> {
                   title: Text(producto['nombre']),
                   subtitle: Text('${AppLocalizations.of(context)!.quantity}: ${producto['cantidad']}'),
                   trailing: Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                    '\$${producto['precioUnidad'].toStringAsFixed(2)}',
+                    '\$${producto['preciounidad'].toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.green,

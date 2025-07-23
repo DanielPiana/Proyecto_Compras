@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Producto extends StatefulWidget {
-  final Database database;
 
-  const Producto({super.key, required this.database});
+  const Producto({super.key});
 
   @override
   State<Producto> createState() => ProductoState();
 }
 
 class ProductoState extends State<Producto> {
+
+  SupabaseClient database = Supabase.instance.client;
+
   Map<String, List<Map<String, dynamic>>> productosPorSupermercado = {}; // LISTA PARA GUARDAR LOS PRODUCTOS AGRUPADOS POR 1 SUPERMERCADO EN CONCRETO
 
   /*TODO-----------------INITIALIZE-----------------*/
@@ -32,7 +34,10 @@ class ProductoState extends State<Producto> {
   /// Actualiza el estado para reflejar los cambios en la interfaz.
   Future<void> cargarProductos() async {
     // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
-    final productos = await widget.database.query('productos');
+    final productos = await database
+        .from('productos')
+        .select();
+
 
     // MAPA PARA AGRUPAR LOS PRODUCTOS POR NOMBRE DE SUPERMERCADO
     final Map<String, List<Map<String, dynamic>>> productosAgrupados = {};
@@ -70,11 +75,11 @@ class ProductoState extends State<Producto> {
   /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
   Future<void> deleteProducto(int id) async {
     try {
-      await widget.database.delete(
-        'productos', // NOMBRE DE LA TABLA
-        where: 'id = ?', // CONDICION PARA IDENTIFICAR LO QUE QUEREMOS BORRAR
-        whereArgs: [id], // DAMOS VALOR AL ARGUMENTO
-      );
+      await database
+          .from('productos') // NOMBRE DE LA TABLA
+          .delete() // OPERACIÓN DELETE
+          .eq('id', id); // CONDICIÓN PARA IDENTIFICAR LO QUE QUEREMOS BORRAR
+
       debugPrint('Producto con id $id eliminado exitosamente.');
 
       // RECARGAMOS LOS PRODUCTOS
@@ -83,6 +88,8 @@ class ProductoState extends State<Producto> {
       debugPrint('Error al eliminar producto: $e');
     }
   }
+
+
 
   /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
   /// Actualiza un producto en la base de datos con los nuevos valores proporcionados.
@@ -98,23 +105,23 @@ class ProductoState extends State<Producto> {
   /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
   Future<void> actualizarProducto(Map<String, dynamic> producto) async {
     try {
-      await widget.database.update(
-        'productos', // NOMBRE DE LA TABLA
-        { // ACTUALIZAMOS LOS DATOS CON EL producto PROPORCIONADO POR PARAMETRO
-          'nombre': producto['nombre'],
-          'descripcion': producto['descripcion'],
-          'precio': producto['precio'],
-          'supermercado': producto['supermercado'],
-        },
-        where: 'id = ?', // CONDICION PARA IDENTIFICAR LO QUE QUEREMOS EDITAR
-        whereArgs: [producto['id']], // DAMOS VALOR AL ARGUMENTO
-      );
-      cargarProductos();
+      await database
+          .from('productos') // NOMBRE DE LA TABLA
+          .update({ // ACTUALIZAMOS LOS DATOS CON EL producto PROPORCIONADO POR PARÁMETRO
+        'nombre': producto['nombre'],
+        'descripcion': producto['descripcion'],
+        'precio': producto['precio'],
+        'supermercado': producto['supermercado'],
+      })
+          .eq('id', producto['id']); // CONDICIÓN PARA IDENTIFICAR LO QUE QUEREMOS EDITAR
+
+      await cargarProductos();
       debugPrint('Producto actualizado exitosamente.');
     } catch (e) {
       debugPrint('Error al actualizar el producto: $e');
     }
   }
+
 
   /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
   /// Obtiene una lista de todos los supermercados existentes en la base de datos.
@@ -125,14 +132,20 @@ class ProductoState extends State<Producto> {
   /// @return Future<List<String>> Lista de nombres de supermercados sin duplicados.
   Future<List<String>> obtenerSupermercados() async {
     // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
-    final productos = await widget.database.query('productos');
+    final productos = await database
+        .from('productos')
+        .select();
 
-    //OBTENEMOS LOS NOMBRES DE LOS SUPERMERCADOS QUE HAY, LOS TRANSFORMAMOS EN SET PARA
+    // OBTENEMOS LOS NOMBRES DE LOS SUPERMERCADOS QUE HAY, LOS TRANSFORMAMOS EN SET PARA
     // ELIMINAR DUPLICADOS Y LO TRANSFORMAMOS EN LISTA OTRA VEZ
-    final supermercados = productos.map((producto) => producto['supermercado'] as String).toSet().toList();
+    final supermercados = (productos as List)
+        .map((producto) => producto['supermercado'] as String)
+        .toSet()
+        .toList();
 
     return supermercados;
   }
+
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
   /// Muestra un cuadro de diálogo de confirmación antes de eliminar un producto.
@@ -262,6 +275,13 @@ class ProductoState extends State<Producto> {
                 final String nuevoNombre = nombreController.text;
                 final String nuevaDescripcion = descripcionController.text;
                 final double nuevoPrecio = double.tryParse(precioController.text) ?? 0.0;
+
+                // if (nuevoNombre.isEmpty || supermercadoSeleccionado.isEmpty) {
+                //   ScaffoldMessenger.of(context).showSnackBar(
+                //     SnackBar(content: Text(AppLocalizations.of(context)!.snackBarInvalidData)),
+                //   );
+                //   return;
+                // } TODO
 
                 // CREAMOS UN MAPA CON LOS DATOS NUEVOS
                 final nuevoProducto = {
@@ -399,7 +419,9 @@ class ProductoState extends State<Producto> {
                     };
 
                     // INSERTAMOS EL PRODUCTO EN LA BASE DE DATOS
-                    await widget.database.insert('productos', nuevoProducto);
+                    await database
+                        .from('productos') // NOMBRE DE LA TABLA
+                        .insert(nuevoProducto); // INSERTAMOS EL NUEVO PRODUCTO
 
                     // CERRAMOS EL DIÁLOGO Y RECARGAMOS LA LISTA DE PRODUCTOS
                     Navigator.of(context).pop();
@@ -429,29 +451,29 @@ class ProductoState extends State<Producto> {
   /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
   Future<void> agregarACompra(int idProducto, double precio, String nombre) async {
     try {
-      // CONSUTLA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
-      final productosExistentes = await widget.database.rawQuery(
-        'SELECT * FROM compra WHERE idProducto = ?',
-        [idProducto],
-      );
+      // CONSULTA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
+      final productosExistentes = await database
+          .from('compra')
+          .select()
+          .eq('idproducto', idProducto);
 
       if (productosExistentes.isNotEmpty) {
-        // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTA REGISTRADO
+        // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTÁ REGISTRADO
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.snackBarRepeatedProduct)),
         );
       } else {
         // SI NO EXISTE, LO AÑADIMOS
-        await widget.database.insert(
-          'compra', // NOMBRE DE LA TABLA
-          {
-            'idProducto': idProducto,
-            'nombre': nombre,
-            'precio': precio,
-            'marcado': 0, // POR DEFECTO SE GUARDA COMO NO MARCADO
-          },
-          //conflictAlgorithm: ConflictAlgorithm.replace, SI EL ID DEL PRODUCTO A GUARDAR COINCIDE CON OTRO EXISTENTE, LO REEMPLAZA
-        );
+        await database
+            .from('compra') // NOMBRE DE LA TABLA
+            .insert({
+          'idproducto': idProducto,
+          'nombre': nombre,
+          'precio': precio,
+          'marcado': 0, // POR DEFECTO SE GUARDA COMO NO MARCADO
+        });
+        // conflictAlgorithm: ConflictAlgorithm.replace, NO APLICA EN SUPABASE PERO SE PUEDE MANEJAR POR POLÍTICAS DE CONFLICTO SI SE NECESITA
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
         );
@@ -460,6 +482,7 @@ class ProductoState extends State<Producto> {
       debugPrint("${AppLocalizations.of(context)!.snackBarErrorAddingProduct}: $e");
     }
   }
+
 
 
   @override
@@ -508,7 +531,7 @@ class ProductoState extends State<Producto> {
                         iconSize: 20.0,
                         onPressed: () {
                            // AGREGAMOS EL PRODUCTO A LA TABLA COMPRA
-                          agregarACompra(producto['id'], producto['precio'], producto['nombre']);
+                          agregarACompra(producto['id'], (producto['precio'] as num).toDouble(), producto['nombre']);
                         },
                         padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
                       ),
