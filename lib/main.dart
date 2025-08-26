@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'Providers/productoProvider.dart';
 import 'Providers/themeProvider.dart';
 import 'l10n/app_localizations.dart';
 
@@ -38,15 +39,24 @@ void main() async {
     userProvider.setUuid(uuid);
   }
 
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => LanguageProvider()),
-      ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ChangeNotifierProvider<UserProvider>.value(value: userProvider),
-      ChangeNotifierProvider(create: (_) => DetalleRecetaProvider())
-    ],
-    child: MainApp(isLoggedIn: uuid != null),
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider<UserProvider>.value(value: userProvider),
+        ChangeNotifierProvider(create: (_) => DetalleRecetaProvider()),
+
+        ChangeNotifierProvider(create: (_) => ProductoProvider(
+            Supabase.instance.client,
+            uuid!,
+          )..cargarProductos(),
+        ),
+      ],
+      child: MainApp(isLoggedIn: uuid != null),
+    ),
+  );
+
 }
 
 /*---------------------------------------------------------------------------------------*/

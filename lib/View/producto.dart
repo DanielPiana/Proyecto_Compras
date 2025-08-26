@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../Providers/productoProvider.dart';
 import '../Providers/userProvider.dart';
 import '../l10n/app_localizations.dart';
+import '../models/productoModel.dart';
 
 class Producto extends StatefulWidget {
 
@@ -19,8 +21,6 @@ class ProductoState extends State<Producto> {
 
   SupabaseClient database = Supabase.instance.client;
 
-  Map<String, List<Map<String, dynamic>>> productosPorSupermercado = {}; // LISTA PARA GUARDAR LOS PRODUCTOS AGRUPADOS POR 1 SUPERMERCADO EN CONCRETO
-
   /*TODO-----------------INITIALIZE-----------------*/
   @override
   void initState() {
@@ -31,7 +31,6 @@ class ProductoState extends State<Producto> {
         setState(() {
           userId = uid;
         });
-        cargarProductos();
       } else {
         Navigator.pushReplacementNamed(context, '/login');
       }
@@ -45,118 +44,118 @@ class ProductoState extends State<Producto> {
   /// pertenecientes a ese supermercado. Si un producto no tiene supermercado, se
   /// agrupa bajo 'Sin supermercado'.
   ///
-  /// Actualiza el estado para reflejar los cambios en la interfaz.
-  Future<void> cargarProductos() async {
-    final productos = await database
-        .from('productos')
-        .select()
-        .eq('usuariouuid', userId); // FILTRAMOS SOLO LOS DEL USUARIO ACTUAL
+  // /// Actualiza el estado para reflejar los cambios en la interfaz.
+  // Future<void> cargarProductos() async {
+  //   final productos = await database
+  //       .from('productos')
+  //       .select()
+  //       .eq('usuariouuid', userId); // FILTRAMOS SOLO LOS DEL USUARIO ACTUAL
+  //
+  //   // MAPA PARA AGRUPAR LOS PRODUCTOS POR NOMBRE DE SUPERMERCADO
+  //   final Map<String, List<Map<String, dynamic>>> productosAgrupados = {};
+  //
+  //   // ITERAMOS SOBRE CADA PRODUCTO OBTENIDO DE LA CONSULTA
+  //   for (var producto in productos) {
+  //     // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
+  //     final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
+  //
+  //     // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS COMO UNA LISTA VACÍA
+  //     productosAgrupados.putIfAbsent(supermercado, () => []);
+  //
+  //     // AGREGAMOS EL PRODUCTO A LA LISTA CORRESPONDIENTE DENTRO DEL MAPA
+  //     productosAgrupados[supermercado]!.add(producto);
+  //   }
+  //
+  //   // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
+  //   setState(() {
+  //     productosPorSupermercado = productosAgrupados;
+  //   });
+  // }
 
-    // MAPA PARA AGRUPAR LOS PRODUCTOS POR NOMBRE DE SUPERMERCADO
-    final Map<String, List<Map<String, dynamic>>> productosAgrupados = {};
-
-    // ITERAMOS SOBRE CADA PRODUCTO OBTENIDO DE LA CONSULTA
-    for (var producto in productos) {
-      // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
-      final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
-
-      // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS COMO UNA LISTA VACÍA
-      productosAgrupados.putIfAbsent(supermercado, () => []);
-
-      // AGREGAMOS EL PRODUCTO A LA LISTA CORRESPONDIENTE DENTRO DEL MAPA
-      productosAgrupados[supermercado]!.add(producto);
-    }
-
-    // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
-    setState(() {
-      productosPorSupermercado = productosAgrupados;
-    });
-  }
-
-  /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
-  /// Elimina un producto de la base de datos según su ID.
-  ///
-  /// Si el producto existe en la tabla 'productos' con el ID proporcionado,
-  /// se elimina y luego se recargan los productos para reflejar los cambios en la UI.
-  ///
-  /// Parámetros:
-  /// - [id]: ID único del producto a eliminar.
-  ///
-  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
-  Future<void> deleteProducto(int id) async {
-    try {
-      await database
-          .from('productos') // NOMBRE DE LA TABLA
-          .delete() // OPERACIÓN DELETE
-          .eq('id', id) // FILTRAMOS POR ID DEL PRODUCTO
-          .eq('usuariouuid', userId); // Y POR USUARIO ACTUAL
-
-      debugPrint('Producto con id $id eliminado exitosamente.');
-
-      // RECARGAMOS LOS PRODUCTOS
-      await cargarProductos();
-    } catch (e) {
-      debugPrint('Error al eliminar producto: $e');
-    }
-  }
+  // /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
+  // /// Elimina un producto de la base de datos según su ID.
+  // ///
+  // /// Si el producto existe en la tabla 'productos' con el ID proporcionado,
+  // /// se elimina y luego se recargan los productos para reflejar los cambios en la UI.
+  // ///
+  // /// Parámetros:
+  // /// - [id]: ID único del producto a eliminar.
+  // ///
+  // /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
+  // Future<void> deleteProducto(int id) async {
+  //   try {
+  //     await database
+  //         .from('productos') // NOMBRE DE LA TABLA
+  //         .delete() // OPERACIÓN DELETE
+  //         .eq('id', id) // FILTRAMOS POR ID DEL PRODUCTO
+  //         .eq('usuariouuid', userId); // Y POR USUARIO ACTUAL
+  //
+  //     debugPrint('Producto con id $id eliminado exitosamente.');
+  //
+  //     // RECARGAMOS LOS PRODUCTOS
+  //     await cargarProductos();
+  //   } catch (e) {
+  //     debugPrint('Error al eliminar producto: $e');
+  //   }
+  // }
 
 
-  /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
-  /// Actualiza un producto en la base de datos con los nuevos valores proporcionados.
-  ///
-  /// Parámetros:
-  /// - [producto]: Mapa con los datos actualizados del producto, incluyendo:
-  ///   - 'id': ID único del producto a actualizar.
-  ///   - 'nombre': Nuevo nombre del producto.
-  ///   - 'descripcion': Nueva descripción del producto.
-  ///   - 'precio': Nuevo precio del producto.
-  ///   - 'supermercado': Nuevo supermercado asociado al producto.
-  ///
-  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
-  Future<void> actualizarProducto(Map<String, dynamic> producto) async {
-    try {
-      await database
-          .from('productos') // NOMBRE DE LA TABLA
-          .update({
-        // NUEVOS VALORES A ACTUALIZAR
-        'nombre': producto['nombre'],
-        'descripcion': producto['descripcion'],
-        'precio': producto['precio'],
-        'supermercado': producto['supermercado'],
-      })
-          .eq('id', producto['id']) // PRODUCTO QUE QUEREMOS ACTUALIZAR
-          .eq('usuariouuid', userId); // DEL USUARIO EN CONCRETO Y NO LOS DEMAS
+  // /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
+  // /// Actualiza un producto en la base de datos con los nuevos valores proporcionados.
+  // ///
+  // /// Parámetros:
+  // /// - [producto]: Mapa con los datos actualizados del producto, incluyendo:
+  // ///   - 'id': ID único del producto a actualizar.
+  // ///   - 'nombre': Nuevo nombre del producto.
+  // ///   - 'descripcion': Nueva descripción del producto.
+  // ///   - 'precio': Nuevo precio del producto.
+  // ///   - 'supermercado': Nuevo supermercado asociado al producto.
+  // ///
+  // /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
+  // Future<void> actualizarProducto(Map<String, dynamic> producto) async {
+  //   try {
+  //     await database
+  //         .from('productos') // NOMBRE DE LA TABLA
+  //         .update({
+  //       // NUEVOS VALORES A ACTUALIZAR
+  //       'nombre': producto['nombre'],
+  //       'descripcion': producto['descripcion'],
+  //       'precio': producto['precio'],
+  //       'supermercado': producto['supermercado'],
+  //     })
+  //         .eq('id', producto['id']) // PRODUCTO QUE QUEREMOS ACTUALIZAR
+  //         .eq('usuariouuid', userId); // DEL USUARIO EN CONCRETO Y NO LOS DEMAS
+  //
+  //     await cargarProductos();
+  //     debugPrint('Producto actualizado correctamente.');
+  //   } catch (e) {
+  //     debugPrint('Error al actualizar el producto: $e');
+  //   }
+  // }
 
-      await cargarProductos();
-      debugPrint('Producto actualizado correctamente.');
-    } catch (e) {
-      debugPrint('Error al actualizar el producto: $e');
-    }
-  }
-
-  /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
-  /// Obtiene una lista de todos los supermercados existentes en la base de datos.
-  ///
-  /// Consulta la tabla 'productos' para extraer los nombres de los supermercados,
-  /// eliminando duplicados mediante un 'Set' y convirtiéndolos nuevamente en una lista.
-  ///
-  /// @return Future<List<String>> Lista de nombres de supermercados sin duplicados.
-  Future<List<String>> obtenerSupermercados() async {
-    // CONSULTA PARA OBTENER LOS PRODUCTOS DEL USUARIO ACTUAL
-    final productos = await database
-        .from('productos')
-        .select()
-        .eq('usuariouuid', userId); // FILTRO POR USUARIO
-
-    // EXTRAEMOS LOS SUPERMERCADOS Y ELIMINAMOS DUPLICADOS
-    final supermercados = (productos as List)
-        .map((producto) => producto['supermercado'] as String)
-        .where((s) => s.isNotEmpty) // OPCIONAL: excluir vacíos
-        .toSet()
-        .toList();
-
-    return supermercados;
-  }
+  // /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
+  //   // /// Obtiene una lista de todos los supermercados existentes en la base de datos.
+  //   // ///
+  //   // /// Consulta la tabla 'productos' para extraer los nombres de los supermercados,
+  //   // /// eliminando duplicados mediante un 'Set' y convirtiéndolos nuevamente en una lista.
+  //   // ///
+  //   // /// @return Future<List<String>> Lista de nombres de supermercados sin duplicados.
+  //   // Future<List<String>> obtenerSupermercados() async {
+  //   //   // CONSULTA PARA OBTENER LOS PRODUCTOS DEL USUARIO ACTUAL
+  //   //   final productos = await database
+  //   //       .from('productos')
+  //   //       .select()
+  //   //       .eq('usuariouuid', userId); // FILTRO POR USUARIO
+  //   //
+  //   //   // EXTRAEMOS LOS SUPERMERCADOS Y ELIMINAMOS DUPLICADOS
+  //   //   final supermercados = (productos as List)
+  //   //       .map((producto) => producto['supermercado'] as String)
+  //   //       .where((s) => s.isNotEmpty) // OPCIONAL: excluir vacíos
+  //   //       .toSet()
+  //   //       .toList();
+  //   //
+  //   //   return supermercados;
+  //   // }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
   /// Muestra un cuadro de diálogo de confirmación antes de eliminar un producto.
@@ -165,7 +164,7 @@ class ProductoState extends State<Producto> {
   /// - [context]: Contexto de la aplicación para mostrar el diálogo.
   /// - [idProducto]: ID del producto que se desea eliminar.
   ///
-  /// Si el usuario confirma la eliminación, se llama al método 'deleteProducto(idProducto)'
+  /// Si el usuario confirma la eliminación, se llama al método 'eliminarProducto(int id) del provider'
   /// y se cierra el diálogo.
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
@@ -174,11 +173,11 @@ class ProductoState extends State<Producto> {
         return AlertDialog(
           title: Text( // TITULO DE LA ALERTA
             AppLocalizations.of(context)!.titleConfirmDialog,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           content: Text(
             AppLocalizations.of(context)!.deleteConfirmationP,
-            style: TextStyle(fontSize: 14),
+            style: const TextStyle(fontSize: 14),
           ),
           actions: [
             TextButton(
@@ -188,19 +187,19 @@ class ProductoState extends State<Producto> {
               },
               child: Text(
                 AppLocalizations.of(context)!.cancel,
-                style: TextStyle(color: Colors.grey),
+                style: const TextStyle(color: Colors.grey),
               ),
             ),
             TextButton(
               onPressed: () async {
                 // BORRAMOS EL PRODUCTO
-                await deleteProducto(idProducto);
+                await context.read<ProductoProvider>().eliminarProducto(idProducto);
                 // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
                 Navigator.of(context).pop();
               },
               child: Text(
                 AppLocalizations.of(context)!.delete,
-                style: TextStyle(color: Colors.red),
+                style: const TextStyle(color: Colors.red),
               ),
             ),
           ],
@@ -214,21 +213,21 @@ class ProductoState extends State<Producto> {
   ///
   /// Parámetros:
   /// - [context]: Contexto de la aplicación para mostrar el diálogo.
-  /// - [producto]: Mapa con los datos actuales del producto a editar.
+  /// - [producto]: Objeto ProductoModel
   ///
   /// Permite modificar el nombre, la descripción, el precio y el supermercado del producto.
   /// Una vez confirmados los cambios, se actualiza el producto en la base de datos.
-  void dialogoEdicion(BuildContext context, Map<String, dynamic> producto) async {
+  void dialogoEdicion(BuildContext context, ProductoModel producto) async {
     // CREAMOS LOS CONTROLADORES PARA LOS TextField Y LOS INICIALIZAMOS CON LOS DATOS DEL PRODUCTO AL QUE HA HECHO CLICK
-    final TextEditingController nombreController = TextEditingController(text: producto['nombre']);
-    final TextEditingController descripcionController = TextEditingController(text: producto['descripcion']);
-    final TextEditingController precioController = TextEditingController(text: producto['precio'].toString());
+    final TextEditingController nombreController = TextEditingController(text: producto.nombre);
+    final TextEditingController descripcionController = TextEditingController(text: producto.descripcion);
+    final TextEditingController precioController = TextEditingController(text: producto.precio.toString());
 
     // OBTENEMOS LA LISTA DE SUPERMERCADOS QUE EXISTEN
-    final List<String> supermercados = await obtenerSupermercados();
+    final List<String> supermercados = await context.read<ProductoProvider>().obtenerSupermercados();
 
     // INICIALIZAMOS LA LISTA CON EL SUPERMERCADO DEL PRODUCTO SELECCIONADO
-    String supermercadoSeleccionado = producto['supermercado'];
+    String supermercadoSeleccionado = producto.supermercado;
 
     showDialog(
       context: context,
@@ -287,24 +286,20 @@ class ProductoState extends State<Producto> {
                 final String nuevaDescripcion = descripcionController.text;
                 final double nuevoPrecio = double.tryParse(precioController.text) ?? 0.0;
 
-                // if (nuevoNombre.isEmpty || supermercadoSeleccionado.isEmpty) {
-                //   ScaffoldMessenger.of(context).showSnackBar(
-                //     SnackBar(content: Text(AppLocalizations.of(context)!.snackBarInvalidData)),
-                //   );
-                //   return;
-                // } TODO
+                // CREAMOS EL PRODUCTO ACTUALIZADO
+                final productoActualizado = ProductoModel(
+                  id: producto.id, // NO LO CAMBIAMOS
+                  codBarras: producto.codBarras, // NO LO CAMBIAMOS
+                  nombre: nuevoNombre,
+                  descripcion: nuevaDescripcion,
+                  precio: nuevoPrecio,
+                  supermercado: supermercadoSeleccionado,
+                  usuarioUuid: producto.usuarioUuid, // NO LO CAMBIAMOS
+                  foto: producto.foto, // NO LO CAMBIAMOS
+                );
 
-                // CREAMOS UN MAPA CON LOS DATOS NUEVOS
-                final nuevoProducto = {
-                  'id': producto['id'], // MANTENEMOS EL ID DEL PRODUCTO ORIGINAL, ESO NO SE CAMBIA
-                  'nombre': nuevoNombre,
-                  'descripcion': nuevaDescripcion,
-                  'precio': nuevoPrecio,
-                  'supermercado': supermercadoSeleccionado,
-                };
-
-                // ACTUALIZAMOS EL PRODUCTO
-                await actualizarProducto(nuevoProducto);
+                // LLAMAMOS AL METODO DEL PROVIDER
+                await context.read<ProductoProvider>().actualizarProducto(productoActualizado);
 
                 // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
                 Navigator.of(context).pop();
@@ -337,8 +332,11 @@ class ProductoState extends State<Producto> {
     String? supermercadoSeleccionado;
     bool creandoSupermercado = false;
 
+    final provider = context.read<ProductoProvider>();
+
     // OBTENEMOS LA LISTA DE LOS SUPERMERCADOS QUE EXISTEN Y AÑADIMOS UNA NUEVA OPCION
-    final supermercados = productosPorSupermercado.keys.toList();
+    final supermercados = provider.productosPorSupermercado.keys.toList();
+
     supermercados.add(AppLocalizations.of(context)!.selectSupermarketNameDDB);
 
     showDialog(
@@ -421,23 +419,16 @@ class ProductoState extends State<Producto> {
                       return;
                     }
 
-                    // CREAR EL NUEVO PRODUCTO
-                    final nuevoProducto = {
-                      'nombre': nombre,
-                      'descripcion': descripcion,
-                      'precio': precio,
-                      'supermercado': supermercado,
-                      'usuariouuid':userId
-                    };
+                    await context.read<ProductoProvider>().crearProducto(
+                      nombre: nombre,
+                      descripcion: descripcion,
+                      precio: precio,
+                      supermercado: supermercado,
+                      usuarioUuid: context.read<UserProvider>().uuid!, // COGEMOS EL UUID DEL USUARIO
+                    );
 
-                    // INSERTAMOS EL PRODUCTO EN LA BASE DE DATOS
-                    await database
-                        .from('productos') // NOMBRE DE LA TABLA
-                        .insert(nuevoProducto); // INSERTAMOS EL NUEVO PRODUCTO
-
-                    // CERRAMOS EL DIÁLOGO Y RECARGAMOS LA LISTA DE PRODUCTOS
+                    // CERRAMOS EL DIÁLOGO
                     Navigator.of(context).pop();
-                    cargarProductos();
                   },
                   child: Text(AppLocalizations.of(context)!.save),
                 ),
@@ -461,49 +452,53 @@ class ProductoState extends State<Producto> {
   /// - [nombre]: Nombre del producto.
   ///
   /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
-  Future<void> agregarACompra(int idProducto, double precio, String nombre, String usuarioUUID) async {
-    try {
-      // CONSULTA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
-      final productosExistentes = await database
-          .from('compra')
-          .select()
-          .eq('idproducto', idProducto)
-          .eq('usuariouuid', usuarioUUID);
-
-      if (productosExistentes.isNotEmpty) {
-        // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTÁ REGISTRADO
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.snackBarRepeatedProduct)),
-        );
-      } else {
-        // SI NO EXISTE, LO AÑADIMOS
-        await database.from('compra').insert({
-          'idproducto': idProducto,
-          'nombre': nombre,
-          'precio': precio,
-          'marcado': 0,
-          'usuariouuid': usuarioUUID,
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
-        );
-      }
-    } catch (e) {
-      debugPrint("${AppLocalizations.of(context)!.snackBarErrorAddingProduct}: $e");
-    }
-  }
+  // Future<void> agregarACompra(int idProducto, double precio, String nombre, String usuarioUUID) async {
+  //   try {
+  //     // CONSULTA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
+  //     final productosExistentes = await database
+  //         .from('compra')
+  //         .select()
+  //         .eq('idproducto', idProducto)
+  //         .eq('usuariouuid', usuarioUUID);
+  //
+  //     if (productosExistentes.isNotEmpty) {
+  //       // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTÁ REGISTRADO
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text(AppLocalizations.of(context)!.snackBarRepeatedProduct)),
+  //       );
+  //     } else {
+  //       // SI NO EXISTE, LO AÑADIMOS
+  //       await database.from('compra').insert({
+  //         'idproducto': idProducto,
+  //         'nombre': nombre,
+  //         'precio': precio,
+  //         'marcado': 0,
+  //         'usuariouuid': usuarioUUID,
+  //       });
+  //
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     debugPrint("${AppLocalizations.of(context)!.snackBarErrorAddingProduct}: $e");
+  //   }
+  // }
 
 
 
   @override
   Widget build(BuildContext context) {
+
+    final providerProducto = context.watch<ProductoProvider>();
+    final productosPorSupermercado = providerProducto.productosPorSupermercado;
+
     return Scaffold( //BODY PRINCIPAL DE LA PAGINA PRODUCTO
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.products), // TITULO DEL AppBar
         centerTitle: true,
       ),
-      body: productosPorSupermercado.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS ESTE MENSAJE
+      body: providerProducto.productos.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS UN CIRCULO DE CARGA
           ? const Center(
         child: CircularProgressIndicator(),
       )
@@ -523,8 +518,8 @@ class ProductoState extends State<Producto> {
             children: productos.map((producto) { // LISTA DE PRODUCTOS DE CADA SUPERMERCADO (producto es el producto actual)
               return ListTile( // CADA PRODUCTO SE MUESTRA COMO UN ListTile
                 leading: const Icon(Icons.fastfood),
-                title: Text(producto['nombre'] ?? '',style: TextStyle(fontSize: 16)),
-                subtitle: Text(producto['descripcion'] ?? '',style: TextStyle(fontSize: 14)),
+                title: Text(producto.nombre ?? '',style: const TextStyle(fontSize: 16)),
+                subtitle: Text(producto.descripcion ?? '',style: const TextStyle(fontSize: 14)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -534,9 +529,22 @@ class ProductoState extends State<Producto> {
                       child: IconButton(
                         icon: const Icon(Icons.add),
                         iconSize: 20.0,
-                        onPressed: () {
-                           // AGREGAMOS EL PRODUCTO A LA TABLA COMPRA
-                          agregarACompra(producto['id'], (producto['precio'] as num).toDouble(), producto['nombre'], context.read<UserProvider>().uuid!);
+                        onPressed: () async {
+                          try {
+                            await context.read<ProductoProvider>().agregarACompra(
+                              idProducto: producto.id,
+                              precio: producto.precio,
+                              nombre: producto.nombre,
+                              usuarioUuid: context.read<UserProvider>().uuid!,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
+                            );
+                          } catch (_) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(AppLocalizations.of(context)!.snackBarRepeatedProduct)),
+                            );
+                          }
                         },
                         padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
                       ),
@@ -564,7 +572,7 @@ class ProductoState extends State<Producto> {
                         onPressed: () {
                           // ABRIMOS EL DIALOGO DE ELIMINACION Y LE PASAMOS EL CONTEXTO
                           // Y EL ID DEL PRODUCTO EN EL QUE HEMOS HECHO CLICK
-                          dialogoEliminacion(context, producto['id']);
+                          dialogoEliminacion(context, producto.id);
                         },
                         padding: EdgeInsets.zero,
                       ),
