@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../Providers/themeProvider.dart';
+import '../Providers/userProvider.dart';
+import '../l10n/app_localizations.dart';
 
 
 class Compra extends StatefulWidget {
@@ -47,7 +47,8 @@ class CompraState extends State<Compra> {
     // CONSULTA QUE OBTIENE LOS PRODUCTOS DE LA COMPRA, JUNTO CON EL SUPERMERCADO DE CADA PRODUCTO
     final response = await database
         .from('compra')
-        .select('*, productos(supermercado)');
+        .select('*, productos(supermercado)')
+        .eq('usuariouuid', context.read<UserProvider>().uuid!);
 
     // response ya es la lista de datos (no viene envuelto en objeto con .data)
     final productosInmutables = (response as List).cast<Map<String, dynamic>>();
@@ -85,7 +86,6 @@ class CompraState extends State<Compra> {
   }
 
 
-
   /// Aumenta la cantidad de un producto en la compra en 1
   ///
   /// - Realiza una consulta SQL para incrementar la cantidad de un producto específico
@@ -93,7 +93,11 @@ class CompraState extends State<Compra> {
   Future<void> sumar1Cantidad(int idProducto) async {
     try {
       // LLAMAMOS A LA FUNCION SQL QUE INCREMENTA LA CANTIDAD DEL PRODUCTO
-      await database.rpc('incrementar_cantidad', params: {'p_id_producto': idProducto});
+      await database.rpc('incrementar_cantidad', params: {
+        'p_id_producto': idProducto,
+        'p_usuario_uuid': context.read<UserProvider>().uuid,
+      });
+
     } catch (e) {
       debugPrint('Error al incrementar la cantidad: $e');
     }
@@ -107,7 +111,11 @@ class CompraState extends State<Compra> {
   ///   identificado por 'idProducto' en la base de datos.
   Future<void> restar1Cantidad(int idProducto) async {
     try {
-      await database.rpc('restar_cantidad', params: {'p_id_producto': idProducto});
+      await database.rpc('restar_cantidad', params: {
+        'p_id_producto': idProducto,
+        'p_usuario_uuid': context.read<UserProvider>().uuid,
+      });
+
     } catch (e) {
       debugPrint('Error al decrementar la cantidad: $e');
     }
@@ -121,7 +129,10 @@ class CompraState extends State<Compra> {
   /// las cantidades por defecto a 1, independientemente de su estado previo.
   Future<void> resetearProductosListaCompra() async {
     try {
-      await database.rpc('resetear_productos_lista_compra');
+      await database.rpc('resetear_productos_lista_compra', params: {
+        'p_usuario_uuid': context.read<UserProvider>().uuid,
+      });
+
       debugPrint('Lista de la compra reseteada');
     } catch (e) {
       debugPrint('Error al resetear productos: $e');
@@ -142,12 +153,16 @@ class CompraState extends State<Compra> {
   ///
   /// Si el proceso es exitoso, la factura se genera correctamente con los productos seleccionados.
   Future<void> generarFactura() async {
+
     try {
+      final userId = context.read<UserProvider>().uuid!;
+
       // CONSULTA PARA OBTENER TODOS LOS PRODUCTOS MARCADOS
       final response = await database
           .from('compra')
           .select()
-          .eq('marcado', 1);
+          .eq('marcado', 1)
+          .eq('usuariouuid', userId);
 
       final productosMarcados = response as List<dynamic>?;
 
@@ -190,6 +205,7 @@ class CompraState extends State<Compra> {
         'precio': precioTotal,
         'fecha': fechaActual,
         'supermercado': supermercado,
+        'usuariouuid': context.read<UserProvider>().uuid!,
       }).select().single();
 
       final idFactura = insertFactura['id'];
@@ -203,6 +219,7 @@ class CompraState extends State<Compra> {
           'preciounidad': producto['precio'],
           'total': (producto['precio'] as num).toDouble() *
               (producto['cantidad'] as num).toDouble(),
+          'usuariouuid': userId,
         });
       }
 
@@ -276,11 +293,11 @@ class CompraState extends State<Compra> {
   /// identificado por 'idProducto' en la base de datos.
   Future<void> deleteProducto(int idProducto) async {
     try {
-      final response = await database
-          .from('compra')
-          .delete()
-          .eq('idproducto', idProducto);
-      // Puedes chequear response para ver si borró algo si quieres
+    await database
+        .from('compra')
+        .delete()
+        .eq('idproducto', idProducto)
+        .eq('usuariouuid', context.read<UserProvider>().uuid!);
     } catch (e) {
       debugPrint('Error al borrar producto: $e');
     }
@@ -327,7 +344,10 @@ class CompraState extends State<Compra> {
           ),
         ],
       ),
-      body: Column(
+      body: productosCompra.isEmpty ? const Center(
+        child: CircularProgressIndicator(),
+      ) :
+      Column(
         children: [
           Expanded( // EXPANDED PARA QUE EL ListView.Builder NO DE ERROR
             child: ListView.builder(
@@ -350,8 +370,8 @@ class CompraState extends State<Compra> {
                   ),
                   children: productos.map((producto) {
                     return ListTile(
-                      visualDensity: VisualDensity(horizontal: -4), // HACE QUE HAYA MENOS ESPACIO ENTRE EL LEADING Y EL TITLE
-                      contentPadding: EdgeInsets.symmetric(horizontal: 4), // REDUCE EL PADDING LATERAL
+                      visualDensity: const VisualDensity(horizontal: -4), // HACE QUE HAYA MENOS ESPACIO ENTRE EL LEADING Y EL TITLE
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4), // REDUCE EL PADDING LATERAL
                       leading: IconButton( // BOTON PARA MARCAR Y DESMARCAR PRODUCTO
                         icon: Icon( // SI producto['marcado'] ES 1, PONEMOS UN ESTILO Y SI NO, OTRO
                           producto['marcado'] == 1
@@ -385,7 +405,7 @@ class CompraState extends State<Compra> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(producto['nombre']),
-                          Text('\$${(producto['precio']).toStringAsFixed(2)}', style: TextStyle(
+                          Text('\$${(producto['precio']).toStringAsFixed(2)}', style: const TextStyle(
                             color: Colors.green,
                             fontWeight: FontWeight.bold,
                               fontSize: 12
@@ -400,7 +420,7 @@ class CompraState extends State<Compra> {
                             width: 25,
                             height: 25,
                             child: IconButton(
-                                icon: Icon(Icons.remove),
+                                icon: const Icon(Icons.remove),
                                 iconSize: 25.0,
                                 onPressed: () {
                                   setState(() {
@@ -425,7 +445,7 @@ class CompraState extends State<Compra> {
                             width: 25,
                             height: 25,
                             child: IconButton(
-                              icon: Icon(Icons.add),
+                              icon: const Icon(Icons.add),
                               iconSize: 25.0,
                               onPressed: () {
                                 setState(() {
@@ -468,8 +488,8 @@ class CompraState extends State<Compra> {
           ),
           Container(
             color: context.watch<ThemeProvider>().isDarkMode
-                ? Color(0xFF424242) // Fondo más oscuro en modo oscuro
-                : Color(0xFFE8F5E9), // Fondo claro en modo claro
+                ? const Color(0xFF424242) // Fondo más oscuro en modo oscuro
+                : const Color(0xFFE8F5E9), // Fondo claro en modo claro
             padding: const EdgeInsets.all(16),
             child: Row(
               // USAMOS spaceBetween PARA QUE SALGA UN Text AL PRINCIPIO Y OTRO AL FINAL

@@ -9,6 +9,10 @@ environment:
 dependencies:
   supabase_flutter: ^2.8.4
   flutter_dotenv: ^5.2.1
+  image_picker: ^1.0.4
+  file_picker: ^10.3.0
+  flutter_slidable: ^3.0.0
+  flutter_speed_dial: ^7.0.0
   flutter:
     sdk: flutter
   sqflite: ^2.2.7

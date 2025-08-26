@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../Providers/userProvider.dart';
+import '../l10n/app_localizations.dart';
 
 class Gastos extends StatefulWidget {
 
@@ -20,8 +23,10 @@ class GastosState extends State<Gastos> {
   @override
   void initState() {
     super.initState();
+    final userId = context.read<UserProvider>().uuid;
     // CARGAMOS LAS FACTURAS AL ABRIR LA PAGINA
     cargarFacturas();
+
   }
   /// Carga las facturas desde la base de datos y agrupa los productos por id.
   ///
@@ -44,6 +49,7 @@ class GastosState extends State<Gastos> {
       final facturas = await database
           .from('facturas')
           .select()
+          .eq('usuariouuid', context.read<UserProvider>().uuid!)
           .order('id', ascending: false);
 
       Map<String, List<Map<String, dynamic>>> agrupados = {};
@@ -150,7 +156,8 @@ class GastosState extends State<Gastos> {
       await database
           .from('facturas')
           .delete()
-          .eq('id', idFactura);
+          .eq('id', idFactura)
+          .eq('usuariouuid', context.read<UserProvider>().uuid!);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Factura eliminada correctamente')),
@@ -172,10 +179,7 @@ class GastosState extends State<Gastos> {
       // SI NO HAY FACTURAS MOSTRAMOS UN MENSAJE
       body: facturasAgrupadas.isEmpty
           ? const Center(
-        child: Text(
-          "No hay facturas registradas",
-          style: TextStyle(fontSize: 18),
-        ),
+        child: CircularProgressIndicator()
       )
           : ListView(
         // MAPEAMOS LAS FACTURAS AGRUPADAS

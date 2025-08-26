@@ -3,15 +3,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
+import 'package:proyectocompras/Providers/userProvider.dart';
 import 'package:proyectocompras/View/gastos.dart';
 import 'package:proyectocompras/View/compra.dart';
+import 'package:proyectocompras/View/login.dart';
 import 'package:proyectocompras/View/producto.dart';
 import 'package:proyectocompras/View/recetas.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'Providers/themeProvider.dart';
+import 'l10n/app_localizations.dart';
 
 /*---------------------------------------------------------------------------------------*/
 void main() async {
@@ -26,23 +30,31 @@ void main() async {
     anonKey: dotenv.env['API_KEY']!,
   );
 
-  SupabaseClient database = Supabase.instance.client;
+  final prefs = await SharedPreferences.getInstance();
+  final uuid = prefs.getString('usuarioUUID');
+
+  final userProvider = UserProvider();
+  if (uuid != null) {
+    userProvider.setUuid(uuid);
+  }
 
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => LanguageProvider()),
-      ChangeNotifierProvider(create: (_) => ThemeProvider())
+      ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ChangeNotifierProvider<UserProvider>.value(value: userProvider),
+      ChangeNotifierProvider(create: (_) => DetalleRecetaProvider())
     ],
-    child: MainApp(),
+    child: MainApp(isLoggedIn: uuid != null),
   ));
 }
 
 /*---------------------------------------------------------------------------------------*/
 class MainApp extends StatelessWidget {
 
+  final bool isLoggedIn;
 
-  const MainApp({super.key});
-
+  const MainApp({super.key,required this.isLoggedIn});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -84,6 +96,11 @@ class MainApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      initialRoute: isLoggedIn ? '/home' : '/login',
+        routes: {
+          '/home': (_) => const Main(),
+          '/login': (_) => const Login(),
+        },
       home: Main()
     );
   }
@@ -165,6 +182,26 @@ class MainState extends State<Main> {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(width: 10),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              color: Colors.white,
+              onPressed: () async {
+                // CERRAR SESIÓN
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('usuarioUUID');
+
+                final userProvider = context.read<UserProvider>();
+                userProvider.setUuid(null);
+                // Cerrar sesión en Supabase (opcional)
+                await Supabase.instance.client.auth.signOut();
+
+                // Ir a login
+                if (context.mounted) {
+                  Navigator.pushReplacementNamed(context, '/login');
+                }
+              },
             ),
           ],
         ),

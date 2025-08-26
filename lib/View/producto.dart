@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../Providers/userProvider.dart';
+import '../l10n/app_localizations.dart';
 
 class Producto extends StatefulWidget {
 
@@ -12,6 +15,8 @@ class Producto extends StatefulWidget {
 
 class ProductoState extends State<Producto> {
 
+  late String userId;
+
   SupabaseClient database = Supabase.instance.client;
 
   Map<String, List<Map<String, dynamic>>> productosPorSupermercado = {}; // LISTA PARA GUARDAR LOS PRODUCTOS AGRUPADOS POR 1 SUPERMERCADO EN CONCRETO
@@ -20,9 +25,18 @@ class ProductoState extends State<Producto> {
   @override
   void initState() {
     super.initState();
-    cargarProductos(); // CARGAMOS LOS PRODUCTOS AL ABRIR LA PAGINA PRODUCTOS
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uid = context.read<UserProvider>().uuid;
+      if (uid != null) {
+        setState(() {
+          userId = uid;
+        });
+        cargarProductos();
+      } else {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    });
   }
-
   /*TODO-----------------METODO DE CARGAR-----------------*/
   /// Carga los productos desde la base de datos y los agrupa por supermercado.
   ///
@@ -33,11 +47,10 @@ class ProductoState extends State<Producto> {
   ///
   /// Actualiza el estado para reflejar los cambios en la interfaz.
   Future<void> cargarProductos() async {
-    // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
     final productos = await database
         .from('productos')
-        .select();
-
+        .select()
+        .eq('usuariouuid', userId); // FILTRAMOS SOLO LOS DEL USUARIO ACTUAL
 
     // MAPA PARA AGRUPAR LOS PRODUCTOS POR NOMBRE DE SUPERMERCADO
     final Map<String, List<Map<String, dynamic>>> productosAgrupados = {};
@@ -47,13 +60,11 @@ class ProductoState extends State<Producto> {
       // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
       final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
 
-      // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS AL MAPA COMO UNA LISTA VACÍA
-      if (!productosAgrupados.containsKey(supermercado)) {
-        productosAgrupados[supermercado] = [];
-      }
+      // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS COMO UNA LISTA VACÍA
+      productosAgrupados.putIfAbsent(supermercado, () => []);
 
       // AGREGAMOS EL PRODUCTO A LA LISTA CORRESPONDIENTE DENTRO DEL MAPA
-      productosAgrupados[supermercado]?.add(producto);
+      productosAgrupados[supermercado]!.add(producto);
     }
 
     // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
@@ -61,7 +72,6 @@ class ProductoState extends State<Producto> {
       productosPorSupermercado = productosAgrupados;
     });
   }
-
 
   /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
   /// Elimina un producto de la base de datos según su ID.
@@ -78,7 +88,8 @@ class ProductoState extends State<Producto> {
       await database
           .from('productos') // NOMBRE DE LA TABLA
           .delete() // OPERACIÓN DELETE
-          .eq('id', id); // CONDICIÓN PARA IDENTIFICAR LO QUE QUEREMOS BORRAR
+          .eq('id', id) // FILTRAMOS POR ID DEL PRODUCTO
+          .eq('usuariouuid', userId); // Y POR USUARIO ACTUAL
 
       debugPrint('Producto con id $id eliminado exitosamente.');
 
@@ -88,7 +99,6 @@ class ProductoState extends State<Producto> {
       debugPrint('Error al eliminar producto: $e');
     }
   }
-
 
 
   /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
@@ -107,21 +117,22 @@ class ProductoState extends State<Producto> {
     try {
       await database
           .from('productos') // NOMBRE DE LA TABLA
-          .update({ // ACTUALIZAMOS LOS DATOS CON EL producto PROPORCIONADO POR PARÁMETRO
+          .update({
+        // NUEVOS VALORES A ACTUALIZAR
         'nombre': producto['nombre'],
         'descripcion': producto['descripcion'],
         'precio': producto['precio'],
         'supermercado': producto['supermercado'],
       })
-          .eq('id', producto['id']); // CONDICIÓN PARA IDENTIFICAR LO QUE QUEREMOS EDITAR
+          .eq('id', producto['id']) // PRODUCTO QUE QUEREMOS ACTUALIZAR
+          .eq('usuariouuid', userId); // DEL USUARIO EN CONCRETO Y NO LOS DEMAS
 
       await cargarProductos();
-      debugPrint('Producto actualizado exitosamente.');
+      debugPrint('Producto actualizado correctamente.');
     } catch (e) {
       debugPrint('Error al actualizar el producto: $e');
     }
   }
-
 
   /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
   /// Obtiene una lista de todos los supermercados existentes en la base de datos.
@@ -131,21 +142,21 @@ class ProductoState extends State<Producto> {
   ///
   /// @return Future<List<String>> Lista de nombres de supermercados sin duplicados.
   Future<List<String>> obtenerSupermercados() async {
-    // CONSULTA PARA OBTENER TODOS LOS REGISTROS DE LA TABLA 'productos'
+    // CONSULTA PARA OBTENER LOS PRODUCTOS DEL USUARIO ACTUAL
     final productos = await database
         .from('productos')
-        .select();
+        .select()
+        .eq('usuariouuid', userId); // FILTRO POR USUARIO
 
-    // OBTENEMOS LOS NOMBRES DE LOS SUPERMERCADOS QUE HAY, LOS TRANSFORMAMOS EN SET PARA
-    // ELIMINAR DUPLICADOS Y LO TRANSFORMAMOS EN LISTA OTRA VEZ
+    // EXTRAEMOS LOS SUPERMERCADOS Y ELIMINAMOS DUPLICADOS
     final supermercados = (productos as List)
         .map((producto) => producto['supermercado'] as String)
+        .where((s) => s.isNotEmpty) // OPCIONAL: excluir vacíos
         .toSet()
         .toList();
 
     return supermercados;
   }
-
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
   /// Muestra un cuadro de diálogo de confirmación antes de eliminar un producto.
@@ -416,6 +427,7 @@ class ProductoState extends State<Producto> {
                       'descripcion': descripcion,
                       'precio': precio,
                       'supermercado': supermercado,
+                      'usuariouuid':userId
                     };
 
                     // INSERTAMOS EL PRODUCTO EN LA BASE DE DATOS
@@ -449,13 +461,14 @@ class ProductoState extends State<Producto> {
   /// - [nombre]: Nombre del producto.
   ///
   /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
-  Future<void> agregarACompra(int idProducto, double precio, String nombre) async {
+  Future<void> agregarACompra(int idProducto, double precio, String nombre, String usuarioUUID) async {
     try {
       // CONSULTA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
       final productosExistentes = await database
           .from('compra')
           .select()
-          .eq('idproducto', idProducto);
+          .eq('idproducto', idProducto)
+          .eq('usuariouuid', usuarioUUID);
 
       if (productosExistentes.isNotEmpty) {
         // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTÁ REGISTRADO
@@ -464,15 +477,13 @@ class ProductoState extends State<Producto> {
         );
       } else {
         // SI NO EXISTE, LO AÑADIMOS
-        await database
-            .from('compra') // NOMBRE DE LA TABLA
-            .insert({
+        await database.from('compra').insert({
           'idproducto': idProducto,
           'nombre': nombre,
           'precio': precio,
-          'marcado': 0, // POR DEFECTO SE GUARDA COMO NO MARCADO
+          'marcado': 0,
+          'usuariouuid': usuarioUUID,
         });
-        // conflictAlgorithm: ConflictAlgorithm.replace, NO APLICA EN SUPABASE PERO SE PUEDE MANEJAR POR POLÍTICAS DE CONFLICTO SI SE NECESITA
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
@@ -494,13 +505,7 @@ class ProductoState extends State<Producto> {
       ),
       body: productosPorSupermercado.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS ESTE MENSAJE
           ? const Center(
-        child: Text(
-          "No hay productos disponibles",
-          style: TextStyle(
-            color: Color(0xFF212121), // GRIS OSCURO PARA EL TEXTO
-            fontSize: 16,
-          ),
-        ),
+        child: CircularProgressIndicator(),
       )
           : ListView( // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
         children: productosPorSupermercado.entries.map((entry) {
@@ -531,7 +536,7 @@ class ProductoState extends State<Producto> {
                         iconSize: 20.0,
                         onPressed: () {
                            // AGREGAMOS EL PRODUCTO A LA TABLA COMPRA
-                          agregarACompra(producto['id'], (producto['precio'] as num).toDouble(), producto['nombre']);
+                          agregarACompra(producto['id'], (producto['precio'] as num).toDouble(), producto['nombre'], context.read<UserProvider>().uuid!);
                         },
                         padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
                       ),
