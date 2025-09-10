@@ -109,34 +109,4 @@ class ProductoProvider with ChangeNotifier {
         .toSet()
         .toList();
   }
-
-  Future<void> agregarACompra({
-    required int idProducto,
-    required double precio,
-    required String nombre,
-    required String usuarioUuid,
-  }) async {
-    try {
-      final productosExistentes = await database
-          .from('compra')
-          .select()
-          .eq('idproducto', idProducto)
-          .eq('usuariouuid', usuarioUuid);
-
-      if (productosExistentes.isNotEmpty) {
-        throw Exception("Producto ya registrado");
-      } else {
-        await database.from('compra').insert({
-          'idproducto': idProducto,
-          'nombre': nombre,
-          'precio': precio,
-          'marcado': 0,
-          'usuariouuid': usuarioUuid,
-        });
-      }
-    } catch (e) {
-      debugPrint("Error agregando producto a la compra: $e");
-      rethrow;
-    }
-  }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
+import 'package:proyectocompras/Providers/facturaProvider.dart';
 import 'package:proyectocompras/Providers/userProvider.dart';
 import 'package:proyectocompras/View/gastos.dart';
 import 'package:proyectocompras/View/compra.dart';
@@ -12,6 +13,7 @@ import 'package:proyectocompras/View/producto.dart';
 import 'package:proyectocompras/View/recetas.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'Providers/compraProvider.dart';
 import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'Providers/productoProvider.dart';
@@ -46,80 +48,88 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider<UserProvider>.value(value: userProvider),
         ChangeNotifierProvider(create: (_) => DetalleRecetaProvider()),
-
-        ChangeNotifierProvider(create: (_) => ProductoProvider(
+        ChangeNotifierProvider(
+          create: (_) => ProductoProvider(
             Supabase.instance.client,
             uuid!,
           )..cargarProductos(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CompraProvider(
+            Supabase.instance.client,
+            uuid!,
+          )..cargarCompra(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => FacturaProvider(
+              Supabase.instance.client,
+              uuid!
+          ), // AÑADIR AQUI METODO DE CARGAR FACTURAS
         ),
       ],
       child: MainApp(isLoggedIn: uuid != null),
     ),
   );
-
 }
 
 /*---------------------------------------------------------------------------------------*/
 class MainApp extends StatelessWidget {
-
   final bool isLoggedIn;
 
-  const MainApp({super.key,required this.isLoggedIn});
+  const MainApp({super.key, required this.isLoggedIn});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF1F8E9),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4CAF50),
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.light,
+          scaffoldBackgroundColor: const Color(0xFFF1F8E9),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF4CAF50),
+            titleTextStyle: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            iconTheme: IconThemeData(color: Colors.white),
           ),
-          iconTheme: IconThemeData(color: Colors.white),
         ),
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF303030),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2C6B31),
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: const Color(0xFF303030),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF2C6B31),
+            titleTextStyle: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            iconTheme: IconThemeData(color: Colors.white),
           ),
-          iconTheme: IconThemeData(color: Colors.white),
         ),
-      ),
-      themeMode: context.watch<ThemeProvider>().isDarkMode
-          ? ThemeMode.dark
-          : ThemeMode.light,
-      supportedLocales: const [Locale("es"), Locale("en")],
-      locale: context.watch<LanguageProvider>().locale,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      initialRoute: isLoggedIn ? '/home' : '/login',
+        themeMode: context.watch<ThemeProvider>().isDarkMode
+            ? ThemeMode.dark
+            : ThemeMode.light,
+        supportedLocales: const [Locale("es"), Locale("en")],
+        locale: context.watch<LanguageProvider>().locale,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        initialRoute: isLoggedIn ? '/home' : '/login',
         routes: {
           '/home': (_) => const Main(),
           '/login': (_) => const Login(),
         },
-      home: Main()
-    );
+        home: Main());
   }
 }
 
 /*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
-
-
   const Main({super.key});
 
   @override

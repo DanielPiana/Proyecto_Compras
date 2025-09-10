@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../Providers/compraProvider.dart';
 import '../Providers/productoProvider.dart';
 import '../Providers/userProvider.dart';
 import '../l10n/app_localizations.dart';
@@ -531,11 +532,10 @@ class ProductoState extends State<Producto> {
                         iconSize: 20.0,
                         onPressed: () async {
                           try {
-                            await context.read<ProductoProvider>().agregarACompra(
+                            await context.read<CompraProvider>().agregarACompra(
                               idProducto: producto.id,
                               precio: producto.precio,
                               nombre: producto.nombre,
-                              usuarioUuid: context.read<UserProvider>().uuid!,
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
