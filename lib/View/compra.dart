@@ -28,25 +28,46 @@ class CompraState extends State<Compra> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
-  /// Muestra un cuadro de diálogo de confirmacion antes de eliminar un producto de la lista de la compra
+  /// Muestra un cuadro de diálogo de confirmación para eliminar un producto de la lista de la compra.
   ///
-  /// Si el usuario confirma la eliminación, llama al método 'deleteProducto(idProducto)' y luego
-  /// actualizarPrecio(idProducto,precio,cantidad) para actualizar el precio de los productos marcados
+  /// Flujo principal:
+  /// - Muestra un cuadro de diálogo pidiendo al usuario confirmar la eliminación.
+  /// - Si el usuario cancela, se cierra el cuadro de diálogo sin cambios.
+  /// - Si confirma, se cierra el cuadro de diálogo y se llama al método
+  ///   [deleteProducto] del [CompraProvider].
+  /// - Se muestra un snackbar de éxito si la eliminación es correcta.
+  /// - Si ocurre un error durante la operación, se captura la excepción y
+  ///   se muestra un snackbar de error.
   ///
-  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
+  /// Parámetros:
+  /// - [context]: Contexto de la aplicación.
+  /// - [idProducto]: Identificador del producto a eliminar.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  ///
+  /// Excepciones:
+  /// - Puede lanzar errores si falla la eliminación en la base de datos,
+  ///   aunque son capturados y notificados al usuario.
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text( // TITULO DE LA ALERTA
+
+          // ---------- TÍTULO ----------
+          title: Text(
             AppLocalizations.of(context)!.titleConfirmDialog,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
+
+          // ---------- CONTENIDO ----------
           content: Text(
             AppLocalizations.of(context)!.deleteConfirmationSP,
             style: const TextStyle(fontSize: 16),
           ),
+
+          // ---------- ACCIONES (Cancelar / Eliminar) ----------
           actions: [
             ElevatedButton(
               onPressed: () {
@@ -60,18 +81,29 @@ class CompraState extends State<Compra> {
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
 
-                Future.delayed(Duration.zero, () {
-                  showAwesomeSnackBar(
-                    context,
-                    title: AppLocalizations.of(context)!.success,
-                    message: AppLocalizations.of(context)!.receipt_deleted_ok,
-                    contentType: asc.ContentType.success,
-                  );
-                });
+                final provider = context.read<CompraProvider>();
+                try {
+                  await provider.deleteProducto(idProducto);
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.success,
+                      message: AppLocalizations.of(context)!.receipt_deleted_ok,
+                      contentType: asc.ContentType.success,
+                    );
+                } catch (e) {
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.error,
+                      message: AppLocalizations.of(context)!.receipt_deleted_error,
+                      contentType: asc.ContentType.failure,
+                    );
+                }
               },
-              child: Text(AppLocalizations.of(context)!.delete,
-                  style: const TextStyle(color: Colors.red)),
-            )
+              child: Text(
+                AppLocalizations.of(context)!.delete,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
           ],
         );
       },

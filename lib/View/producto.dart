@@ -33,6 +33,7 @@ class ProductoState extends State<Producto> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uid = context.read<UserProvider>().uuid;
+      // SI NO HAY USUARIO, LE MANDAMOS A LA PESTAÑA DE LOGIN
       if (uid != null) {
         setState(() {
           userId = uid;
@@ -44,35 +45,49 @@ class ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
-
-  /// Muestra un cuadro de diálogo de confirmación antes de eliminar un producto.
+  /// Muestra un cuadro de diálogo de confirmación para eliminar un producto.
+  ///
+  /// Flujo principal:
+  /// - Pregunta al usuario si desea eliminar el producto.
+  /// - Si confirma, lo elimina localmente y luego intenta eliminarlo en el servidor.
+  /// - Si ocurre un error en el servidor, restaura el producto en local y muestra un mensaje de error.
   ///
   /// Parámetros:
-  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
-  /// - [idProducto]: ID del producto que se desea eliminar.
+  /// - [context]: Contexto de la aplicación.
+  /// - [idProducto]: Identificador del producto a eliminar.
   ///
-  /// Si el usuario confirma la eliminación, se llama al método 'eliminarProducto(int id) del provider'
-  /// y se cierra el diálogo.
+  /// Retorna:
+  /// - `void` (no retorna nada).
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
+
+          // ---------- TÍTULO ----------
           title: Text(
             AppLocalizations.of(context)!.titleConfirmDialog,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
+
+          // ---------- CONTENIDO ----------
           content: Text(
             AppLocalizations.of(context)!.deleteConfirmationP,
             style: const TextStyle(fontSize: 14),
           ),
+
+          // ---------- ACCIONES (Cancelar / Eliminar) ----------
           actions: [
+
+            // Cancelar
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
                 AppLocalizations.of(context)!.cancel,
               ),
             ),
+
+            // Eliminar
             TextButton(
               onPressed: () async {
                 final provider = context.read<ProductoProvider>();
@@ -118,15 +133,26 @@ class ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE EDICION DE PRODUCTO-----------------*/
-
-  /// Muestra un cuadro de diálogo para editar un producto.
+  /// Muestra un cuadro de diálogo para editar un producto existente.
+  ///
+  /// Flujo principal:
+  /// - Carga los valores actuales del producto en los campos de texto.
+  /// - Permite modificar nombre, descripción, precio, supermercado e imagen.
+  /// - Valida los campos en tiempo real mostrando iconos de estado y mensajes de error.
+  /// - Si se selecciona una nueva imagen, se sube a Supabase y se obtiene la URL pública.
+  /// - Al confirmar, se construye un nuevo objeto [ProductoModel] actualizado.
+  /// - Se actualiza el producto en la base de datos mediante el [ProductoProvider].
+  /// - Si la operación es exitosa, se muestra un snackbar de éxito; si falla, se muestra un snackbar de error.
   ///
   /// Parámetros:
-  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
-  /// - [producto]: Objeto ProductoModel
+  /// - [context]: Contexto de la aplicación.
+  /// - [producto]: Instancia de [ProductoModel] que se desea editar.
   ///
-  /// Permite modificar el nombre, la descripción, el precio y el supermercado del producto.
-  /// Una vez confirmados los cambios, se actualiza el producto en la base de datos.
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  ///
+  /// Excepciones:
+  /// - Puede lanzar errores relacionados con la carga de imágenes o la actualización en Supabase.
   void dialogoEdicion(BuildContext context, ProductoModel producto) async {
     final TextEditingController nombreController =
     TextEditingController(text: producto.nombre);
@@ -157,12 +183,18 @@ class ProductoState extends State<Producto> {
         return StatefulBuilder(
           builder: (dialogCtx, setState) {
             return AlertDialog(
+
+              // ---------- TÍTULO ----------
               title: Text(AppLocalizations.of(context)!.editProduct),
+
+              // ---------- CONTENIDO ----------
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+
+                    // ---------- CAMPO NOMBRE ----------
                     TextField(
                       controller: nombreController,
                       decoration: InputDecoration(
@@ -186,6 +218,7 @@ class ProductoState extends State<Producto> {
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
 
+                    // ---------- CAMPO DESCRIPCIÓN ----------
                     TextField(
                       controller: descripcionController,
                       decoration: InputDecoration(
@@ -211,6 +244,7 @@ class ProductoState extends State<Producto> {
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
 
+                    // ---------- CAMPO DE PRECIO ----------
                     TextField(
                       controller: precioController,
                       decoration: InputDecoration(
@@ -236,6 +270,7 @@ class ProductoState extends State<Producto> {
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
 
+                    // ---------- SELECCIÓN SUPERMERCADO ----------
                     DropdownButtonFormField<String>(
                       value: supermercadoSeleccionado,
                       decoration: InputDecoration(
@@ -292,6 +327,7 @@ class ProductoState extends State<Producto> {
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 12),
 
+                    // ---------- SELECCIÓN DE FOTO ----------
                     Center(
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.image),
@@ -423,15 +459,25 @@ class ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
-
   /// Muestra un cuadro de diálogo para crear un nuevo producto.
   ///
-  /// Parámetros:
-  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
+  /// Flujo principal:
+  /// - Permite ingresar nombre, descripción y precio del producto.
+  /// - Permite seleccionar un supermercado existente o crear uno nuevo.
+  /// - Valida los campos en tiempo real, mostrando iconos de estado y mensajes de error.
+  /// - Da la opción de subir una imagen y almacenarla en Supabase.
+  /// - Construye un nuevo [ProductoModel] con los datos ingresados.
+  /// - Se guarda localmente y luego se intenta guardar en la base de datos.
+  /// - Se notifica al usuario con un snackbar de éxito o de error según el resultado.
   ///
-  /// Permite ingresar el nombre, la descripción y el precio del producto.
-  /// También permite seleccionar un supermercado existente o crear uno nuevo.
-  /// Una vez confirmados los datos, el producto se guarda en la base de datos.
+  /// Parámetros:
+  /// - [context]: Contexto de la aplicación.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  ///
+  /// Excepciones:
+  /// - Puede lanzar errores relacionados con la carga de imágenes o la creación en Supabase.
   void dialogoCreacion(BuildContext context) {
     final TextEditingController nombreController = TextEditingController();
     final TextEditingController descripcionController = TextEditingController();
@@ -662,6 +708,8 @@ class ProductoState extends State<Producto> {
                   ],
                 ),
               ),
+
+              // ---------- ACCIONES (Cancelar / Guardar) ----------
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
@@ -768,8 +816,9 @@ class ProductoState extends State<Producto> {
   Widget build(BuildContext context) {
     final providerProducto = context.watch<ProductoProvider>();
     final productosPorSupermercado = providerProducto.productosPorSupermercado;
-
     return Scaffold(
+
+      // ---------- APP BAR ----------
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.products,
@@ -781,6 +830,8 @@ class ProductoState extends State<Producto> {
         ),
         centerTitle: true,
       ),
+
+      // ---------- BODY ----------
       body: providerProducto.productos
           .isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS UN CIRCULO DE CARGA
           ? const Center(
@@ -800,6 +851,8 @@ class ProductoState extends State<Producto> {
                 border: Border.all(color: Colors.grey.shade600, width: 0.8),
                 borderRadius: BorderRadius.circular(10),
                 color: Colors.white),
+
+            // ---------- SECCIÓN DE SUPERMERCADO ----------
             child: ExpansionTile(
               shape: const Border(),
               collapsedShape: const Border(),
@@ -816,6 +869,8 @@ class ProductoState extends State<Producto> {
                   ),
                 ),
               ),
+
+              // ---------- LISTA DE PRODUCTOS ----------
               children: productos.map((producto) {
                 return Column(
                   children: [
@@ -830,6 +885,8 @@ class ProductoState extends State<Producto> {
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: 8,
                             ),
+
+                            // Miniatura del producto
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: AspectRatio(
@@ -842,6 +899,8 @@ class ProductoState extends State<Producto> {
                                 ),
                               ),
                             ),
+
+                            // Nombre del producto
                             title: Text(
                               producto.nombre,
                               style: const TextStyle(
@@ -849,9 +908,13 @@ class ProductoState extends State<Producto> {
                                   fontWeight: FontWeight.bold
                               ),
                             ),
+
+                            // ---------- ACCIONES (añadir / editar / eliminar) ----------
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+
+                                // Añadir a la lista de la compra
                                 IconButton(
                                   icon: const Icon(Icons.add),
                                   constraints: const BoxConstraints(
@@ -885,6 +948,8 @@ class ProductoState extends State<Producto> {
                                   },
                                   padding: EdgeInsets.zero,
                                 ),
+
+                                // Editar producto
                                 IconButton(
                                   icon: const Icon(Icons.edit),
                                   constraints: const BoxConstraints(
@@ -897,6 +962,8 @@ class ProductoState extends State<Producto> {
                                   },
                                   padding: EdgeInsets.zero,
                                 ),
+
+                                // Eliminar producto
                                 IconButton(
                                   icon: const Icon(Icons.delete),
                                   constraints: const BoxConstraints(
@@ -916,6 +983,8 @@ class ProductoState extends State<Producto> {
                         ),
                       ),
                     ),
+
+                    // Separador entre productos
                     Divider(
                       height: 1,
                       thickness: 0.8,
@@ -929,6 +998,8 @@ class ProductoState extends State<Producto> {
           );
         }).toList(),
       ),
+
+      // ---------- BOTÓN FLOTANTE ----------
       floatingActionButton: FloatingActionButton(
         // BOTON FLOTANTE PARA AÑADIR NUEVO PRODUCTO
         onPressed: () {

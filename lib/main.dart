@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
 import 'package:proyectocompras/Providers/facturaProvider.dart';
+import 'package:proyectocompras/Providers/recetaProvider.dart';
 import 'package:proyectocompras/Providers/userProvider.dart';
 import 'package:proyectocompras/View/gastos.dart';
 import 'package:proyectocompras/View/compra.dart';
@@ -42,33 +41,39 @@ void main() async {
   }
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LanguageProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider<UserProvider>.value(value: userProvider),
-        ChangeNotifierProvider(create: (_) => DetalleRecetaProvider()),
-        ChangeNotifierProvider(
-          create: (_) => ProductoProvider(
-            Supabase.instance.client,
-            uuid!,
-          )..cargarProductos(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CompraProvider(
-            Supabase.instance.client,
-            uuid!,
-          )..cargarCompra(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => FacturaProvider(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => LanguageProvider()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider<UserProvider>.value(value: userProvider),
+          ChangeNotifierProvider(create: (_) => DetalleRecetaProvider()),
+          ChangeNotifierProvider(
+            create: (_) => ProductoProvider(
               Supabase.instance.client,
-              uuid!
-          ), // AÑADIR AQUI METODO DE CARGAR FACTURAS
-        ),
-      ],
-      child: MainApp(isLoggedIn: uuid != null),
-    ),
+              uuid,
+            )..cargarProductos(),
+          ),
+          ChangeNotifierProvider(
+              create: (_) => CompraProvider(
+                Supabase.instance.client,
+                uuid,
+              )..setUserAndReload(uuid)
+          ),
+          ChangeNotifierProvider(
+              create: (_) => FacturaProvider(
+                Supabase.instance.client,
+                uuid,
+              )..setUserAndReload(uuid)
+          ),
+          ChangeNotifierProvider(
+              create: (_) => RecetaProvider(
+                Supabase.instance.client,
+                uuid,
+              )..setUserAndReload(uuid)
+          ),
+        ],
+        child: MainApp(isLoggedIn: uuid != null),
+      )
   );
 }
 
@@ -81,52 +86,185 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.light,
-          scaffoldBackgroundColor: const Color(0xFFF1F8E9),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF4CAF50),
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+      debugShowCheckedModeBanner: false,
+
+      // 🌞 Tema claro
+      theme: ThemeData(
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF4CAF50),
+          onPrimary: Colors.white,
+          onSecondary: Colors.black,
+          surface: Colors.white,
+          onSurface: Colors.black87,
+          error: Color(0xFFF44336),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF1F8E9),
+        inputDecorationTheme: InputDecorationTheme(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Colors.grey[700]!,
+              width: 0.8,
             ),
-            iconTheme: IconThemeData(color: Colors.white),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(
+              color: Color(0xFF4CAF50),
+              width: 1.6,
+            ),
+          ),
+          labelStyle: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700]!,
+          ),
+          hintStyle: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700]!,
           ),
         ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF303030),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF2C6B31),
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 2,
+            shadowColor: Colors.black,
+            side: BorderSide(
+              color: Colors.grey[700]!,
+              width: 0.2,
             ),
-            iconTheme: IconThemeData(color: Colors.white),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
-        themeMode: context.watch<ThemeProvider>().isDarkMode
-            ? ThemeMode.dark
-            : ThemeMode.light,
-        supportedLocales: const [Locale("es"), Locale("en")],
-        locale: context.watch<LanguageProvider>().locale,
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        initialRoute: isLoggedIn ? '/home' : '/login',
-        routes: {
-          '/home': (_) => const Main(),
-          '/login': (_) => const Login(),
-        },
-        home: Main());
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF4CAF50),
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        useMaterial3: true,
+      ),
+
+      // 🌚 Tema oscuro
+      darkTheme: ThemeData(
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF4CAF50),
+          onPrimary: Colors.white,
+          onSecondary: Colors.black,
+          surface: Color(0xFF1E1E1E),
+          onSurface: Colors.white70,
+          error: Color(0xFFF44336),
+          onError: Colors.white,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        inputDecorationTheme: InputDecorationTheme(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(
+              color: Colors.white38,
+              width: 0.8,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(
+              color: Colors.white54,
+              width: 0.8,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(
+              color: Color(0xFF4CAF50),
+              width: 1.6,
+            ),
+          ),
+          labelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white70,
+          ),
+          hintStyle: const TextStyle(
+            fontSize: 14,
+            color: Colors.white54,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 2,
+            shadowColor: Colors.black,
+            side: const BorderSide(
+              color: Colors.white24,
+              width: 0.8,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF2C6B31),
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        useMaterial3: true,
+      ),
+
+      themeMode: context.watch<ThemeProvider>().isDarkMode
+          ? ThemeMode.dark
+          : ThemeMode.light,
+
+      supportedLocales: const [Locale("es"), Locale("en")],
+      locale: context.watch<LanguageProvider>().locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      initialRoute: isLoggedIn ? '/home' : '/login',
+      routes: {
+        '/home': (_) => const Main(),
+        '/login': (_) => const Login(),
+      },
+    );
   }
 }
+
 
 /*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
@@ -148,10 +286,10 @@ class MainState extends State<Main> {
     // INICIALIZAMOS LAS PAGINAS AQUI, PARA QUE NO DE ERROR EL WIDGET.DATABASE
     pages = [
       //DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
-      Producto(),
-      Compra(),
-      Gastos(),
-      Recetas(),
+      const Producto(),
+      const Compra(),
+      const Gastos(),
+      const Recetas(),
     ];
   }
 
@@ -160,24 +298,24 @@ class MainState extends State<Main> {
     // CREAMOS LA VARIABLE AQUI, PORQUE COMO VA A TENER UN .watch NECESITA ESTAR DENTRO DE UN build.
     final bottomNavColors = context.watch<ThemeProvider>().isDarkMode
         ? {
-            "background": const Color(0xFF424242),
-            "selectedItem": const Color(0xFF81C784),
-            "unselectedItem": const Color(0xFF757575),
-          }
+      "background": const Color(0xFF424242),
+      "selectedItem": const Color(0xFF81C784),
+      "unselectedItem": const Color(0xFF757575),
+    }
         : {
-            "background": const Color(0xFFE8F5E9),
-            "selectedItem": const Color(0xFF388E3C),
-            "unselectedItem": const Color(0xFFA5D6A7),
-          };
+      "background": const Color(0xFFE8F5E9),
+      "selectedItem": const Color(0xFF388E3C),
+      "unselectedItem": const Color(0xFFA5D6A7),
+    };
 
     String languageSelected = "en";
 
     List<DropdownMenuItem> language = [
-      DropdownMenuItem(
+      const DropdownMenuItem(
         value: "en",
         child: Text("English"),
       ),
-      DropdownMenuItem(
+      const DropdownMenuItem(
         value: "es",
         child: Text("Español"),
       ),
@@ -214,14 +352,22 @@ class MainState extends State<Main> {
 
                 final userProvider = context.read<UserProvider>();
                 userProvider.setUuid(null);
+
                 // Cerrar sesión en Supabase (opcional)
                 await Supabase.instance.client.auth.signOut();
+
+                // 🔹 Limpias todos los providers
+                context.read<ProductoProvider>().setUserAndReload(null);
+                context.read<CompraProvider>().setUserAndReload(null);
+                context.read<FacturaProvider>().setUserAndReload(null);
+                context.read<RecetaProvider>().setUserAndReload(null);
 
                 // Ir a login
                 if (context.mounted) {
                   Navigator.pushReplacementNamed(context, '/login');
                 }
               },
+
             ),
           ],
         ),
@@ -231,7 +377,7 @@ class MainState extends State<Main> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.blue,
               ),
               child: Text(AppLocalizations.of(context)!.menuSettings),
@@ -252,7 +398,7 @@ class MainState extends State<Main> {
                           .setLocale(Locale("$value"));
                     },
                     value:
-                        context.watch<LanguageProvider>().locale.languageCode)),
+                    context.watch<LanguageProvider>().locale.languageCode)),
             SwitchListTile(
               title: Text(AppLocalizations.of(context)!.darkTheme),
               value: context.watch<ThemeProvider>().isDarkMode,
@@ -299,7 +445,7 @@ class MainState extends State<Main> {
         currentIndex: selectedIndex,
         // INDICE EN EL QUE HACEMOS CLICK
         onTap:
-            _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
+        _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
       ),
     );
   }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/compraModel.dart';
 import '../models/productoModel.dart';
-import '../utils/capitalize.dart';
 
 class DuplicateProductException implements Exception {}
 
@@ -21,6 +20,7 @@ class CompraProvider extends ChangeNotifier {
 
   CompraProvider(this.database, this.userId);
 
+  /// METODO PARA MARCAR O DESMARCAR UN PRODUCTO
   void alternarMarcado(CompraModel producto) {
     producto.marcado = producto.marcado == 1 ? 0 : 1;
 
@@ -32,6 +32,7 @@ class CompraProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
   /// METODO PARA ESTABLECER EL USUARIO Y CARGAR SUS DATOS
   Future<void> setUserAndReload(String? uuid) async {
     userId = uuid;
@@ -43,7 +44,24 @@ class CompraProvider extends ChangeNotifier {
     await cargarCompra();
   }
 
-  /// CARGA LOS PRODUCTOS DE LA COMPRA Y LOS AGRUPA POR SUPERMERCADO
+  /// Carga la lista de compras del usuario desde la base de datos y actualiza el estado local.
+  ///
+  /// Flujo principal:
+  /// - Consulta la tabla `compra` en la base de datos, incluyendo la relación con `productos(supermercado)`,
+  ///   filtrando por el [userId].
+  /// - Inicializa las estructuras locales (`_compras`, `comprasAgrupadas`, `precioTotalCompra`).
+  /// - Convierte los resultados en instancias de [CompraModel] y los guarda en la lista local.
+  /// - Ordena las compras mediante [ordenarCompras].
+  /// - Agrupa las compras por supermercado, asegurando nueva referencia del `Map` en cada iteración
+  ///   para forzar la recarga en la UI.
+  /// - Calcula el precio total de la compra sumando los productos marcados.
+  /// - Notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Retorna:
+  /// - `Future<void>` (operación asincrónica sin valor de retorno).
+  ///
+  /// Excepciones:
+  /// - Puede lanzar errores si falla la consulta a la base de datos o la conversión de datos.
   Future<void> cargarCompra() async {
     final response = await database
         .from('compra')
@@ -81,6 +99,22 @@ class CompraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+
+  /// Incrementa en 1 la cantidad de un producto en la lista de compras.
+  ///
+  /// Flujo principal:
+  /// - Recorre todas las listas agrupadas por supermercado en [comprasAgrupadas].
+  /// - Busca el producto cuyo [idProducto] coincida.
+  /// - Si se encuentra, incrementa su cantidad en 1.
+  /// - Si el producto está marcado (`marcado == 1`), también incrementa el [precioTotalCompra].
+  /// - Si no se encuentra en esa lista, se ignora sin lanzar error.
+  /// - Al final, se notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Parámetros:
+  /// - [idProducto]: Identificador del producto cuya cantidad se incrementará.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
   void sumar1Cantidad(int idProducto) {
     comprasAgrupadas.forEach((key, list) {
       try {
@@ -96,6 +130,21 @@ class CompraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Decrementa en 1 la cantidad de un producto en la lista de compras.
+  ///
+  /// Flujo principal:
+  /// - Recorre todas las listas agrupadas por supermercado en [comprasAgrupadas].
+  /// - Busca el producto cuyo [idProducto] coincida.
+  /// - Si se encuentra y su cantidad es mayor a 1, la decrementa en 1.
+  /// - Si el producto está marcado (`marcado == 1`), también decrementa el [precioTotalCompra].
+  /// - Si no se encuentra en esa lista, se ignora sin lanzar error.
+  /// - Al final, se notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Parámetros:
+  /// - [idProducto]: Identificador del producto cuya cantidad se decrementará.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
   void restar1Cantidad(int idProducto) {
     comprasAgrupadas.forEach((key, list) {
       try {
@@ -113,6 +162,7 @@ class CompraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// DESMARCA LOS PRODUCTOS Y PONE LAS CANTIDADES A 1
   Future<void> resetearProductosListaCompra() async {
     try {
       await database.rpc('resetear_productos_lista_compra', params: {
@@ -124,9 +174,30 @@ class CompraProvider extends ChangeNotifier {
     }
   }
 
+  /// Elimina un producto de la compra en la base de datos y actualiza el estado local.
+  ///
+  /// Flujo principal:
+  /// - Busca el producto en la lista local de [_compras] a partir de su [idProducto].
+  /// - Aplica una eliminación optimista mediante [eliminarProductoLocal],
+  ///   quitando el producto de la lista local antes de confirmar con la base de datos.
+  /// - Intenta eliminar el registro en la tabla `compra` de la base de datos,
+  ///   filtrando por `idproducto` y [userId].
+  /// - Si la operación en la base de datos falla:
+  ///   - Restaura el producto eliminado en la lista local con [addProductoLocal].
+  ///   - Muestra un log del error y relanza la excepción para que el llamador la maneje.
+  ///
+  /// Parámetros:
+  /// - [idProducto]: Identificador del producto a eliminar.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  ///
+  /// Excepciones:
+  /// - Relanza cualquier error producido durante la operación con la base de datos.
   Future<void> deleteProducto(int idProducto) async {
+    final eliminado = _compras.firstWhere((p) => p.idProducto == idProducto);
 
-    eliminarProductoLocal(idProducto);
+    eliminarProductoLocal(idProducto); // optimistic update
 
     try {
       await database
@@ -135,15 +206,33 @@ class CompraProvider extends ChangeNotifier {
           .eq('idproducto', idProducto)
           .eq('usuariouuid', userId!);
     } catch (e) {
-      debugPrint("Error al eliminar producto: $e");
-      await cargarCompra();
+      addProductoLocal(eliminado);
+      debugPrint("❌ Error al eliminar producto: $e");
+      rethrow;
     }
   }
 
+  /// Elimina un producto de la lista local de compras (sin tocar la base de datos).
+  ///
+  /// Flujo principal:
+  /// - Busca el producto en la lista principal de [_compras] a partir de su [idProducto].
+  /// - Si no existe, finaliza sin hacer nada.
+  /// - Si existe:
+  ///   - Lo elimina de la lista principal [_compras].
+  ///   - Lo elimina también de la lista agrupada [comprasAgrupadas] por supermercado.
+  ///   - Si el supermercado queda vacío, elimina la clave correspondiente del mapa.
+  ///   - Si el producto estaba marcado, descuenta su precio total del [precioTotalCompra].
+  /// - Finalmente, notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Parámetros:
+  /// - [idProducto]: Identificador del producto a eliminar.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
   void eliminarProductoLocal(int idProducto) {
     // BUSCAMOS EL INDICE Y GUARDAMOS EL PRODUCTO
     final index = _compras.indexWhere((p) => p.idProducto == idProducto);
-    if (index == -1) return; // No existe
+    if (index == -1) return;
     final productoBackup = _compras[index];
 
     // ELIMINAMOS LOCALMENTE DE LA LISTA PRINCIPAL
@@ -166,6 +255,56 @@ class CompraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Agrega un producto a la lista local de compras (sin tocar la base de datos).
+  ///
+  /// Flujo principal:
+  /// - Inserta el producto en la lista principal [_compras].
+  /// - Ordena la lista completa mediante [ordenarCompras].
+  /// - Inserta el producto también en la lista agrupada [comprasAgrupadas] según su supermercado:
+  ///   - Si no existe la clave del supermercado, la crea.
+  ///   - Duplica la lista para forzar nueva referencia y refrescar la UI.
+  /// - Si el producto está marcado, suma su precio al [precioTotalCompra].
+  /// - Finalmente, notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Parámetros:
+  /// - [compra]: Instancia de [CompraModel] a agregar.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  void addProductoLocal(CompraModel compra) {
+    _compras.add(compra);
+    ordenarCompras(_compras);
+
+    comprasAgrupadas = Map.from(comprasAgrupadas);
+    comprasAgrupadas.putIfAbsent(compra.supermercado, () => <CompraModel>[]);
+    comprasAgrupadas[compra.supermercado] = List<CompraModel>.from(
+      comprasAgrupadas[compra.supermercado]!,
+    )..add(compra);
+
+    if (compra.marcado == 1) {
+      precioTotalCompra += compra.precio * compra.cantidad;
+    }
+
+    notifyListeners();
+  }
+
+  /// Actualiza el precio total al eliminar un producto de la compra y ajusta la lista agrupada.
+  ///
+  /// Flujo principal:
+  /// - Resta del [precioTotalCompra] el importe del producto eliminado (`precio * cantidad`).
+  /// - Recorre las listas agrupadas por supermercado en [comprasAgrupadas].
+  ///   - Si encuentra el producto, lo elimina de la lista correspondiente.
+  ///   - Si tras la eliminación la lista queda vacía, marca el supermercado para ser eliminado.
+  /// - Si algún supermercado queda vacío, elimina la clave del mapa.
+  /// - Finalmente, notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Parámetros:
+  /// - [idProducto]: Identificador del producto eliminado.
+  /// - [precio]: Precio unitario del producto.
+  /// - [cantidad]: Cantidad del producto que se elimina.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
   void actualizarPrecio(int idProducto, double precio, int cantidad) {
     // RESTAMOS EL PRECIO DEL PRODUCTO ELIMINADO
     precioTotalCompra -= precio * cantidad;
@@ -190,12 +329,32 @@ class CompraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> agregarACompra(
-      int idProducto,
-      double precio,
-      String nombre,
-      String supermercado,
-      ) async {
+  /// Agrega un producto a la tabla `compra` en la base de datos y a la lista local.
+  ///
+  /// Flujo principal:
+  /// - Consulta en la base de datos si el producto ya existe en la tabla `compra`
+  ///   filtrando por [idProducto] y [userId].
+  /// - Si el producto ya está en la compra, lanza una [DuplicateProductException].
+  /// - Si no existe:
+  ///   - Inserta un nuevo registro en la base de datos con los datos del producto.
+  ///   - Crea una instancia local de [CompraModel] con cantidad inicial = 1 y marcado = 0.
+  ///   - Lo agrega a la lista principal [_compras].
+  ///   - Lo agrega también a la lista agrupada [comprasAgrupadas] según su supermercado.
+  /// - Finalmente, notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Parámetros:
+  /// - [idProducto]: Identificador del producto a agregar.
+  /// - [precio]: Precio unitario del producto.
+  /// - [nombre]: Nombre del producto.
+  /// - [supermercado]: Nombre del supermercado al que pertenece.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  ///
+  /// Excepciones:
+  /// - [DuplicateProductException] si el producto ya existe en la compra.
+  /// - Relanza cualquier error inesperado durante la operación con la base de datos.
+  Future<void> agregarACompra(int idProducto, double precio, String nombre, String supermercado,) async {
     try {
       final productosExistentes = await database
           .from('compra')
@@ -239,6 +398,27 @@ class CompraProvider extends ChangeNotifier {
     }
   }
 
+  /// Actualiza la información de un producto en la lista local de compras.
+  ///
+  /// Flujo principal:
+  /// - Busca en la lista principal [_compras] el producto cuyo [idProducto] coincida
+  ///   con el del [productoActualizado].
+  /// - Si no existe, termina sin hacer nada.
+  /// - Si existe:
+  ///   - Crea una nueva instancia de [CompraModel] con los datos actualizados
+  ///     (nombre, precio, supermercado), manteniendo la cantidad y marcado previos.
+  ///   - Reemplaza el producto en la lista principal [_compras].
+  ///   - Elimina la versión anterior de [comprasAgrupadas].
+  ///   - Si el supermercado antiguo queda vacío, elimina su clave del mapa.
+  ///   - Inserta el producto actualizado en la lista agrupada correspondiente a su nuevo supermercado.
+  ///   - Ordena las compras mediante [ordenarCompras].
+  /// - Finalmente, notifica a los listeners para refrescar la interfaz.
+  ///
+  /// Parámetros:
+  /// - [productoActualizado]: Instancia de [ProductoModel] con los nuevos datos.
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
   void actualizarProductoEnCompraLocal(ProductoModel productoActualizado) {
     final index =
     _compras.indexWhere((c) => c.idProducto == productoActualizado.id);
