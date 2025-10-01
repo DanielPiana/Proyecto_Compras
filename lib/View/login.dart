@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../Providers/compraProvider.dart';
+import '../Providers/facturaProvider.dart';
+import '../Providers/productoProvider.dart';
+import '../Providers/recetaProvider.dart';
 import '../Providers/userProvider.dart';
-import '../main.dart';
+import '../Widgets/awesomeSnackbar.dart';
+import '../l10n/app_localizations.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -27,58 +32,127 @@ class _LoginScreenState extends State<Login> {
     });
 
     final email = emailController.text.trim();
-    final password = passwordController.text;
+    final password = passwordController.text.trim();
 
     try {
-      // Intentar iniciar sesión
+      // INTENTO DE INICIO DE SESION
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      // Si funciona, guardar UUID y continuar
+      // SI FUNCIONA, GUARDAMOS USUARIO
       if (response.user != null) {
-        await guardarUUID(response.user!.id);
-        context.read<UserProvider>().setUuid(response.user!.id);
+        final uid = response.user!.id;
+
+        await guardarUUID(uid);
+        context.read<UserProvider>().setUuid(uid);
+
+        // RECARGAMOS LOS PROVIDERS
+        await context.read<ProductoProvider>().setUserAndReload(uid);
+        await context.read<CompraProvider>().setUserAndReload(uid);
+        await context.read<FacturaProvider>().setUserAndReload(uid);
+        await context.read<RecetaProvider>().setUserAndReload(uid);
+
+        if (!mounted) return;
+
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.success,
+          message: AppLocalizations.of(context)!.login_try_ok,
+          contentType: asc.ContentType.success,
+        );
+
         Navigator.pushReplacementNamed(context, '/home');
         return;
       }
     } catch (e) {
-      // Si falla, intentar registrar el usuario
-      try {
-        final signUp = await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password,
-        );
+      final errorMsg = e.toString();
 
-        final user = signUp.user;
-        if (user != null) {
-          final usuarioUUID = user.id;
-          final fechaCreacion = DateTime.now().toIso8601String();
-
-          // Insertar en tabla usuario
-          await Supabase.instance.client.from('usuario').insert({
-            'usuariouuid': usuarioUUID,
-            'nombreusuario': email.split('@').first,
-            'correo': email,
-            'fechacreacion': fechaCreacion,
-          });
-
-          await guardarUUID(usuarioUUID);
-          context.read<UserProvider>().setUuid(usuarioUUID);
-          Navigator.pushReplacementNamed(context, '/home');
-          return;
+      if (errorMsg.contains("Invalid login credentials")) {
+        // EL CORREO EXISTE PERO LA CONTRASEÑA NO COINCIDE
+        if (mounted) {
+          showAwesomeSnackBar(
+            context,
+            title: AppLocalizations.of(context)!.error,
+            message: AppLocalizations.of(context)!.login_try_error,
+            contentType: asc.ContentType.failure,
+          );
         }
-      } catch (e) {
-        setState(() => error = 'Error al registrar: $e');
+      } else if (errorMsg.contains("User not found") ||
+          errorMsg.contains("Email not confirmed") ||
+          errorMsg.contains("Invalid login credentials")) {
+        // INTENTAMOS REGISTRAR SI EL USUARIO NO EXISTE
+        try {
+          final signUp = await Supabase.instance.client.auth.signUp(
+            email: email,
+            password: password,
+          );
+
+          final user = signUp.user;
+
+          if (user != null) {
+            final usuarioUUID = user.id;
+            final fechaCreacion = DateTime.now().toIso8601String();
+
+            // INSERTAMOS EL USUARIO
+            await Supabase.instance.client.from('usuario').insert({
+              'usuariouuid': usuarioUUID,
+              'nombreusuario': email.split('@').first,
+              'correo': email,
+              'fechacreacion': fechaCreacion,
+            });
+
+            // ESTABLECEMOS EL USUARIO LOGEADO Y RESETEAMOS PROVEEDORES
+            await guardarUUID(usuarioUUID);
+            context.read<UserProvider>().setUuid(usuarioUUID);
+
+            if (mounted) {
+              showAwesomeSnackBar(
+                context,
+                title: AppLocalizations.of(context)!.success,
+                message: AppLocalizations.of(context)!.register_try_ok,
+                contentType: asc.ContentType.success,
+              );
+            }
+
+            // LE MANDAMOS A LA PESTAÑA PRINCIPAL
+            if (!mounted) return;
+            Navigator.pushReplacementNamed(context, '/home');
+            return;
+          }
+        } catch (signupError) {
+          // ERROR AL REGISTRAR
+          if (mounted) {
+            showAwesomeSnackBar(
+              context,
+              title: AppLocalizations.of(context)!.error,
+              message:
+              '${AppLocalizations.of(context)!.register_try_error} $signupError',
+              contentType: asc.ContentType.failure,
+            );
+          }
+        }
+      } else {
+        // ERROR GENÉRICO
+        if (mounted) {
+          showAwesomeSnackBar(
+            context,
+            title: AppLocalizations.of(context)!.error,
+            message: AppLocalizations.of(context)!.unknown_error,
+            contentType: asc.ContentType.failure,
+          );
+          print("Error: $errorMsg");
+        }
       }
     }
 
     setState(() {
       isLoading = false;
-      if (error.isEmpty) error = 'Usuario o contraseña incorrectos';
     });
   }
+
+
 
   Future<void> guardarUUID(String uuid) async {
     final prefs = await SharedPreferences.getInstance();
@@ -88,26 +162,27 @@ class _LoginScreenState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Iniciar Sesión o Registrarse')),
+      appBar: AppBar(title:Text(AppLocalizations.of(context)!.register_or_login)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(labelText: 'Correo'),
+              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.mail),
             ),
+            const SizedBox(height: 10),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
+              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.password),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: isLoading ? null : loginORegistro,
               child: isLoading
                   ? const CircularProgressIndicator()
-                  : const Text('Entrar / Registrar'),
+                  : Text(AppLocalizations.of(context)!.login_register),
             ),
             if (error.isNotEmpty) ...[
               const SizedBox(height: 20),

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../Providers/facturaProvider.dart';
 import '../Providers/userProvider.dart';
+import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
 class Gastos extends StatefulWidget {
-
   const Gastos({super.key});
 
   @override
@@ -14,77 +15,15 @@ class Gastos extends StatefulWidget {
 }
 
 class GastosState extends State<Gastos> {
-
   SupabaseClient database = Supabase.instance.client;
-
-  // LISTA PARA ALMACENAR LAS FACTURAS AGRUPADAS POR FECHA Y ID
-  Map<String, List<Map<String, dynamic>>> facturasAgrupadas = {};
 
   @override
   void initState() {
     super.initState();
-    final userId = context.read<UserProvider>().uuid;
-    // CARGAMOS LAS FACTURAS AL ABRIR LA PAGINA
-    cargarFacturas();
-
   }
-  /// Carga las facturas desde la base de datos y agrupa los productos por id.
-  ///
-  /// Realiza una consulta a la base de datos para obtener todas las facturas ordenadas
-  /// por id en orden descendente. Luego, para cada factura, se realiza una segunda
-  /// consulta para obtener todos los productos asociados a dicha factura. Los productos
-  /// se agrupan utilizando una clave única que combina la fecha y el ID de la factura.
-  /// Si una factura no tiene fecha, se asigna el valor "Sin fecha".
-  ///
-  /// Los productos de cada factura se almacenan en un mapa, donde la clave es la combinación
-  /// de la fecha y el ID de la factura, y el valor es una lista de los productos correspondientes
-  /// a esa factura.
-  ///
-  /// Finalmente, se actualiza el estado de la interfaz con las facturas agrupadas y sus productos.
-  ///
-  /// Este proceso de carga y agrupación es asincrónico y se realiza de manera eficiente para
-  /// evitar bloquear la interfaz de usuario mientras se obtiene la información de la base de datos.
-  Future<void> cargarFacturas() async {
-    try {
-      final facturas = await database
-          .from('facturas')
-          .select()
-          .eq('usuariouuid', context.read<UserProvider>().uuid!)
-          .order('id', ascending: false);
-
-      Map<String, List<Map<String, dynamic>>> agrupados = {};
-
-      for (var factura in facturas) {
-        final idFactura = factura['id'];
-        final fecha = (factura['fecha'] ?? 'Sin fecha').toString();
-
-        final productos = await database
-            .from('producto_factura')
-            .select('cantidad, preciounidad, productos(nombre)')
-            .eq('idfactura', idFactura);
-
-        final productosList = (productos as List).map<Map<String, dynamic>>((item) {
-          return {
-            'nombre': item['productos']['nombre'],
-            'cantidad': item['cantidad'],
-            'preciounidad': item['preciounidad'],
-          };
-        }).toList();
-
-        agrupados['$fecha-$idFactura'] = productosList;
-      }
-
-      setState(() {
-        facturasAgrupadas = agrupados;
-      });
-    } catch (e) {
-      debugPrint('Error al cargar facturas: $e');
-    }
-  }
-
-
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
+
   /// Muestra un cuadro de diálogo de confirmación para la eliminación de una factura.
   ///
   /// Este método muestra un 'AlertDialog' en el que se le pregunta al usuario si está
@@ -99,155 +38,185 @@ class GastosState extends State<Gastos> {
   void dialogoEliminacion(BuildContext context, int idFactura) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text( // TITULO DE LA ALERTA
+          title: Text(
             AppLocalizations.of(context)!.titleConfirmDialog,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          content:  Text(
+          content: Text(
             AppLocalizations.of(context)!.deleteConfirmationR,
-            style: TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: 16),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                // CERRAMOS EL DIALOGO
-                Navigator.of(context).pop();
-              },
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
                 AppLocalizations.of(context)!.cancel,
-                style: TextStyle(color: Colors.grey),
               ),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
-                // BORRAMOS LA FACTURA
-                await borrarFactura(idFactura);
-                await cargarFacturas();
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
+                try {
+                  await context.read<FacturaProvider>().borrarFactura(
+                    idFactura,
+                    context.read<UserProvider>().uuid!,
+                  );
+                  showAwesomeSnackBar(
+                    context,
+                    title: AppLocalizations.of(context)!.success,
+                    message: AppLocalizations.of(context)!.receipt_deleted_ok,
+                    contentType: asc.ContentType.success,
+                  );
+                } catch (e) {
+                  showAwesomeSnackBar(
+                    context,
+                    title: 'Error',
+                    message:
+                    AppLocalizations.of(context)!.receipt_deleted_error,
+                    contentType: asc.ContentType.failure,
+                  );
+                }
               },
               child: Text(
                 AppLocalizations.of(context)!.delete,
-                style: TextStyle(color: Colors.red),
+                style: const TextStyle(color: Colors.red),
               ),
-            ),
+            )
           ],
         );
       },
     );
   }
 
-  /// Elimina un producto de la base de datos según su ID.
-  ///
-  /// Si el producto existe en la tabla 'productos' con el ID proporcionado se elimina
-  ///
-  /// Parámetros:
-  /// - [id]: ID único de la factura a eliminar.
-  Future<void> borrarFactura(int idFactura) async {
-    try {
-      // Primero borramos los productos asociados a la factura
-      await database
-          .from('producto_factura')
-          .delete()
-          .eq('idfactura', idFactura);
-
-      // Luego borramos la factura en sí
-      await database
-          .from('facturas')
-          .delete()
-          .eq('id', idFactura)
-          .eq('usuariouuid', context.read<UserProvider>().uuid!);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Factura eliminada correctamente')),
-      );
-    } catch (e) {
-      debugPrint('Error al borrar factura: $e');
-    }
-  }
-
-
-
   @override
   Widget build(BuildContext context) {
+    final facturas = context.watch<FacturaProvider>().facturas;
     return Scaffold(
       appBar: AppBar(
-        title: Text((AppLocalizations.of(context)!.receipt)), // TÍTULO DEL AppBar
+        title: Text(
+          AppLocalizations.of(context)!.receipt,
+          style: const TextStyle(
+            fontSize: 30,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
-      // SI NO HAY FACTURAS MOSTRAMOS UN MENSAJE
-      body: facturasAgrupadas.isEmpty
-          ? const Center(
-        child: CircularProgressIndicator()
-      )
-          : ListView(
-        // MAPEAMOS LAS FACTURAS AGRUPADAS
-        children: facturasAgrupadas.entries.map((entry) {
-          // DIVIDIMOS LA CLAVE ÚNICA PARA OBTENER FECHA E ID
-          final clave = entry.key.split('-'); // DIVIDIMOS EN [FECHA, ID]
-          final fecha = clave[0]; // PRIMERA PARTE: FECHA
-          final idFactura = clave[1]; // SEGUNDA PARTE: ID FACTURA
-          final productos = entry.value; // LISTA DE PRODUCTOS DE ESA FACTURA
-
-          // CALCULAMOS EL PRECIO TOTAL DE LA FACTURA
-          double precioTotal = 0;
-          for (var producto in productos) {
-            precioTotal += producto['preciounidad'] * producto['cantidad'];
-          }
-
-          return ExpansionTile( // 'CARPETAS'
-            // MOSTRAMOS EL ID JUNTO CON LA FECHA
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  fecha,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+      body: facturas.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: facturas.length,
+        itemBuilder: (context, index) {
+          final factura = facturas[index];
+          final double precioTotal = factura.productos.fold(
+            0.0,
+                (sum, p) => sum + (p.precioUnidad * p.cantidad),
+          );
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade600, width: 0.8),
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.white),
+            child: ExpansionTile(
+              shape: const Border(),
+              collapsedShape: const Border(),
+              title: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 48,
                 ),
-                IconButton(
-                  onPressed: () {
-                    dialogoEliminacion(context, int.parse(idFactura));
-                  },
-                  icon: const Icon(Icons.delete),
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      factura.fecha,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 35,
+                        minHeight: 35,
+                      ),
+                      onPressed: () {
+                        dialogoEliminacion(context, factura.id!);
+                      },
+                      icon: const Icon(Icons.delete),
+                      iconSize: 22,
+                      color: Colors.red.shade400,
+                    ),
+                  ],
+                ),
+              ),
+              children: [
+                ...factura.productos.map((producto) {
+                  return Column(
+                    children: [
+                      SizedBox(
+                        height: 75,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                          ),
+                          child: Center(
+                            child: ListTile(
+                              title: Text(producto.nombre,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${AppLocalizations.of(context)!.quantity}${producto.cantidad}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              trailing: Text(
+                                '\$${producto.precioUnidad.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontSize: 15
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Divider(
+                        height: 1,
+                        thickness: 0.8,
+                        indent: 16,
+                        color: Colors.grey.shade400,
+                      ),
+                    ],
+                  );
+                }),
+                ListTile(
+                  title: Text(
+                    AppLocalizations.of(context)!.totalPrice,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: Text(
+                    '\$${precioTotal.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 20,
+                    ),
+                  ),
                 ),
               ],
             ),
-            // MAPEAMOS LA LISTA DE PRODUCTOS PARA QUE CREE UN ListTile POR CADA PRODUCTO
-            children: [
-              ...productos.map((producto) {
-                return ListTile(
-                  title: Text(producto['nombre']),
-                  subtitle: Text('${AppLocalizations.of(context)!.quantity}: ${producto['cantidad']}'),
-                  trailing: Text( // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                    '\$${producto['preciounidad'].toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                );
-              }).toList(),
-              ListTile(
-                title: Text(
-                  AppLocalizations.of(context)!.totalPrice,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                trailing: Text(
-                  '\$${precioTotal.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 20
-                  ),
-                ),
-              ),
-            ],
           );
-        }).toList(),
+        },
       ),
     );
   }

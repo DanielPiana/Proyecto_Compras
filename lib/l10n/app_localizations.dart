@@ -63,7 +63,7 @@ import 'app_localizations_es.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -86,16 +86,16 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('es')
+    Locale('es'),
   ];
 
   /// No description provided for @totalMarked.
@@ -284,12 +284,6 @@ abstract class AppLocalizations {
   /// **'Error al añadir producto a la lista de compra:'**
   String get snackBarErrorAddingProduct;
 
-  /// No description provided for @snackBarAddedReceipt.
-  ///
-  /// In es, this message translates to:
-  /// **'Factura generada'**
-  String get snackBarAddedReceipt;
-
   /// No description provided for @snackBarReceiptQuantityError.
   ///
   /// In es, this message translates to:
@@ -301,6 +295,462 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Cantidad: '**
   String get quantity;
+
+  /// No description provided for @select_photo.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar foto'**
+  String get select_photo;
+
+  /// No description provided for @register_or_login.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar Sesión o Registrarse'**
+  String get register_or_login;
+
+  /// No description provided for @login_register.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrar / Registrar'**
+  String get login_register;
+
+  /// No description provided for @new_recipe.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva receta'**
+  String get new_recipe;
+
+  /// No description provided for @lessThan15.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos de 15 minutos'**
+  String get lessThan15;
+
+  /// No description provided for @lessThan30.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos de 30 minutos'**
+  String get lessThan30;
+
+  /// No description provided for @lessThan45.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos de 45 minutos'**
+  String get lessThan45;
+
+  /// No description provided for @lessThan1h.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos de 1 hora'**
+  String get lessThan1h;
+
+  /// No description provided for @lessThan1h30.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos de 1hora y 30 minutos'**
+  String get lessThan1h30;
+
+  /// No description provided for @lessThan2h.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos de 2 horas'**
+  String get lessThan2h;
+
+  /// No description provided for @moreThan2h.
+  ///
+  /// In es, this message translates to:
+  /// **'Más de 2 horas'**
+  String get moreThan2h;
+
+  /// No description provided for @estimated_time.
+  ///
+  /// In es, this message translates to:
+  /// **'Tiempo estimado'**
+  String get estimated_time;
+
+  /// No description provided for @share.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir'**
+  String get share;
+
+  /// No description provided for @time.
+  ///
+  /// In es, this message translates to:
+  /// **'Tiempo'**
+  String get time;
+
+  /// No description provided for @select_products.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona productos'**
+  String get select_products;
+
+  /// No description provided for @no_description.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin descripción'**
+  String get no_description;
+
+  /// No description provided for @close.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar'**
+  String get close;
+
+  /// No description provided for @edit_name.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar nombre'**
+  String get edit_name;
+
+  /// No description provided for @new_name.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo nombre'**
+  String get new_name;
+
+  /// No description provided for @save_changes.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Guardar cambios?'**
+  String get save_changes;
+
+  /// No description provided for @changes_confirmation.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienes cambios sin guardar. ¿Qué deseas hacer?'**
+  String get changes_confirmation;
+
+  /// No description provided for @no_save_exit.
+  ///
+  /// In es, this message translates to:
+  /// **'Salir sin guardar'**
+  String get no_save_exit;
+
+  /// No description provided for @save_exit.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar y salir'**
+  String get save_exit;
+
+  /// No description provided for @first_time_step.
+  ///
+  /// In es, this message translates to:
+  /// **'Para añadir tu primer paso haz click aquí'**
+  String get first_time_step;
+
+  /// No description provided for @link_products.
+  ///
+  /// In es, this message translates to:
+  /// **'Vincular productos'**
+  String get link_products;
+
+  /// No description provided for @no_linked_products.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay productos asociados'**
+  String get no_linked_products;
+
+  /// No description provided for @change_photo.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar foto'**
+  String get change_photo;
+
+  /// No description provided for @edit_step.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar paso'**
+  String get edit_step;
+
+  /// No description provided for @fill_fields.
+  ///
+  /// In es, this message translates to:
+  /// **'Por favor, completa todos los campos'**
+  String get fill_fields;
+
+  /// No description provided for @step_title.
+  ///
+  /// In es, this message translates to:
+  /// **'Título del paso'**
+  String get step_title;
+
+  /// No description provided for @step_description.
+  ///
+  /// In es, this message translates to:
+  /// **'Descripción del paso'**
+  String get step_description;
+
+  /// No description provided for @save_step.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar paso'**
+  String get save_step;
+
+  /// No description provided for @step.
+  ///
+  /// In es, this message translates to:
+  /// **'Paso'**
+  String get step;
+
+  /// No description provided for @title.
+  ///
+  /// In es, this message translates to:
+  /// **'Título'**
+  String get title;
+
+  /// No description provided for @add_step.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir paso'**
+  String get add_step;
+
+  /// No description provided for @delete_step.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar paso'**
+  String get delete_step;
+
+  /// No description provided for @previous.
+  ///
+  /// In es, this message translates to:
+  /// **'Anterior'**
+  String get previous;
+
+  /// No description provided for @next.
+  ///
+  /// In es, this message translates to:
+  /// **'Siguiente'**
+  String get next;
+
+  /// No description provided for @finish.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizar'**
+  String get finish;
+
+  /// No description provided for @product_deleted_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Producto eliminado correctamente'**
+  String get product_deleted_ok;
+
+  /// No description provided for @product_deleted_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al eliminar producto'**
+  String get product_deleted_error;
+
+  /// No description provided for @success.
+  ///
+  /// In es, this message translates to:
+  /// **'Éxito'**
+  String get success;
+
+  /// No description provided for @product_updated_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Producto actualizado correctamente'**
+  String get product_updated_ok;
+
+  /// No description provided for @product_updated_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error actualizando producto'**
+  String get product_updated_error;
+
+  /// No description provided for @product_created_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Producto creado correctamente'**
+  String get product_created_ok;
+
+  /// No description provided for @product_created_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error creando producto'**
+  String get product_created_error;
+
+  /// No description provided for @warning.
+  ///
+  /// In es, this message translates to:
+  /// **'Aviso'**
+  String get warning;
+
+  /// No description provided for @name_error_message.
+  ///
+  /// In es, this message translates to:
+  /// **'El nombre es obligatorio'**
+  String get name_error_message;
+
+  /// No description provided for @description_error_message.
+  ///
+  /// In es, this message translates to:
+  /// **'La descripción es obligatoria'**
+  String get description_error_message;
+
+  /// No description provided for @price_error_message.
+  ///
+  /// In es, this message translates to:
+  /// **'El precio debe ser un número válido'**
+  String get price_error_message;
+
+  /// No description provided for @supermarket_error_message.
+  ///
+  /// In es, this message translates to:
+  /// **'Debes seleccionar un supermercado'**
+  String get supermarket_error_message;
+
+  /// No description provided for @receipt_deleted_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Factura eliminada correctamente'**
+  String get receipt_deleted_ok;
+
+  /// No description provided for @receipt_deleted_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al eliminar factura'**
+  String get receipt_deleted_error;
+
+  /// No description provided for @receipt_created_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Factura creada correctamente'**
+  String get receipt_created_ok;
+
+  /// No description provided for @receipt_created_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error creando factura'**
+  String get receipt_created_error;
+
+  /// No description provided for @wrong_username_or_password.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuario o contraseña incorrectos'**
+  String get wrong_username_or_password;
+
+  /// No description provided for @mail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo'**
+  String get mail;
+
+  /// No description provided for @password.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña'**
+  String get password;
+
+  /// No description provided for @recipe_deleted_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Receta borrada correctamente'**
+  String get recipe_deleted_ok;
+
+  /// No description provided for @recipe_deleted_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error borrando receta'**
+  String get recipe_deleted_error;
+
+  /// No description provided for @recipe_created_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Receta creada correctamente'**
+  String get recipe_created_ok;
+
+  /// No description provided for @recipe_created_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error creando receta'**
+  String get recipe_created_error;
+
+  /// No description provided for @time_error_message.
+  ///
+  /// In es, this message translates to:
+  /// **'Tiempo es obligatorio'**
+  String get time_error_message;
+
+  /// No description provided for @products_linked_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Productos vinculados correctamente'**
+  String get products_linked_ok;
+
+  /// No description provided for @products_linked_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al vincular productos'**
+  String get products_linked_error;
+
+  /// No description provided for @data_not_saved.
+  ///
+  /// In es, this message translates to:
+  /// **'Los datos no se han guardado'**
+  String get data_not_saved;
+
+  /// No description provided for @data_saved_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Los datos se han guardado correctamente'**
+  String get data_saved_ok;
+
+  /// No description provided for @recipe_updated_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Receta actualizada correctamente'**
+  String get recipe_updated_ok;
+
+  /// No description provided for @recipe_updated_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error actualizando receta'**
+  String get recipe_updated_error;
+
+  /// No description provided for @delete_step_confirmation.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Estás seguro de borrar este paso?'**
+  String get delete_step_confirmation;
+
+  /// No description provided for @login_try_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicio de sesión correcto'**
+  String get login_try_ok;
+
+  /// No description provided for @login_try_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña incorrecta, prueba otra vez'**
+  String get login_try_error;
+
+  /// No description provided for @error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error'**
+  String get error;
+
+  /// No description provided for @register_try_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta creada correctamente'**
+  String get register_try_ok;
+
+  /// No description provided for @register_try_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al crear cuenta'**
+  String get register_try_error;
+
+  /// No description provided for @unknown_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error desconocido'**
+  String get unknown_error;
 }
 
 class _AppLocalizationsDelegate
@@ -330,8 +780,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

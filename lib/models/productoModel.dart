@@ -1,14 +1,13 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProductoModel {
-  final int id;
-  final String codBarras;
-  final String nombre;
-  final String descripcion;
-  final double precio;
-  final String supermercado;
-  final String usuarioUuid;
-  final String foto;
+  final int? id;
+  String codBarras;
+  String nombre;
+  String descripcion;
+  double precio;
+  String supermercado;
+  String usuarioUuid;
+  String foto;
 
   ProductoModel({
     required this.id,

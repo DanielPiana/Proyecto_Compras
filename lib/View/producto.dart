@@ -1,15 +1,21 @@
+import 'dart:io';
+import 'dart:math';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../Providers/compraProvider.dart';
 import '../Providers/productoProvider.dart';
 import '../Providers/userProvider.dart';
+import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
 import '../models/productoModel.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
 class Producto extends StatefulWidget {
-
   const Producto({super.key});
 
   @override
@@ -17,7 +23,6 @@ class Producto extends StatefulWidget {
 }
 
 class ProductoState extends State<Producto> {
-
   late String userId;
 
   SupabaseClient database = Supabase.instance.client;
@@ -37,128 +42,9 @@ class ProductoState extends State<Producto> {
       }
     });
   }
-  /*TODO-----------------METODO DE CARGAR-----------------*/
-  /// Carga los productos desde la base de datos y los agrupa por supermercado.
-  ///
-  /// Consulta todos los registros de la tabla 'productos' y los organiza en un mapa,
-  /// donde la clave es el nombre del supermercado y el valor es una lista de productos
-  /// pertenecientes a ese supermercado. Si un producto no tiene supermercado, se
-  /// agrupa bajo 'Sin supermercado'.
-  ///
-  // /// Actualiza el estado para reflejar los cambios en la interfaz.
-  // Future<void> cargarProductos() async {
-  //   final productos = await database
-  //       .from('productos')
-  //       .select()
-  //       .eq('usuariouuid', userId); // FILTRAMOS SOLO LOS DEL USUARIO ACTUAL
-  //
-  //   // MAPA PARA AGRUPAR LOS PRODUCTOS POR NOMBRE DE SUPERMERCADO
-  //   final Map<String, List<Map<String, dynamic>>> productosAgrupados = {};
-  //
-  //   // ITERAMOS SOBRE CADA PRODUCTO OBTENIDO DE LA CONSULTA
-  //   for (var producto in productos) {
-  //     // OBTENEMOS EL NOMBRE DEL SUPERMERCADO; SI ES NULO, USAMOS 'Sin supermercado'
-  //     final supermercado = (producto['supermercado'] ?? 'Sin supermercado').toString();
-  //
-  //     // SI EL SUPERMERCADO NO EXISTE COMO CLAVE EN EL MAPA, LO AÑADIMOS COMO UNA LISTA VACÍA
-  //     productosAgrupados.putIfAbsent(supermercado, () => []);
-  //
-  //     // AGREGAMOS EL PRODUCTO A LA LISTA CORRESPONDIENTE DENTRO DEL MAPA
-  //     productosAgrupados[supermercado]!.add(producto);
-  //   }
-  //
-  //   // ACTUALIZAMOS EL ESTADO CON LOS PRODUCTOS AGRUPADOS PARA REFLEJARLO EN LA INTERFAZ
-  //   setState(() {
-  //     productosPorSupermercado = productosAgrupados;
-  //   });
-  // }
-
-  // /*TODO-----------------METODO DE ELIMINAR PRODUCTO-----------------*/
-  // /// Elimina un producto de la base de datos según su ID.
-  // ///
-  // /// Si el producto existe en la tabla 'productos' con el ID proporcionado,
-  // /// se elimina y luego se recargan los productos para reflejar los cambios en la UI.
-  // ///
-  // /// Parámetros:
-  // /// - [id]: ID único del producto a eliminar.
-  // ///
-  // /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
-  // Future<void> deleteProducto(int id) async {
-  //   try {
-  //     await database
-  //         .from('productos') // NOMBRE DE LA TABLA
-  //         .delete() // OPERACIÓN DELETE
-  //         .eq('id', id) // FILTRAMOS POR ID DEL PRODUCTO
-  //         .eq('usuariouuid', userId); // Y POR USUARIO ACTUAL
-  //
-  //     debugPrint('Producto con id $id eliminado exitosamente.');
-  //
-  //     // RECARGAMOS LOS PRODUCTOS
-  //     await cargarProductos();
-  //   } catch (e) {
-  //     debugPrint('Error al eliminar producto: $e');
-  //   }
-  // }
-
-
-  // /*TODO-----------------METODO DE EDITAR PRODUCTO-----------------*/
-  // /// Actualiza un producto en la base de datos con los nuevos valores proporcionados.
-  // ///
-  // /// Parámetros:
-  // /// - [producto]: Mapa con los datos actualizados del producto, incluyendo:
-  // ///   - 'id': ID único del producto a actualizar.
-  // ///   - 'nombre': Nuevo nombre del producto.
-  // ///   - 'descripcion': Nueva descripción del producto.
-  // ///   - 'precio': Nuevo precio del producto.
-  // ///   - 'supermercado': Nuevo supermercado asociado al producto.
-  // ///
-  // /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
-  // Future<void> actualizarProducto(Map<String, dynamic> producto) async {
-  //   try {
-  //     await database
-  //         .from('productos') // NOMBRE DE LA TABLA
-  //         .update({
-  //       // NUEVOS VALORES A ACTUALIZAR
-  //       'nombre': producto['nombre'],
-  //       'descripcion': producto['descripcion'],
-  //       'precio': producto['precio'],
-  //       'supermercado': producto['supermercado'],
-  //     })
-  //         .eq('id', producto['id']) // PRODUCTO QUE QUEREMOS ACTUALIZAR
-  //         .eq('usuariouuid', userId); // DEL USUARIO EN CONCRETO Y NO LOS DEMAS
-  //
-  //     await cargarProductos();
-  //     debugPrint('Producto actualizado correctamente.');
-  //   } catch (e) {
-  //     debugPrint('Error al actualizar el producto: $e');
-  //   }
-  // }
-
-  // /*TODO-----------------METODO DE OBTENER TODOS LOS SUPERMERCADOS-----------------*/
-  //   // /// Obtiene una lista de todos los supermercados existentes en la base de datos.
-  //   // ///
-  //   // /// Consulta la tabla 'productos' para extraer los nombres de los supermercados,
-  //   // /// eliminando duplicados mediante un 'Set' y convirtiéndolos nuevamente en una lista.
-  //   // ///
-  //   // /// @return Future<List<String>> Lista de nombres de supermercados sin duplicados.
-  //   // Future<List<String>> obtenerSupermercados() async {
-  //   //   // CONSULTA PARA OBTENER LOS PRODUCTOS DEL USUARIO ACTUAL
-  //   //   final productos = await database
-  //   //       .from('productos')
-  //   //       .select()
-  //   //       .eq('usuariouuid', userId); // FILTRO POR USUARIO
-  //   //
-  //   //   // EXTRAEMOS LOS SUPERMERCADOS Y ELIMINAMOS DUPLICADOS
-  //   //   final supermercados = (productos as List)
-  //   //       .map((producto) => producto['supermercado'] as String)
-  //   //       .where((s) => s.isNotEmpty) // OPCIONAL: excluir vacíos
-  //   //       .toSet()
-  //   //       .toList();
-  //   //
-  //   //   return supermercados;
-  //   // }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
+
   /// Muestra un cuadro de diálogo de confirmación antes de eliminar un producto.
   ///
   /// Parámetros:
@@ -170,9 +56,9 @@ class ProductoState extends State<Producto> {
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text( // TITULO DE LA ALERTA
+          title: Text(
             AppLocalizations.of(context)!.titleConfirmDialog,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
@@ -182,27 +68,49 @@ class ProductoState extends State<Producto> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                // CERRAMOS EL DIALOGO
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
                 AppLocalizations.of(context)!.cancel,
-                style: const TextStyle(color: Colors.grey),
               ),
             ),
             TextButton(
               onPressed: () async {
-                // BORRAMOS EL PRODUCTO
-                await context.read<ProductoProvider>().eliminarProducto(idProducto);
-                // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
-                Navigator.of(context).pop();
+                final provider = context.read<ProductoProvider>();
+
+                final backup =
+                provider.productos.firstWhere((p) => p.id == idProducto);
+
+                provider.removeProductoLocal(idProducto);
+
+                Navigator.of(dialogContext).pop();
+
+                try {
+                  await provider.eliminarProducto(context, idProducto);
+
+                  showAwesomeSnackBar(
+                    context,
+                    title: AppLocalizations.of(context)!.success,
+                    message: AppLocalizations.of(context)!.product_deleted_ok,
+                    contentType: asc.ContentType.success,
+                  );
+                } catch (e) {
+                  debugPrint("Error al eliminar producto: $e");
+                  provider.addProductoLocal(backup);
+
+                  showAwesomeSnackBar(
+                    context,
+                    title: 'Error',
+                    message:
+                    AppLocalizations.of(context)!.product_deleted_error,
+                    contentType: asc.ContentType.failure,
+                  );
+                }
               },
               child: Text(
                 AppLocalizations.of(context)!.delete,
                 style: const TextStyle(color: Colors.red),
               ),
-            ),
+            )
           ],
         );
       },
@@ -210,6 +118,7 @@ class ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE EDICION DE PRODUCTO-----------------*/
+
   /// Muestra un cuadro de diálogo para editar un producto.
   ///
   /// Parámetros:
@@ -219,217 +128,289 @@ class ProductoState extends State<Producto> {
   /// Permite modificar el nombre, la descripción, el precio y el supermercado del producto.
   /// Una vez confirmados los cambios, se actualiza el producto en la base de datos.
   void dialogoEdicion(BuildContext context, ProductoModel producto) async {
-    // CREAMOS LOS CONTROLADORES PARA LOS TextField Y LOS INICIALIZAMOS CON LOS DATOS DEL PRODUCTO AL QUE HA HECHO CLICK
-    final TextEditingController nombreController = TextEditingController(text: producto.nombre);
-    final TextEditingController descripcionController = TextEditingController(text: producto.descripcion);
-    final TextEditingController precioController = TextEditingController(text: producto.precio.toString());
+    final TextEditingController nombreController =
+    TextEditingController(text: producto.nombre);
+    final TextEditingController descripcionController =
+    TextEditingController(text: producto.descripcion);
+    final TextEditingController precioController =
+    TextEditingController(text: producto.precio.toString());
 
-    // OBTENEMOS LA LISTA DE SUPERMERCADOS QUE EXISTEN
-    final List<String> supermercados = await context.read<ProductoProvider>().obtenerSupermercados();
-
-    // INICIALIZAMOS LA LISTA CON EL SUPERMERCADO DEL PRODUCTO SELECCIONADO
+    final List<String> supermercados =
+    await context.read<ProductoProvider>().obtenerSupermercados();
     String supermercadoSeleccionado = producto.supermercado;
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title:Text(AppLocalizations.of(context)!.editProduct), // TITULO DE LA ALERTA
-          content: Column(
-            mainAxisSize: MainAxisSize.min, // PARA QUE VERTICALMENTE, OCUPE LO MINIMO
-            children: [
-              TextField( // TextField PARA EL NOMBRE
-                controller: nombreController,
-                decoration:  InputDecoration(labelText:AppLocalizations.of(context)!.name),
-              ),
-              TextField( // TextField PARA LA DESCRIPCION
-                controller: descripcionController,
-                decoration: InputDecoration(labelText:AppLocalizations.of(context)!.description),
-              ),
-              TextField( // TextField PARA EL PRECIO
-                controller: precioController,
-                decoration: InputDecoration(labelText: AppLocalizations.of(context)!.price),
-                keyboardType: TextInputType.number,
-              ),
-              DropdownButtonFormField<String>( // DropdownButtonFormField DE Strings
-                // PONEMOS DE VALOR, EL SUPERMERCADO DEL PRODUCTO SELECCIONADO
-                value: supermercadoSeleccionado,
-                decoration: InputDecoration(labelText:AppLocalizations.of(context)!.supermarket),
-                // PONEMOS LA LISTA DE SUPERMERCADOS COMO OPCIONES PARA EL DESPLEGABLE
-                items: supermercados.map((supermercado) {
-                  return DropdownMenuItem<String>( // CADA SUPERMERCADO SE CONVIERTE EN UN DropdownMenuItem
-                    value: supermercado,
-                    child: Text(supermercado),
-                  );
-                }).toList(), // CONVERTIDO A LISTA
-                // CUANDO EL USUARIO SELECCIONA UNA NUEVA OPCION DE LA LISTA SE EJECUTA EL onChanged
-                onChanged: (nuevoSupermercado) {
-                  if (nuevoSupermercado != null) { // COMPROBAMOS QUE EL NUEVO VALOR NO SEA NULO
-                    supermercadoSeleccionado = nuevoSupermercado; // ACTUALIZAMOS LA VARIABLE CON EL NUEVO SUPERMERCADO
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            // BOTON PARA CANCELAR LA EDICION
-            TextButton(
-              onPressed: () {
-                // CERRAMOS EL DIALOGO
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.cancel),
-            ),
-            TextButton( // BOTON PARA CONFIRMAR LA EDICION Y GUARDAR CAMBIOS
-              onPressed: () async {
-                // COGEMOS LOS DATOS DE LOS CONTROLADORES
-                final String nuevoNombre = nombreController.text;
-                final String nuevaDescripcion = descripcionController.text;
-                final double nuevoPrecio = double.tryParse(precioController.text) ?? 0.0;
+    File? nuevaImagenSeleccionada;
 
-                // CREAMOS EL PRODUCTO ACTUALIZADO
-                final productoActualizado = ProductoModel(
-                  id: producto.id, // NO LO CAMBIAMOS
-                  codBarras: producto.codBarras, // NO LO CAMBIAMOS
-                  nombre: nuevoNombre,
-                  descripcion: nuevaDescripcion,
-                  precio: nuevoPrecio,
-                  supermercado: supermercadoSeleccionado,
-                  usuarioUuid: producto.usuarioUuid, // NO LO CAMBIAMOS
-                  foto: producto.foto, // NO LO CAMBIAMOS
-                );
+    bool nombreValido = producto.nombre.trim().isNotEmpty;
+    bool descripcionValida = producto.descripcion.trim().isNotEmpty;
+    bool precioValido = true;
+    bool supermercadoValido = producto.supermercado.trim().isNotEmpty;
 
-                // LLAMAMOS AL METODO DEL PROVIDER
-                await context.read<ProductoProvider>().actualizarProducto(productoActualizado);
-
-                // CERRAMOS EL DIALOGO (ACTUALIZAMOS EN EL METODO)
-                Navigator.of(context).pop();
-              },
-              child:Text(AppLocalizations.of(context)!.save),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
-  /// Muestra un cuadro de diálogo para crear un nuevo producto.
-  ///
-  /// Parámetros:
-  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
-  ///
-  /// Permite ingresar el nombre, la descripción y el precio del producto.
-  /// También permite seleccionar un supermercado existente o crear uno nuevo.
-  /// Una vez confirmados los datos, el producto se guarda en la base de datos.
-  void dialogoCreacion(BuildContext context) {
-    // CREAMOS LOS CONTROLADORES PARA LOS TextField
-    final TextEditingController nombreController = TextEditingController();
-    final TextEditingController descripcionController = TextEditingController();
-    final TextEditingController precioController = TextEditingController();
-    final TextEditingController nuevoSupermercadoController = TextEditingController();
-
-    // VARIABLES PARA CONTROLAR EL SUPERMERCADO SELECCIONADO Y SI ESTA CREANDO UNO NUEVO
-    String? supermercadoSeleccionado;
-    bool creandoSupermercado = false;
-
-    final provider = context.read<ProductoProvider>();
-
-    // OBTENEMOS LA LISTA DE LOS SUPERMERCADOS QUE EXISTEN Y AÑADIMOS UNA NUEVA OPCION
-    final supermercados = provider.productosPorSupermercado.keys.toList();
-
-    supermercados.add(AppLocalizations.of(context)!.selectSupermarketNameDDB);
+    bool nombreTouched = false;
+    bool descripcionTouched = false;
+    bool precioTouched = false;
+    bool supermercadoTouched = false;
 
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
+          builder: (dialogCtx, setState) {
             return AlertDialog(
-              title: Text(AppLocalizations.of(context)!.createProduct), // TÍTULO DEL DIÁLOGO
+              title: Text(AppLocalizations.of(context)!.editProduct),
               content: SingleChildScrollView(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min, // PARA QUE VERTICALMENTE, OCUPE LO MINIMO
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextField( // TextField PARA EL NOMBRE
+                    TextField(
                       controller: nombreController,
-                      decoration:  InputDecoration(labelText: AppLocalizations.of(context)!.name),
-                    ),
-                    TextField( // TextField PARA LA DESCRIPCION
-                      controller: descripcionController,
-                      decoration:  InputDecoration(labelText: AppLocalizations.of(context)!.description),
-                    ),
-                    TextField( // TextField PARA EL PRECIO
-                      controller: precioController,
-                      decoration:  InputDecoration(labelText: AppLocalizations.of(context)!.price),
-                      keyboardType: TextInputType.number,
-                    ),
-                    DropdownButton<String>( // DropdownButton PARA SELECCIONAR EL SUPERMERCADO
-                      isExpanded: true, // OCUPA EL ESPACIO DISPONIBLE
-                      value: supermercadoSeleccionado, // VALOR SELECCIONADO INICIALMENTE
-                      hint: Text(AppLocalizations.of(context)!.selectSupermarket),
-                      items: supermercados.map((supermercado) {
-                        // PONEMOS LA LISTA DE SUPERMERCADOS COMO OPCIONES PARA EL DESPLEGABLE
-                        return DropdownMenuItem<String>( // CADA SUPERMERCADO SE CONVIERTE EN UN DropdownMenuItem
-                          value: supermercado,
-                          child: Text(supermercado),
-                        );
-                      }).toList(), // CONVERTIDO A LISTA
-                      // CUANDO EL USUARIO SELECCIONA UNA NUEVA OPCION DE LA LISTA SE EJECUTA EL onChanged
-                      onChanged: (String? value) {
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.name,
+                        suffixIcon: nombreTouched
+                            ? (nombreValido
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
+                      ),
+                      onChanged: (value) {
                         setState(() {
-                          // ACTUALIZAMOS EL SUPERMERCADO SELECCIONADO
-                          supermercadoSeleccionado = value;
-                          // ACTIVAR CAMPO EXTRA SI ES "Nuevo supermercado"
-                          creandoSupermercado = (value == "Nuevo supermercado" || value == "New supermarket");
+                          nombreTouched = true;
+                          nombreValido = value.trim().isNotEmpty;
                         });
                       },
                     ),
-                    // CAMPO PARA CREAR UN NUEVO SUPERMERCADO (VISIBLE SOLO SI SE SELECCIONÓ "Nuevo supermercado")
-                    if (creandoSupermercado)
-                      TextField(
-                        controller: nuevoSupermercadoController,
-                        decoration: InputDecoration(labelText: AppLocalizations.of(context)!.selectSupermarketName),
+                    if (nombreTouched && !nombreValido)
+                      Text(AppLocalizations.of(context)!.name_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: descripcionController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.description,
+                        suffixIcon: descripcionTouched
+                            ? (descripcionValida
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
                       ),
+                      onChanged: (value) {
+                        setState(() {
+                          descripcionTouched = true;
+                          descripcionValida = value.trim().isNotEmpty;
+                        });
+                      },
+                    ),
+                    if (descripcionTouched && !descripcionValida)
+                      Text(
+                          AppLocalizations.of(context)!
+                              .description_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: precioController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.price,
+                        suffixIcon: precioTouched
+                            ? (precioValido
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        final input = value.trim().replaceAll(',', '.');
+                        setState(() {
+                          precioTouched = true;
+                          precioValido = double.tryParse(input) != null;
+                        });
+                      },
+                    ),
+                    if (precioTouched && !precioValido)
+                      Text(AppLocalizations.of(context)!.price_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 10),
+
+                    DropdownButtonFormField<String>(
+                      value: supermercadoSeleccionado,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.supermarket,
+                        suffixIcon: supermercadoTouched
+                            ? (supermercadoValido
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
+                      ),
+                      items: supermercados.map((s) {
+                        return DropdownMenuItem<String>(
+                          value: s,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: Colors.grey.shade400, width: 0.8),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child:
+                              Text(s, style: const TextStyle(fontSize: 16)),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      selectedItemBuilder: (context) {
+                        return supermercados.map((s) {
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child:
+                            Text(s, style: const TextStyle(fontSize: 16)),
+                          );
+                        }).toList();
+                      },
+                      onChanged: (nuevoSuper) {
+                        if (nuevoSuper != null) {
+                          setState(() {
+                            supermercadoTouched = true;
+                            supermercadoSeleccionado = nuevoSuper;
+                            supermercadoValido = nuevoSuper.trim().isNotEmpty;
+                          });
+                        }
+                      },
+                    ),
+                    if (supermercadoTouched && !supermercadoValido)
+                      Text(
+                          AppLocalizations.of(context)!
+                              .supermarket_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 12),
+
+                    Center(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.image),
+                        label: Text(AppLocalizations.of(context)!.select_photo),
+                        onPressed: () async {
+                          File? imagen;
+                          if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+                            final picker = ImagePicker();
+                            final pickedFile = await picker.pickImage(
+                                source: ImageSource.gallery);
+                            if (pickedFile != null) {
+                              imagen = File(pickedFile.path);
+                            }
+                          } else {
+                            final result = await FilePicker.platform
+                                .pickFiles(type: FileType.image);
+                            if (result != null &&
+                                result.files.single.path != null) {
+                              imagen = File(result.files.single.path!);
+                            }
+                          }
+                          if (imagen != null) {
+                            setState(() {
+                              nuevaImagenSeleccionada = imagen;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (nuevaImagenSeleccionada != null)
+                      Image.file(nuevaImagenSeleccionada!,
+                          height: 100, fit: BoxFit.cover)
+                    else if (producto.foto.isNotEmpty)
+                      Image.network(producto.foto,
+                          height: 100, fit: BoxFit.cover),
                   ],
                 ),
               ),
               actions: [
-                // BOTON PARA CANCELAR LA EDICION
-                TextButton(
-                  onPressed: () {
-                    // CERRAMOS EL DIALOGO
-                    Navigator.of(context).pop();
-                  },
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
                   child: Text(AppLocalizations.of(context)!.cancel),
                 ),
-                // BOTON PARA CONFIRMAR LA CREACION Y GUARDAR CAMBIOS
-                TextButton(
+                ElevatedButton(
                   onPressed: () async {
-                    // VALIDAMOS LOS CAMPOS
-                    final String nombre = nombreController.text;
-                    final String descripcion = descripcionController.text;
-                    final double precio = double.tryParse(precioController.text) ?? 0.0;
-                    final String supermercado = creandoSupermercado
-                        ? nuevoSupermercadoController.text // USAMOS EL NUEVO SUPERMERCADO
-                        : supermercadoSeleccionado ?? ''; // USAMOS EL SELECCIONADO
+                    final String nuevoNombre = nombreController.text.trim();
+                    final String nuevaDescripcion =
+                    descripcionController.text.trim();
+                    final String precioInput =
+                    precioController.text.trim().replaceAll(',', '.');
+                    final double? nuevoPrecioParsed =
+                    double.tryParse(precioInput);
 
-                    // COMPROBAMOS QUE LOS CAMPOS REQUERIDOS NO ESTÉN VACÍOS
-                    if (nombre.isEmpty || supermercado.isEmpty) {
-                      debugPrint("Nombre o supermercado no pueden estar vacíos");
+                    if (!nombreValido ||
+                        !descripcionValida ||
+                        !precioValido ||
+                        !supermercadoValido ||
+                        nuevoPrecioParsed == null) {
                       return;
                     }
 
-                    await context.read<ProductoProvider>().crearProducto(
-                      nombre: nombre,
-                      descripcion: descripcion,
-                      precio: precio,
-                      supermercado: supermercado,
-                      usuarioUuid: context.read<UserProvider>().uuid!, // COGEMOS EL UUID DEL USUARIO
+                    final double nuevoPrecio = nuevoPrecioParsed;
+                    String urlImagen = producto.foto;
+
+                    if (nuevaImagenSeleccionada != null) {
+                      final bytes =
+                      await nuevaImagenSeleccionada!.readAsBytes();
+                      final nombreArchivo =
+                          '${nuevoNombre}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+                      final path =
+                          'productos/${producto.usuarioUuid}/$nombreArchivo.jpg';
+
+                      await Supabase.instance.client.storage
+                          .from('fotos')
+                          .uploadBinary(path, bytes,
+                          fileOptions:
+                          const FileOptions(contentType: 'image/jpeg'));
+
+                      urlImagen = Supabase.instance.client.storage
+                          .from('fotos')
+                          .getPublicUrl(path);
+                    }
+
+                    final productoActualizado = ProductoModel(
+                      id: producto.id,
+                      codBarras: producto.codBarras,
+                      nombre: nuevoNombre,
+                      descripcion: nuevaDescripcion,
+                      precio: nuevoPrecio,
+                      supermercado: supermercadoSeleccionado,
+                      usuarioUuid: producto.usuarioUuid,
+                      foto: urlImagen,
                     );
 
-                    // CERRAMOS EL DIÁLOGO
-                    Navigator.of(context).pop();
+                    Navigator.of(dialogContext).pop();
+
+                    try {
+                      await context.read<ProductoProvider>().actualizarProducto(
+                        productoActualizado,
+                        context.read<CompraProvider>(),
+                      );
+
+                      showAwesomeSnackBar(
+                        context,
+                        title: AppLocalizations.of(context)!.success,
+                        message:
+                        AppLocalizations.of(context)!.product_updated_ok,
+                        contentType: asc.ContentType.success,
+                      );
+                    } catch (e) {
+                      showAwesomeSnackBar(
+                        context,
+                        title: 'Error',
+                        message:
+                        AppLocalizations.of(context)!.product_updated_error,
+                        contentType: asc.ContentType.failure,
+                      );
+                    }
                   },
                   child: Text(AppLocalizations.of(context)!.save),
                 ),
@@ -441,150 +422,515 @@ class ProductoState extends State<Producto> {
     );
   }
 
-/*TODO-----------------METODO AÑADIR PRODUCTO A LISTA DE LA COMPRA-----------------*/
-  /// Agrega un producto a la lista de compra en la base de datos.
-  ///
-  /// Si el producto ya existe en la lista, muestra un mensaje
-  /// informando al usuario. En caso contrario, lo añade como no marcado.
+  /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
+
+  /// Muestra un cuadro de diálogo para crear un nuevo producto.
   ///
   /// Parámetros:
-  /// - [idProducto]: ID único del producto.
-  /// - [precio]: Precio del producto.
-  /// - [nombre]: Nombre del producto.
+  /// - [context]: Contexto de la aplicación para mostrar el diálogo.
   ///
-  /// Maneja excepciones para evitar fallos durante la operación con la base de datos.
-  // Future<void> agregarACompra(int idProducto, double precio, String nombre, String usuarioUUID) async {
-  //   try {
-  //     // CONSULTA PARA COGER TODOS LOS PRODUCTOS EXISTENTES Y PODER COMPROBAR SI EXISTE
-  //     final productosExistentes = await database
-  //         .from('compra')
-  //         .select()
-  //         .eq('idproducto', idProducto)
-  //         .eq('usuariouuid', usuarioUUID);
-  //
-  //     if (productosExistentes.isNotEmpty) {
-  //       // SI YA EXISTE, MOSTRAMOS UN MENSAJE DICIENDO QUE YA ESTÁ REGISTRADO
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text(AppLocalizations.of(context)!.snackBarRepeatedProduct)),
-  //       );
-  //     } else {
-  //       // SI NO EXISTE, LO AÑADIMOS
-  //       await database.from('compra').insert({
-  //         'idproducto': idProducto,
-  //         'nombre': nombre,
-  //         'precio': precio,
-  //         'marcado': 0,
-  //         'usuariouuid': usuarioUUID,
-  //       });
-  //
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     debugPrint("${AppLocalizations.of(context)!.snackBarErrorAddingProduct}: $e");
-  //   }
-  // }
+  /// Permite ingresar el nombre, la descripción y el precio del producto.
+  /// También permite seleccionar un supermercado existente o crear uno nuevo.
+  /// Una vez confirmados los datos, el producto se guarda en la base de datos.
+  void dialogoCreacion(BuildContext context) {
+    final TextEditingController nombreController = TextEditingController();
+    final TextEditingController descripcionController = TextEditingController();
+    final TextEditingController precioController = TextEditingController();
+    final TextEditingController nuevoSupermercadoController =
+    TextEditingController();
 
+    String? supermercadoSeleccionado;
+    bool creandoSupermercado = false;
+    File? imagenSeleccionada;
 
+    bool nombreValido = false;
+    bool descripcionValida = false;
+    bool precioValido = false;
+    bool supermercadoValido = false;
+
+    bool nombreTouched = false;
+    bool descripcionTouched = false;
+    bool precioTouched = false;
+    bool supermercadoTouched = false;
+
+    final provider = context.read<ProductoProvider>();
+    final supermercados = provider.productosPorSupermercado.keys.toList()
+      ..add(AppLocalizations.of(context)!.selectSupermarketNameDDB);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setState) {
+            return AlertDialog(
+              title: Text(AppLocalizations.of(context)!.createProduct),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nombreController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.name,
+                        suffixIcon: nombreTouched
+                            ? (nombreValido
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          nombreTouched = true;
+                          nombreValido = value.trim().isNotEmpty;
+                        });
+                      },
+                    ),
+                    if (nombreTouched && !nombreValido)
+                      Text(AppLocalizations.of(context)!.name_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: descripcionController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.description,
+                        suffixIcon: descripcionTouched
+                            ? (descripcionValida
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          descripcionTouched = true;
+                          descripcionValida = value.trim().isNotEmpty;
+                        });
+                      },
+                    ),
+                    if (descripcionTouched && !descripcionValida)
+                      Text(
+                          AppLocalizations.of(context)!
+                              .description_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: precioController,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.price,
+                        suffixIcon: precioTouched
+                            ? (precioValido
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        final input = value.trim().replaceAll(',', '.');
+                        setState(() {
+                          precioTouched = true;
+                          precioValido = double.tryParse(input) != null;
+                        });
+                      },
+                    ),
+                    if (precioTouched && !precioValido)
+                      Text(AppLocalizations.of(context)!.price_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 10),
+
+                    DropdownButtonFormField<String>(
+                      value: supermercadoSeleccionado,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.supermarket,
+                        suffixIcon: supermercadoTouched
+                            ? (supermercadoValido
+                            ? const Icon(Icons.check_circle,
+                            color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
+                            : null,
+                      ),
+                      hint:
+                      Text(AppLocalizations.of(context)!.selectSupermarket),
+                      items: supermercados.map((s) {
+                        return DropdownMenuItem<String>(
+                          value: s,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 8),
+                              decoration: BoxDecoration(
+                                border:
+                                Border.all(color: Colors.grey, width: 0.8),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child:
+                              Text(s, style: const TextStyle(fontSize: 16)),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      selectedItemBuilder: (context) {
+                        return supermercados.map((s) {
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child:
+                            Text(s, style: const TextStyle(fontSize: 16)),
+                          );
+                        }).toList();
+                      },
+                      onChanged: (String? value) {
+                        setState(() {
+                          supermercadoTouched = true;
+                          supermercadoSeleccionado = value;
+                          creandoSupermercado =
+                          (value == "Nuevo supermercado" ||
+                              value == "New supermarket");
+                          supermercadoValido =
+                              value != null && value.trim().isNotEmpty;
+                        });
+                      },
+                    ),
+                    if (supermercadoTouched && !supermercadoValido)
+                      Text(
+                          AppLocalizations.of(context)!
+                              .supermarket_error_message,
+                          style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 10),
+
+                    if (creandoSupermercado)
+                      TextField(
+                        controller: nuevoSupermercadoController,
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!
+                              .selectSupermarketName,
+                          suffixIcon:
+                          nuevoSupermercadoController.text.isNotEmpty
+                              ? const Icon(Icons.check_circle,
+                              color: Colors.green)
+                              : const Icon(Icons.cancel, color: Colors.red),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            supermercadoValido = value.trim().isNotEmpty;
+                          });
+                        },
+                      ),
+                    const SizedBox(height: 10),
+
+                    Center(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.image),
+                        label: Text(AppLocalizations.of(context)!.select_photo),
+                        onPressed: () async {
+                          File? imagen;
+                          if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+                            final picker = ImagePicker();
+                            final pickedFile = await picker.pickImage(
+                                source: ImageSource.gallery);
+                            if (pickedFile != null) {
+                              imagen = File(pickedFile.path);
+                            }
+                          } else {
+                            final result = await FilePicker.platform
+                                .pickFiles(type: FileType.image);
+                            if (result != null &&
+                                result.files.single.path != null) {
+                              imagen = File(result.files.single.path!);
+                            }
+                          }
+                          if (imagen != null) {
+                            setState(() {
+                              imagenSeleccionada = imagen;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (imagenSeleccionada != null)
+                      Image.file(
+                        imagenSeleccionada!,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(AppLocalizations.of(context)!.cancel),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final String nombre =
+                    capitalize(nombreController.text.trim());
+                    final String descripcion =
+                    capitalize(descripcionController.text.trim());
+                    final String precioInput =
+                    precioController.text.trim().replaceAll(',', '.');
+                    final double? precioParsed = double.tryParse(precioInput);
+                    final String supermercado = creandoSupermercado
+                        ? capitalize(nuevoSupermercadoController.text.trim())
+                        : capitalize(supermercadoSeleccionado ?? '');
+
+                    setState(() {
+                      nombreTouched = true;
+                      descripcionTouched = true;
+                      precioTouched = true;
+                      supermercadoTouched = true;
+
+                      nombreValido = nombre.isNotEmpty;
+                      descripcionValida = descripcion.isNotEmpty;
+                      precioValido = precioParsed != null;
+                      supermercadoValido = supermercado.isNotEmpty;
+                    });
+
+                    if (!nombreValido ||
+                        !descripcionValida ||
+                        !precioValido ||
+                        !supermercadoValido ||
+                        precioParsed == null) {
+                      return;
+                    }
+
+                    final double precio = precioParsed;
+                    final uuidUsuario = context.read<UserProvider>().uuid!;
+                    String urlImagen = '';
+
+                    if (imagenSeleccionada != null) {
+                      final bytes = await imagenSeleccionada!.readAsBytes();
+                      final nombreArchivo =
+                          '${nombre}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+                      final path = 'productos/$uuidUsuario/$nombreArchivo.jpg';
+
+                      await Supabase.instance.client.storage
+                          .from('fotos')
+                          .uploadBinary(path, bytes,
+                          fileOptions:
+                          const FileOptions(contentType: 'image/jpeg'));
+
+                      urlImagen = Supabase.instance.client.storage
+                          .from('fotos')
+                          .getPublicUrl(path);
+                    }
+
+                    final nuevoProducto = ProductoModel(
+                      id: null,
+                      nombre: nombre,
+                      descripcion: descripcion,
+                      precio: precio,
+                      supermercado: supermercado,
+                      usuarioUuid: uuidUsuario,
+                      codBarras: '',
+                      foto: urlImagen,
+                    );
+
+                    provider.addProductoLocal(nuevoProducto);
+                    Navigator.of(dialogContext).pop();
+
+                    try {
+                      await provider.crearProducto(nuevoProducto);
+                      showAwesomeSnackBar(
+                        context,
+                        title: AppLocalizations.of(context)!.success,
+                        message:
+                        AppLocalizations.of(context)!.product_created_ok,
+                        contentType: asc.ContentType.success,
+                      );
+                    } catch (e) {
+                      showAwesomeSnackBar(
+                        context,
+                        title: "Error",
+                        message:
+                        AppLocalizations.of(context)!.product_created_error,
+                        contentType: asc.ContentType.failure,
+                      );
+                    }
+                  },
+                  child: Text(AppLocalizations.of(context)!.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-
     final providerProducto = context.watch<ProductoProvider>();
     final productosPorSupermercado = providerProducto.productosPorSupermercado;
 
-    return Scaffold( //BODY PRINCIPAL DE LA PAGINA PRODUCTO
+    return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.products), // TITULO DEL AppBar
+        title: Text(
+          AppLocalizations.of(context)!.products,
+          style: const TextStyle(
+              fontSize: 30,
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.bold
+          ),
+        ),
         centerTitle: true,
       ),
-      body: providerProducto.productos.isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS UN CIRCULO DE CARGA
+      body: providerProducto.productos
+          .isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS UN CIRCULO DE CARGA
           ? const Center(
         child: CircularProgressIndicator(),
       )
-          : ListView( // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
+          : ListView(
+        // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
         children: productosPorSupermercado.entries.map((entry) {
-          final supermercado = entry.key; // AQUI OBTENEMOS EL NOMBRE DEL SUPERMERCADO
-          final productos = entry.value; // AQUI OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
+          final supermercado =
+              entry.key; // AQUI OBTENEMOS EL NOMBRE DEL SUPERMERCADO
+          final productos = entry
+              .value; // AQUI OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
 
-          return ExpansionTile(  // CARPETA EXPANSIBLE PARA GUARDAR CADA LISTA DE PRODUCTOS
-            title: Text(
-              supermercado,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade600, width: 0.8),
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.white),
+            child: ExpansionTile(
+              shape: const Border(),
+              collapsedShape: const Border(),
+              title: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 51,
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  supermercado,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
               ),
-            ),
-            children: productos.map((producto) { // LISTA DE PRODUCTOS DE CADA SUPERMERCADO (producto es el producto actual)
-              return ListTile( // CADA PRODUCTO SE MUESTRA COMO UN ListTile
-                leading: const Icon(Icons.fastfood),
-                title: Text(producto.nombre ?? '',style: const TextStyle(fontSize: 16)),
-                subtitle: Text(producto.descripcion ?? '',style: const TextStyle(fontSize: 14)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+              children: productos.map((producto) {
+                return Column(
                   children: [
-                    SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON
-                      width: 25,
-                      height: 25,
-                      child: IconButton(
-                        icon: const Icon(Icons.add),
-                        iconSize: 20.0,
-                        onPressed: () async {
-                          try {
-                            await context.read<CompraProvider>().agregarACompra(
-                              idProducto: producto.id,
-                              precio: producto.precio,
-                              nombre: producto.nombre,
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(AppLocalizations.of(context)!.snackBarAddedProduct)),
-                            );
-                          } catch (_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(AppLocalizations.of(context)!.snackBarRepeatedProduct)),
-                            );
-                          }
-                        },
-                        padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
+                    SizedBox(
+                      height: 85,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                        ),
+                        child: Center(
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                            ),
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: AspectRatio(
+                                aspectRatio: 1.4,
+                                child: Image.network(
+                                  producto.foto,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              producto.nombre,
+                              style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.add),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 35,
+                                    minHeight: 35,
+                                  ),
+                                  iconSize: 22,
+                                  onPressed: () async {
+                                    try {
+                                      await context.read<CompraProvider>().agregarACompra(
+                                          producto.id!,
+                                          producto.precio,
+                                          producto.nombre,
+                                          producto.supermercado);
+                                      showAwesomeSnackBar(
+                                        context,
+                                        title: AppLocalizations.of(context)!.success,
+                                        message: AppLocalizations.of(context)!
+                                            .snackBarAddedProduct,
+                                        contentType: asc.ContentType.success,
+                                      );
+                                    } catch (_) {
+                                      showAwesomeSnackBar(
+                                        context,
+                                        title: AppLocalizations.of(context)!.success,
+                                        message: AppLocalizations.of(context)!
+                                            .snackBarRepeatedProduct,
+                                        contentType: asc.ContentType.warning,
+                                      );
+                                    }
+                                  },
+                                  padding: EdgeInsets.zero,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 35,
+                                    minHeight: 35,
+                                  ),
+                                  iconSize: 22,
+                                  onPressed: () {
+                                    dialogoEdicion(context, producto);
+                                  },
+                                  padding: EdgeInsets.zero,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 35,
+                                    minHeight: 35,
+                                  ),
+                                  iconSize: 22,
+                                  color: Colors.red.shade400,
+                                  onPressed: () {
+                                    dialogoEliminacion(context, producto.id!);
+                                  },
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON
-                      width: 25,
-                      height: 25,
-                      child: IconButton(
-                        icon: const Icon(Icons.edit),
-                        iconSize: 20.0,
-                        onPressed: () {
-                          // ABRIMOS EL DIALOGO DE ELIMINACION Y LE PASAMOS EL CONTEXTO
-                          // Y EL PRODUCTO EN EL QUE HEMOS HECHO CLICK
-                          dialogoEdicion(context, producto);
-                        },
-                        padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA
-                      ),
-                    ),
-                    SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON
-                      width: 25,
-                      height: 25,
-                      child: IconButton(
-                        icon: const Icon(Icons.delete),
-                        iconSize: 20.0,
-                        onPressed: () {
-                          // ABRIMOS EL DIALOGO DE ELIMINACION Y LE PASAMOS EL CONTEXTO
-                          // Y EL ID DEL PRODUCTO EN EL QUE HEMOS HECHO CLICK
-                          dialogoEliminacion(context, producto.id);
-                        },
-                        padding: EdgeInsets.zero,
-                      ),
+                    Divider(
+                      height: 1,
+                      thickness: 0.8,
+                      indent: 16,
+                      color: Colors.grey.shade400,
                     ),
                   ],
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           );
         }).toList(),
       ),
-      floatingActionButton: FloatingActionButton( // BOTON FLOTANTE PARA AÑADIR NUEVO PRODUCTO
+      floatingActionButton: FloatingActionButton(
+        // BOTON FLOTANTE PARA AÑADIR NUEVO PRODUCTO
         onPressed: () {
           // ABRIMOS EL DIALOGO DE CREACION
           dialogoCreacion(context);

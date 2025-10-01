@@ -1,11 +1,11 @@
 class CompraModel {
   final int idProducto;
-  final String nombre;
-  final double precio;
-  int cantidad; // para sumar/restar
-  int marcado; // 0 o 1
-  final String usuarioUuid;
-  final String supermercado;
+  String nombre;
+  double precio;
+  int cantidad;
+  int marcado;
+  String usuarioUuid;
+  String supermercado;
 
   CompraModel({
     required this.idProducto,

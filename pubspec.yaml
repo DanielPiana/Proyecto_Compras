@@ -17,6 +17,9 @@ dependencies:
     sdk: flutter
   sqflite: ^2.2.7
 
+dependency_overrides:
+  awesome_snackbar_content: ^0.1.7
+
   path: ^1.8.3
   shared_preferences: ^2.4.0
   flutter_localizations:
@@ -30,7 +33,6 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  sqflite_common_ffi: ^2.3.3 # Mantener esto en "dev_dependencies" para pruebas en escritorio
 
 
 flutter:

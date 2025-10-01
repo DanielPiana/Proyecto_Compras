@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
+import '../Providers/pasosRecetaProvider.dart';
+import '../l10n/app_localizations.dart';
 import '../models/PasoReceta.dart';
 
 class StepperPersonalizado extends StatefulWidget {
@@ -47,233 +49,321 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
     });
   }
 
-  void _resetProvider() {
-    final provider = context.read<DetalleRecetaProvider>();
-    provider.cambioEstadoEdicion(false);
-    provider.setNuevaDescripcion('');
-    provider.setNuevoTitulo('');
-  }
-
   @override
   Widget build(BuildContext context) {
-    final provider = context.read<DetalleRecetaProvider>();
+    final providerDetalle = context.read<DetalleRecetaProvider>();
+    // CARGAMOS PASOS DESDE EL PROVIDER
+    final pasos = context.watch<PasosRecetaProvider>().pasos;
+
+    if (pasos.isEmpty) {
+      if (pasoActual != 0) {
+        setState(() {
+          pasoActual = 0;
+          _tituloController.text = '';
+          _descripcionController.text = '';
+        });
+      }
+    } else if (pasoActual >= pasos.length) {
+      setState(() {
+        pasoActual = pasos.length - 1;
+        _tituloController.text = pasos[pasoActual].titulo;
+        _descripcionController.text = pasos[pasoActual].descripcion;
+      });
+    }
 
     return Column(
       children: [
-        // Card con el contenido del paso actual
-        SizedBox(
-          width: double.infinity,
-          child: Card(
-            elevation: 4,
-            margin: const EdgeInsets.all(8.0),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Indicador del paso actual
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      'Paso ${pasoActual + 1} de ${widget.pasosReceta.length}',
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+        Container(
+          margin: const EdgeInsets.all(8.0),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade600, width: 0.8),
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.white,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    '${AppLocalizations.of(context)!.step}: ${pasos.isEmpty ? 0 : pasoActual + 1} de ${pasos.length}',
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  AnimatedCrossFade(
-                    duration: const Duration(milliseconds: 400),
-                    crossFadeState:
-                        context.watch<DetalleRecetaProvider>().estaEditando
-                            ? CrossFadeState.showSecond
-                            : CrossFadeState.showFirst,
-                    firstChild: Column(
-                      children: [
-                        Center(
-                          child: Text(
-                            widget.pasosReceta[pasoActual].titulo,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          widget.pasosReceta[pasoActual].descripcion,
+                ),
+                const SizedBox(height: 6),
+                AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 400),
+                  crossFadeState: context.watch<DetalleRecetaProvider>().estaEditando
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  firstChild: (pasos.isEmpty)
+                      ? const SizedBox.shrink()
+                      : Column(
+                    children: [
+                      Center(
+                        child: Text(
+                          pasos[pasoActual].titulo,
                           style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.black54,
-                            height: 1.5,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
                         ),
-                      ],
-                    ),
-                    secondChild: Column(
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        pasos[pasoActual].descripcion,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.black54,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  secondChild: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
                       children: [
-                        Center(
-                          child: TextField(
-                            controller: _tituloController,
-                            focusNode: _focusNode,
-                            autofocus: true,
-                            decoration: const InputDecoration(
-                              labelText: "Título",
-                            ),
-                            onChanged: (value) {
-                                provider.setNuevoTitulo(value);
-                                if (value != tituloOriginal) {
-                                  provider.actualizarCambios(true);
-                                } else {
-                                  provider.actualizarCambios(false);
-                                }
-                            },
+                        TextField(
+                          controller: _tituloController,
+                          focusNode: _focusNode,
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.title,
                           ),
+                          onChanged: (value) {
+                            if (pasos.isEmpty) return;
+                            final actualizado =
+                            pasos[pasoActual].copyWith(titulo: value);
+                            context
+                                .read<PasosRecetaProvider>()
+                                .actualizarPasoLocal(
+                                actualizado.numeroPaso, actualizado);
+                            providerDetalle.setCambioPaso(true);
+                          },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         TextField(
                           controller: _descripcionController,
                           maxLines: null,
-                          decoration: const InputDecoration(
-                            labelText: "Descripción",
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.description,
                           ),
                           onChanged: (value) {
-                              provider.setNuevaDescripcion(value);
-                              if (value != descripcionOriginal) {
-                                provider.actualizarCambios(true);
-                              }else {
-                                provider.actualizarCambios(false);
-                              }
+                            if (pasos.isEmpty) return;
+                            final actualizado =
+                            pasos[pasoActual].copyWith(descripcion: value);
+                            context
+                                .read<PasosRecetaProvider>()
+                                .actualizarPasoLocal(
+                                actualizado.numeroPaso, actualizado);
+                            providerDetalle.setCambioPaso(true);
                           },
                         ),
                       ],
                     ),
-                  )
-                ],
-              ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      onPressed: () {
+                        final pProv = context.read<PasosRecetaProvider>();
+                        pProv.crearPaso("", "");
+                        final nuevos = pProv.pasos;
+                        setState(() {
+                          pasoActual = nuevos.isEmpty ? 0 : nuevos.length - 1;
+                          _tituloController.text =
+                          nuevos.isNotEmpty ? nuevos.last.titulo : "";
+                          _descripcionController.text =
+                          nuevos.isNotEmpty ? nuevos.last.descripcion : "";
+                        });
+                        context.read<DetalleRecetaProvider>().setEdicion(true);
+                      },
+                      child: Text(AppLocalizations.of(context)!.add_step),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      onPressed: () async {
+                        final pProv = context.read<PasosRecetaProvider>();
+                        if (pProv.pasos.isEmpty) return;
+                        final paso = pProv.pasos[pasoActual];
+
+                        final confirmacion = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) {
+                            return AlertDialog(
+                              title: Text(AppLocalizations.of(context)!.delete_step),
+                              content: Text(AppLocalizations.of(context)!.delete_step_confirmation),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(dialogContext, false),
+                                  child: Text(AppLocalizations.of(context)!.cancel),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  onPressed: () => Navigator.pop(dialogContext, true),
+                                  child: Text(AppLocalizations.of(context)!.delete),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (confirmacion != true) return;
+                        await pProv.eliminarPaso(paso.numeroPaso);
+
+                        if (!mounted) return;
+                        final len = pProv.pasos.length;
+                        if (len > 0) {
+                          setState(() {
+                            if (pasoActual >= len) pasoActual = len - 1;
+                            _tituloController.text = pProv.pasos[pasoActual].titulo;
+                            _descripcionController.text = pProv.pasos[pasoActual].descripcion;
+                          });
+                        } else {
+                          setState(() {
+                            _tituloController.clear();
+                            _descripcionController.clear();
+                          });
+                        }
+                      },
+                      child: Text(AppLocalizations.of(context)!.delete_step),
+                    )
+                  ],
+                ),
+              ],
             ),
           ),
         ),
 
         const SizedBox(height: 16),
 
-        // Indicadores de puntos (dots)
-        _buildPageIndicator(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            pasos.length,
+                (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: index == pasoActual ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: index == pasoActual
+                    ? Colors.blue
+                    : index < pasoActual
+                    ? Colors.green.withOpacity(0.6)
+                    : Colors.grey.withOpacity(0.4),
+              ),
+            ),
+          ),
+        ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        // Botones de navegación
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ElevatedButton.icon(
+                icon: const Icon(Icons.arrow_back, size: 16),
+                label: Text(AppLocalizations.of(context)!.previous),
+                style: ElevatedButton.styleFrom(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
                 onPressed: pasoActual > 0
                     ? () {
                   setState(() {
                     pasoActual--;
-                    _tituloController.text = widget.pasosReceta[pasoActual].titulo;
+                    _tituloController.text = pasos[pasoActual].titulo;
                     _descripcionController.text =
-                        widget.pasosReceta[pasoActual].descripcion;
-                    _ultimoEstadoEdicion = false;
-                    provider.setEdicion(false);
-                    print(pasoActual+1);
-                    provider.restarPaso();
+                        pasos[pasoActual].descripcion;
                   });
-                  _resetProvider();
                 }
                     : null,
-                icon: const Icon(Icons.arrow_back, size: 16),
-                label: const Text("Anterior"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      pasoActual > 0 ? Colors.grey[600] : Colors.grey[300],
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
               ),
               ElevatedButton.icon(
-                onPressed: pasoActual < widget.pasosReceta.length - 1
-                    ? () {
-                  setState(() {
-                    pasoActual++;
-                    _tituloController.text = widget.pasosReceta[pasoActual].titulo;
-                    _descripcionController.text =
-                        widget.pasosReceta[pasoActual].descripcion;
-                    _ultimoEstadoEdicion = false;
-                    provider.setEdicion(false);
-                    print(pasoActual+1);
-                    provider.sumarPaso;
-                  });
-                  _resetProvider();
-                }
-                    : null,
                 icon: Icon(
-                  pasoActual == widget.pasosReceta.length - 1
+                  (pasos.isNotEmpty && pasoActual == pasos.length - 1)
                       ? Icons.check
-                      : pasoActual == widget.pasosReceta.length - 2
-                          ? Icons.flag
-                          : Icons.arrow_forward,
+                      : (pasos.isNotEmpty && pasoActual == pasos.length - 2)
+                      ? Icons.flag
+                      : Icons.arrow_forward,
                   size: 16,
                 ),
-                label: Text(pasoActual == widget.pasosReceta.length - 1
-                    ? "Finalizado"
-                    : pasoActual == widget.pasosReceta.length - 2
-                        ? "Finalizar"
-                        : "Siguiente"),
+                label: Text(
+                  (pasos.isEmpty)
+                      ? AppLocalizations.of(context)!.next
+                      : (pasoActual == pasos.length - 1)
+                      ? AppLocalizations.of(context)!.finish
+                      : (pasoActual == pasos.length - 2)
+                      ? AppLocalizations.of(context)!.finish
+                      : AppLocalizations.of(context)!.next,
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: pasoActual == widget.pasosReceta.length - 1
+                  backgroundColor: (pasos.isNotEmpty && pasoActual == pasos.length - 1)
                       ? Colors.green
                       : Colors.blue,
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
                 ),
+                onPressed: (pasos.isNotEmpty && pasoActual < pasos.length - 1)
+                    ? () {
+                  setState(() {
+                    pasoActual++;
+                    _tituloController.text = pasos[pasoActual].titulo;
+                    _descripcionController.text =
+                        pasos[pasoActual].descripcion;
+                  });
+                }
+                    : null,
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  // Widget para crear los puntos indicadores
-  Widget _buildPageIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        widget.pasosReceta.length,
-        (index) => AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: index == pasoActual ? 24 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
-            color: index == pasoActual
-                ? Colors.blue
-                : index < pasoActual
-                    ? Colors.green.withOpacity(0.6)
-                    : Colors.grey.withOpacity(0.4),
-          ),
-        ),
-      ),
     );
   }
 }
