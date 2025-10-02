@@ -15,6 +15,7 @@ class FacturaProvider extends ChangeNotifier {
 
   FacturaProvider(this.database, this.userId);
 
+  /// METODO PARA ESTABLECER UN USUARIO Y RECARGAR SUS PRODUCTOS
   Future<void> setUserAndReload(String? uuid) async {
     userId = uuid;
     if (uuid == null) {
@@ -26,8 +27,22 @@ class FacturaProvider extends ChangeNotifier {
   }
 
 
-  /// Genera una factura para un supermercado específico usando los productos marcados en CompraProvider.
-  /// Devuelve true si la factura se generó correctamente, false en caso de error o si no hay productos marcados.
+  /// Genera una factura a partir de los productos marcados de la lista de la compra
+  ///
+  /// Flujo principal:
+  /// - Recalcula el precio total de los productos marcados
+  /// - Intenta insertar la fecha en la base de datos
+  /// - Recuperamos el id de la factura que acabamos de insertar
+  /// e insertamos en producto_factura todos los productos relacionados
+  /// con el id de la factura asociado
+  /// Creamos el modelo de [FacturaModel]
+  /// Lo insertamos en la lista local y notificamos a los listeners
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  ///
+  /// Excepciones:
+  /// - Puede lanzar errores si fallan las inserciones a la base de datos
   Future<void> generarFactura(List<CompraModel> productosMarcados, String uuidUsuario,) async {
     try {
       final double precioTotal = productosMarcados.fold(
@@ -78,6 +93,17 @@ class FacturaProvider extends ChangeNotifier {
     }
   }
 
+  /// Carga las facturas del usuario desde la base de datos
+  ///
+  /// Flujo principal:
+  /// - Consulta la tabla 'facturas' en la base de datos, filtrando por [userId]
+  /// - Convierte los resultados en una lista de [FacturaModel]
+  /// - Notifica a los listeners para actualizar la UI
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada)
+  /// Excepciones:
+  /// - Puede lanzar excepciones si falla la consulta a la base de datos
   Future<void> cargarFacturas() async {
     try {
       final facturasData = await database
@@ -117,13 +143,33 @@ class FacturaProvider extends ChangeNotifier {
     }
   }
 
+  /// Elimina una factura de la base de datos y sus productos relacionados
+  /// de la tabla 'producto_factura'
+  /// Flujo principal:
+  /// Realizamos una copia de seguridad de la lista local de facturas
+  /// Eliminamos la factura de la lista local y notificamos a los listeners
+  /// Eliminamos los productos asociados a esa factura de la tabla 'producto_factura'
+  /// Eliminamos la factura de la base de datos, si da un error, volvemos a
+  /// insertar la factura en la lista local y notificamos a los listeners
+  ///
+  /// Parametros:
+  /// - [idFactura]: Identificador de la factura
+  /// - [uuidUsuario]: Identificador del usuario
+  ///
+  /// Retorna:
+  ///- `void` (no retorna nada).
+  ///
+  /// Excepciones:
+  /// - Puede lanzar errores si falla la eliminacion en la base de datos
   Future<void> borrarFactura(int idFactura, String uuidUsuario) async {
+
     final backup = List<FacturaModel>.from(facturas);
 
     facturas.removeWhere((f) => f.id == idFactura);
     notifyListeners();
 
     try {
+      // TODO comprobar si borramos en producto_factura funciona y luego da erroe en facturas, se restaura en producto_factura
       await database.from('producto_factura').delete().eq('idfactura', idFactura);
 
       await database

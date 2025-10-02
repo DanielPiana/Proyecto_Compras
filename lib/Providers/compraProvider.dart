@@ -58,7 +58,7 @@ class CompraProvider extends ChangeNotifier {
   /// - Notifica a los listeners para refrescar la interfaz.
   ///
   /// Retorna:
-  /// - `Future<void>` (operación asincrónica sin valor de retorno).
+  /// - `void` (no retorna nada).
   ///
   /// Excepciones:
   /// - Puede lanzar errores si falla la consulta a la base de datos o la conversión de datos.

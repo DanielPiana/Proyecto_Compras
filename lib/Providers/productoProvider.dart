@@ -71,8 +71,7 @@ class ProductoProvider with ChangeNotifier {
   /// - Notifica a los listeners para actualizar la UI.
   ///
   /// Retorna:
-  /// - `Future<void>` (no retorna datos, solo una operación asincrónica).
-  ///
+  /// - `void` (no retorna nada)
   /// Excepciones:
   /// - Puede lanzar errores si falla la consulta a la base de datos o la conversión de datos.
   Future<void> cargarProductos() async {
@@ -258,7 +257,7 @@ class ProductoProvider with ChangeNotifier {
   /// - [id]: Identificador del producto a eliminar.
   ///
   /// Retorna:
-  /// - `Future<void>` (no retorna datos, solo una operación asincrónica).
+  /// - `void` (no retorna nada).
   ///
   /// Excepciones:
   /// - Puede lanzar errores si falla la eliminación en la base de datos.

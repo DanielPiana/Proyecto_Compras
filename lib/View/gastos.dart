@@ -23,18 +23,19 @@ class GastosState extends State<Gastos> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO EN LISTA-----------------*/
-
-  /// Muestra un cuadro de diálogo de confirmación para la eliminación de una factura.
+  /// Muestra un cuadro de diálogo de confirmación para eliminar una factura.
   ///
-  /// Este método muestra un 'AlertDialog' en el que se le pregunta al usuario si está
-  /// seguro de eliminar una factura específica. El cuadro de diálogo contiene dos botones:
-  /// - "Cancelar": Cierra el cuadro de diálogo sin realizar ninguna acción.
-  /// - "Eliminar": Elimina la factura especificada por el 'idFactura' y recarga las facturas.
+  /// Flujo principal:
+  /// - Pregunta al usuario si desea eliminar la factura.
+  /// - Si confirma, lo elimina localmente y luego intenta eliminarlo en el servidor.
+  /// - Si ocurre un error en el servidor, restaura la factura en local y muestra un mensaje de error.
   ///
-  /// Además, se informa al usuario de que los productos asociados a la factura no serán eliminados.
+  /// Parámetros:
+  /// - [context]: Contexto de la aplicación.
+  /// - [idFactura]: Identificador de la factura a eliminar.
   ///
-  /// El cuadro de diálogo se muestra de forma asincrónica y se cierra automáticamente al
-  /// confirmar la eliminación o al cancelar la acción.
+  /// Retorna:
+  /// - `void` (no retorna nada).
   void dialogoEliminacion(BuildContext context, int idFactura) {
     showDialog(
       context: context,
@@ -48,13 +49,19 @@ class GastosState extends State<Gastos> {
             AppLocalizations.of(context)!.deleteConfirmationR,
             style: const TextStyle(fontSize: 16),
           ),
+
+          // ---------- ACCION (Eliminar / Cancelar) ----------
           actions: [
+
+            // Cancelar
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
                 AppLocalizations.of(context)!.cancel,
               ),
             ),
+
+            // Eliminar
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
@@ -94,6 +101,7 @@ class GastosState extends State<Gastos> {
   Widget build(BuildContext context) {
     final facturas = context.watch<FacturaProvider>().facturas;
     return Scaffold(
+      // ---------- APP BAR ----------
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.receipt,
@@ -105,6 +113,8 @@ class GastosState extends State<Gastos> {
         ),
         centerTitle: true,
       ),
+
+      // ---------- BODY ----------
       body: facturas.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
@@ -121,6 +131,8 @@ class GastosState extends State<Gastos> {
                 border: Border.all(color: Colors.grey.shade600, width: 0.8),
                 borderRadius: BorderRadius.circular(10),
                 color: Colors.white),
+
+            // ---------- SECCIÓN DE FECHA ----------
             child: ExpansionTile(
               shape: const Border(),
               collapsedShape: const Border(),
@@ -155,6 +167,8 @@ class GastosState extends State<Gastos> {
                   ],
                 ),
               ),
+
+              // ---------- LISTA DE FACTURAS ----------
               children: [
                 ...factura.productos.map((producto) {
                   return Column(

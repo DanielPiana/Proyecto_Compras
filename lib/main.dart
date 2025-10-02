@@ -88,7 +88,6 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      // 🌞 Tema claro
       theme: ThemeData(
         colorScheme: const ColorScheme.light(
           primary: Color(0xFF4CAF50),
@@ -162,7 +161,6 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      // 🌚 Tema oscuro
       darkTheme: ThemeData(
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF4CAF50),
@@ -353,16 +351,13 @@ class MainState extends State<Main> {
                 final userProvider = context.read<UserProvider>();
                 userProvider.setUuid(null);
 
-                // Cerrar sesión en Supabase (opcional)
                 await Supabase.instance.client.auth.signOut();
 
-                // 🔹 Limpias todos los providers
                 context.read<ProductoProvider>().setUserAndReload(null);
                 context.read<CompraProvider>().setUserAndReload(null);
                 context.read<FacturaProvider>().setUserAndReload(null);
                 context.read<RecetaProvider>().setUserAndReload(null);
 
-                // Ir a login
                 if (context.mounted) {
                   Navigator.pushReplacementNamed(context, '/login');
                 }
@@ -385,12 +380,12 @@ class MainState extends State<Main> {
             ListTile(
                 title: Text(AppLocalizations.of(context)!.language),
                 trailing: DropdownButton(
-                    items: language, // Lista de opciones para el dropdownButton
+                    items: language,
                     onChanged: (value) {
-                      //es te value es el valor que vas a cambiar
+
                       setState(() {
                         languageSelected =
-                            value; // cambiamos el valor de languageSelected al valor seleccionado en el dropdownbutton
+                            value;
                         print(languageSelected);
                       });
                       context
@@ -406,7 +401,6 @@ class MainState extends State<Main> {
                 context.read<ThemeProvider>().toggleTheme();
               },
             )
-            // Añade más opciones según sea necesario
           ],
         ),
       ),
@@ -415,11 +409,8 @@ class MainState extends State<Main> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: bottomNavColors["background"],
-        // Usar el color de fondo de acuerdo al modo
         selectedItemColor: bottomNavColors["selectedItem"],
-        // Usar el color para el ítem seleccionado
         unselectedItemColor: bottomNavColors["unselectedItem"],
-        // Usar el color para los ítems no seleccionados
         items: [
           BottomNavigationBarItem(
             // PRODUCTOS
@@ -443,9 +434,7 @@ class MainState extends State<Main> {
           ),
         ],
         currentIndex: selectedIndex,
-        // INDICE EN EL QUE HACEMOS CLICK
-        onTap:
-        _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
+        onTap: _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
       ),
     );
   }
