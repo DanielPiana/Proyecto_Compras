@@ -456,6 +456,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
       child: Scaffold(
         body: CustomScrollView(
           slivers: [
+
+            // ---------- APP BAR ----------
             SliverAppBar(
               pinned: true,
               centerTitle: true,
@@ -464,6 +466,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                 collapseMode: CollapseMode.parallax,
                 background: Padding(
                   padding: const EdgeInsets.only(top: 50, left: 16, right: 16),
+
+                  // ---------- FOTO DE LA RECETA ----------
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: nuevaFotoFile != null
@@ -499,6 +503,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                   ),
                 ),
               ),
+
+              // ---------- TITLO DEL APP BAR ----------
               title: AnimatedCrossFade(
                 duration: const Duration(milliseconds: 400),
                 crossFadeState: editandoNombre
@@ -545,6 +551,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
             SliverPadding(
               padding: const EdgeInsets.all(16.0),
               sliver: SliverList(
+
+                // ---------- STEPPER PERSONALIZADO ----------
                 delegate: SliverChildListDelegate([
                   Builder(builder: (context) {
                     final pasosProvider = context.watch<PasosRecetaProvider>();
@@ -606,12 +614,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                     ],
                   ),
                   const SizedBox(height: 8),
+
+                  // ---------- LISTA DE PRODUCTOS ASOCIADOS A LA RECETA ----------
                   Consumer<ProductosRecetaProvider>(
                     builder: (context, prov, _) {
                       if (prov.productos.isEmpty) {
                         return Text(AppLocalizations.of(context)!.no_linked_products);
                       }
-
                       return Column(
                         children: prov.productos.map((producto) {
                           return Container(
@@ -676,6 +685,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           buttonSize: const Size(58, 58),
           children: [
+
+            // ---------- ICONO EDITAR PASOS ----------
             SpeedDialChild(
               child: const Icon(Icons.description),
               label: AppLocalizations.of(context)!.edit_step,
@@ -689,6 +700,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                 context.read<DetalleRecetaProvider>().setEdicion(true);
               },
             ),
+
+            // ---------- ICONO EDITAR IMAGEN ----------
             SpeedDialChild(
               child: const Icon(Icons.image),
               label: AppLocalizations.of(context)!.change_photo,
@@ -696,6 +709,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                 dialogEditarFoto();
               },
             ),
+
+            // ---------- ICONO EDITAR NOMBRE ----------
             SpeedDialChild(
               child: const Icon(Icons.edit),
               label: AppLocalizations.of(context)!.edit_name,
@@ -715,6 +730,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
             ),
           ],
         )
+
+        // ---------- FABS CONFIRMAR CAMBIOS / CANCELAR CAMBIOS ----------
             : Row(
           children: [
             const Spacer(),

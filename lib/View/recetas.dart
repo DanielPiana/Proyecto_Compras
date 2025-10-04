@@ -295,8 +295,9 @@ class RecetasState extends State<Recetas> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RecetaProvider>();
-
     return Scaffold(
+
+      // ---------- APP BAR ----------
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.recipes,
@@ -316,6 +317,8 @@ class RecetasState extends State<Recetas> {
           ),
         ],
       ),
+
+      // ---------- BODY ----------
       body: provider.recetas.isEmpty
           ? const Center(
         child: (CircularProgressIndicator()),
@@ -333,6 +336,7 @@ class RecetasState extends State<Recetas> {
             crossAxisCount = 2;
           }
 
+          // ---------- SECCIÓN DE LAS RECETAS ----------
           return GridView.builder(
             itemCount: provider.recetas.length,
             padding: const EdgeInsets.all(12),
@@ -353,6 +357,9 @@ class RecetasState extends State<Recetas> {
                     )
                 ),
                 elevation: 4,
+
+
+                // ---------- LISTENER DE LA RECETA ----------
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () async {
@@ -415,6 +422,8 @@ class RecetasState extends State<Recetas> {
                                   color: Colors.grey,
                                 ),
                               ),
+
+                              // ---------- ICONO PARA BORRAR Y COMPARTIR ----------
                               Positioned(
                                 top: 8,
                                 right: 8,
@@ -428,6 +437,8 @@ class RecetasState extends State<Recetas> {
                                       if (value == 'compartir') {
                                         // TODO: método compartir
                                       } else if (value == 'eliminar') {
+
+                                        // Eliminar
                                         try {
                                           await provider
                                               .eliminarReceta(receta.id!);
@@ -480,6 +491,7 @@ class RecetasState extends State<Recetas> {
                           ),
                         ),
                       ),
+                      // ---------- SECCIÓN INFERIOR DE PRECIO TOTAL ----------
                       Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(

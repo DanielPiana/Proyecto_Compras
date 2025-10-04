@@ -12,6 +12,7 @@ class RecetaProvider with ChangeNotifier {
 
   List<RecetaModel> get recetas => _recetas;
 
+  /// METODO PARA ESTABLECER UN USUARIO Y RECARGAR SUS RECETAS
   Future<void> setUserAndReload(String? uuid) async {
     userId = uuid;
     if (uuid == null) {
@@ -22,6 +23,18 @@ class RecetaProvider with ChangeNotifier {
     await cargarRecetas();
   }
 
+  /// Carga las recetas del usuario desde la base de datos
+  ///
+  /// Flujo principal:
+  /// - Consulta la tabla 'recetas' en la base de datos filtrando por [userId]
+  /// - Convierte las recetas en una lista [RecetaModel]
+  /// - Llama al metodo ordenarRecetas para ordenarlas alfabéticamente
+  /// - Notifica a los listeners para actualizar la UI
+  ///
+  /// Retorna:
+  /// - `void` (no retorna nada)
+  /// Excepciones:
+  /// - Puede lanzar errores si falla la consulta a la base de datos
   Future<void> cargarRecetas() async {
     try {
       final data = await database
@@ -38,11 +51,27 @@ class RecetaProvider with ChangeNotifier {
     }
   }
 
+  /// METODO PARA ORDENAR RECETAS ALFABETICAMENTE
   List<RecetaModel> ordenarRecetas(List<RecetaModel> recetas) {
     recetas.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
     return recetas;
   }
 
+  /// Crea una receta en la base de datos y lo añade a la lista local
+  ///
+  /// Flujo principal:
+  /// - Inserta la receta creada en la lista local
+  /// - Notifica a los listeners para recargar la UI
+  /// - Intenta insertar en la base de datos la [nuevaReceta] y la guarda en [response]
+  /// - Si da error y [response] está vacío salta un error y borramos la receta
+  /// de la lista local
+  ///
+  /// Parámetros:
+  /// - [nuevaReceta]: Instancia de [nuevaReceta] que vamos a crear
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  /// Excepciones:
+  /// - Puede lanzar errores si falla la inserción en la base de datos.
   Future<void> crearReceta(RecetaModel nuevaReceta) async {
     _recetas.insert(0, nuevaReceta);
     notifyListeners();
@@ -72,16 +101,31 @@ class RecetaProvider with ChangeNotifier {
     }
   }
 
+  /// Actualiza un producto existente en la base de datos y en la lista local.
+  ///
+  /// Flujo principal:
+  /// - Realiza una copia de respaldo de la lista local de productos
+  /// - Busca la receta en la lista local y la reemplaza por la versión nueva
+  /// - Intenta actualizar la receta en la base de datos
+  /// - Si el proceso falla se restaura la copia de seguridad y noticamos a los
+  /// listeners para actualizar la UI
+  ///
+  /// Parámetros:
+  ///  - [nuevaReceta]: Instancia de [RecetaModel] con los nuevos datos.
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  /// Excepciones:
+  /// - Puede lanzar errores si falla la actualización en la base de datos.
   Future<void> actualizarReceta(RecetaModel recetaActualizada) async {
     final backup = List<RecetaModel>.from(_recetas);
 
     final index = _recetas.indexWhere((r) => r.id == recetaActualizada.id);
+
     if (index != -1) {
       _recetas[index] = recetaActualizada;
       ordenarRecetas(_recetas);
       notifyListeners();
     }
-
     try {
       await database.from('recetas').update(recetaActualizada.toMap()).eq('id', recetaActualizada.id!);
     } catch (e) {
@@ -91,6 +135,21 @@ class RecetaProvider with ChangeNotifier {
     }
   }
 
+  /// Elimina una receta de la base de datos y de la lista local.
+  ///
+  /// Flujo principal:
+  /// - Realiza una copia de seguridad de la lista local de recetas
+  /// - Elimina la receta de la lista local según su [id]
+  /// - Notifica a los listeners para recargar la UI
+  /// - Intenta eliminar la receta de la tabla 'recetas' de la base de datos
+  /// - Si da error, se restaura la copia de seguridad y notifica a los listeners
+  ///
+  /// Parámetros:
+  /// - [id]: Identificador del producto a eliminar.
+  /// Retorna:
+  /// - `void` (no retorna nada).
+  /// Excepciones:
+  /// - Puede lanzar errores si falla la eliminación de la base de datos.
   Future<void> eliminarReceta(int id) async {
     final backup = List<RecetaModel>.from(_recetas);
 
@@ -106,21 +165,24 @@ class RecetaProvider with ChangeNotifier {
     }
   }
 
+  /// METODO PARA AÑADIR UNA RECETA A LA LISTA LOCAL
   void addRecetaLocal(RecetaModel receta) {
     _recetas.add(receta);
     notifyListeners();
   }
 
+  /// METODO PARA ELIMINAR UNA RECETA A LA LISTA LOCAL
   void removeRecetaLocal(int id) {
     _recetas.removeWhere((r) => r.id == id);
     notifyListeners();
   }
 
+  /// METODO PARA ACTUALIZAR UNA RECETA EXISTENTE EN LA LISTA LOCAL
   void updateRecetaLocal(RecetaModel recetaActualizada) {
     final index = _recetas.indexWhere((r) => r.id == recetaActualizada.id);
     if (index != -1) {
       _recetas[index] = recetaActualizada;
-      // ordenarRecetas(_recetas);
+      ordenarRecetas(_recetas);
       notifyListeners();
     }
   }

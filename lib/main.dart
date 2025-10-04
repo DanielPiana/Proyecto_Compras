@@ -283,7 +283,7 @@ class MainState extends State<Main> {
     super.initState();
     // INICIALIZAMOS LAS PAGINAS AQUI, PARA QUE NO DE ERROR EL WIDGET.DATABASE
     pages = [
-      //DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
+      // DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
       const Producto(),
       const Compra(),
       const Gastos(),
@@ -434,7 +434,8 @@ class MainState extends State<Main> {
           ),
         ],
         currentIndex: selectedIndex,
-        onTap: _onItemTapped, //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
+        //LLAMAMOS AL METODO Y QUE SE ACTUALICE LA PAGINA A VISUALIZAR
+        onTap: _onItemTapped,
       ),
     );
   }

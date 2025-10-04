@@ -6,12 +6,10 @@ class DetalleRecetaProvider extends ChangeNotifier {
   String _nuevoTituloPaso = '';
   String _nuevaDescripcionPaso = '';
 
-  // BANDERAS
   bool _cambioNombre = false;
   bool _cambioFoto = false;
   bool _cambioPaso = false;
 
-  // GETTERS
   bool get estaEditando => _estaEditando;
   int get pasoActualParaActualizar => _pasoActualParaActualizar;
   String get nuevoTituloPaso => _nuevoTituloPaso;

@@ -127,9 +127,7 @@ class ProductoProvider with ChangeNotifier {
 
   /// METODO PARA ORDENAR PRODUCTOS ALFABETICAMENTE
   List<ProductoModel> ordenarProductos(List<ProductoModel> productos) {
-
     productos.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
-
     return productos;
   }
 
@@ -146,11 +144,9 @@ class ProductoProvider with ChangeNotifier {
   ///   notifica a los listeners y relanza la excepción.
   ///
   /// Parámetros:
-  /// - [nuevoProducto]: Instancia de [ProductoModel] que se desea crear.
-  ///
+  /// - [nuevoProducto]: Instancia de [ProductoModel] que vamos a crear.
   /// Retorna:
-  /// - `Future<void>` (no retorna datos, solo una operación asincrónica).
-  ///
+  /// - `void` (no retorna nada).
   /// Excepciones:
   /// - Puede lanzar errores si falla la inserción en la base de datos.
   Future<void> crearProducto(ProductoModel nuevoProducto) async {
@@ -187,7 +183,7 @@ class ProductoProvider with ChangeNotifier {
   ///
   /// Flujo principal:
   /// - Realiza una copia de respaldo de la lista local de productos.
-  /// - Busca el producto en la lista local y lo reemplaza por la versión actualizada.
+  /// - Busca el producto en la lista local y lo reemplaza por la versión nueva.
   /// - Ordena los productos y notifica a los listeners para refrescar la UI.
   /// - Actualiza también el producto en el [CompraProvider] para mantener la coherencia local.
   /// - Intenta actualizar el producto en la tabla `productos` de la base de datos.
@@ -200,7 +196,7 @@ class ProductoProvider with ChangeNotifier {
   /// - [compraProvider]: Proveedor de compras, usado para mantener consistencia local.
   ///
   /// Retorna:
-  /// - `Future<void>` (no retorna datos, solo una operación asincrónica).
+  /// - `void` (no retorna nada)
   ///
   /// Excepciones:
   /// - Puede lanzar errores si falla la actualización en la base de datos.
@@ -255,10 +251,8 @@ class ProductoProvider with ChangeNotifier {
   /// Parámetros:
   /// - [context]: Contexto de la aplicación, usado para acceder al [CompraProvider].
   /// - [id]: Identificador del producto a eliminar.
-  ///
   /// Retorna:
   /// - `void` (no retorna nada).
-  ///
   /// Excepciones:
   /// - Puede lanzar errores si falla la eliminación en la base de datos.
   Future<void> eliminarProducto(BuildContext context, int id) async {
