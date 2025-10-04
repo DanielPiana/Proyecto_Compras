@@ -30,11 +30,6 @@ class RecetaProvider with ChangeNotifier {
   /// - Convierte las recetas en una lista [RecetaModel]
   /// - Llama al metodo ordenarRecetas para ordenarlas alfabéticamente
   /// - Notifica a los listeners para actualizar la UI
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada)
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la consulta a la base de datos
   Future<void> cargarRecetas() async {
     try {
       final data = await database
@@ -65,13 +60,6 @@ class RecetaProvider with ChangeNotifier {
   /// - Intenta insertar en la base de datos la [nuevaReceta] y la guarda en [response]
   /// - Si da error y [response] está vacío salta un error y borramos la receta
   /// de la lista local
-  ///
-  /// Parámetros:
-  /// - [nuevaReceta]: Instancia de [nuevaReceta] que vamos a crear
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la inserción en la base de datos.
   Future<void> crearReceta(RecetaModel nuevaReceta) async {
     _recetas.insert(0, nuevaReceta);
     notifyListeners();
@@ -109,13 +97,6 @@ class RecetaProvider with ChangeNotifier {
   /// - Intenta actualizar la receta en la base de datos
   /// - Si el proceso falla se restaura la copia de seguridad y noticamos a los
   /// listeners para actualizar la UI
-  ///
-  /// Parámetros:
-  ///  - [nuevaReceta]: Instancia de [RecetaModel] con los nuevos datos.
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la actualización en la base de datos.
   Future<void> actualizarReceta(RecetaModel recetaActualizada) async {
     final backup = List<RecetaModel>.from(_recetas);
 
@@ -143,13 +124,6 @@ class RecetaProvider with ChangeNotifier {
   /// - Notifica a los listeners para recargar la UI
   /// - Intenta eliminar la receta de la tabla 'recetas' de la base de datos
   /// - Si da error, se restaura la copia de seguridad y notifica a los listeners
-  ///
-  /// Parámetros:
-  /// - [id]: Identificador del producto a eliminar.
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la eliminación de la base de datos.
   Future<void> eliminarReceta(int id) async {
     final backup = List<RecetaModel>.from(_recetas);
 

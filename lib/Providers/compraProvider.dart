@@ -56,12 +56,6 @@ class CompraProvider extends ChangeNotifier {
   ///   para forzar la recarga en la UI.
   /// - Calcula el precio total de la compra sumando los productos marcados.
   /// - Notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  ///
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la consulta a la base de datos o la conversión de datos.
   Future<void> cargarCompra() async {
     final response = await database
         .from('compra')
@@ -109,12 +103,6 @@ class CompraProvider extends ChangeNotifier {
   /// - Si el producto está marcado (`marcado == 1`), también incrementa el [precioTotalCompra].
   /// - Si no se encuentra en esa lista, se ignora sin lanzar error.
   /// - Al final, se notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Parámetros:
-  /// - [idProducto]: Identificador del producto cuya cantidad se incrementará.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
   void sumar1Cantidad(int idProducto) {
     comprasAgrupadas.forEach((key, list) {
       try {
@@ -139,12 +127,6 @@ class CompraProvider extends ChangeNotifier {
   /// - Si el producto está marcado (`marcado == 1`), también decrementa el [precioTotalCompra].
   /// - Si no se encuentra en esa lista, se ignora sin lanzar error.
   /// - Al final, se notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Parámetros:
-  /// - [idProducto]: Identificador del producto cuya cantidad se decrementará.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
   void restar1Cantidad(int idProducto) {
     comprasAgrupadas.forEach((key, list) {
       try {
@@ -185,15 +167,6 @@ class CompraProvider extends ChangeNotifier {
   /// - Si la operación en la base de datos falla:
   ///   - Restaura el producto eliminado en la lista local con [addProductoLocal].
   ///   - Muestra un log del error y relanza la excepción para que el llamador la maneje.
-  ///
-  /// Parámetros:
-  /// - [idProducto]: Identificador del producto a eliminar.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  ///
-  /// Excepciones:
-  /// - Relanza cualquier error producido durante la operación con la base de datos.
   Future<void> deleteProducto(int idProducto) async {
     final eliminado = _compras.firstWhere((p) => p.idProducto == idProducto);
 
@@ -207,7 +180,7 @@ class CompraProvider extends ChangeNotifier {
           .eq('usuariouuid', userId!);
     } catch (e) {
       addProductoLocal(eliminado);
-      debugPrint("❌ Error al eliminar producto: $e");
+      debugPrint("Error al eliminar producto: $e");
       rethrow;
     }
   }
@@ -223,12 +196,6 @@ class CompraProvider extends ChangeNotifier {
   ///   - Si el supermercado queda vacío, elimina la clave correspondiente del mapa.
   ///   - Si el producto estaba marcado, descuenta su precio total del [precioTotalCompra].
   /// - Finalmente, notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Parámetros:
-  /// - [idProducto]: Identificador del producto a eliminar.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
   void eliminarProductoLocal(int idProducto) {
     // BUSCAMOS EL INDICE Y GUARDAMOS EL PRODUCTO
     final index = _compras.indexWhere((p) => p.idProducto == idProducto);
@@ -265,12 +232,6 @@ class CompraProvider extends ChangeNotifier {
   ///   - Duplica la lista para forzar nueva referencia y refrescar la UI.
   /// - Si el producto está marcado, suma su precio al [precioTotalCompra].
   /// - Finalmente, notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Parámetros:
-  /// - [compra]: Instancia de [CompraModel] a agregar.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
   void addProductoLocal(CompraModel compra) {
     _compras.add(compra);
     ordenarCompras(_compras);
@@ -297,14 +258,6 @@ class CompraProvider extends ChangeNotifier {
   ///   - Si tras la eliminación la lista queda vacía, marca el supermercado para ser eliminado.
   /// - Si algún supermercado queda vacío, elimina la clave del mapa.
   /// - Finalmente, notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Parámetros:
-  /// - [idProducto]: Identificador del producto eliminado.
-  /// - [precio]: Precio unitario del producto.
-  /// - [cantidad]: Cantidad del producto que se elimina.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
   void actualizarPrecio(int idProducto, double precio, int cantidad) {
     // RESTAMOS EL PRECIO DEL PRODUCTO ELIMINADO
     precioTotalCompra -= precio * cantidad;
@@ -341,19 +294,6 @@ class CompraProvider extends ChangeNotifier {
   ///   - Lo agrega a la lista principal [_compras].
   ///   - Lo agrega también a la lista agrupada [comprasAgrupadas] según su supermercado.
   /// - Finalmente, notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Parámetros:
-  /// - [idProducto]: Identificador del producto a agregar.
-  /// - [precio]: Precio unitario del producto.
-  /// - [nombre]: Nombre del producto.
-  /// - [supermercado]: Nombre del supermercado al que pertenece.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  ///
-  /// Excepciones:
-  /// - [DuplicateProductException] si el producto ya existe en la compra.
-  /// - Relanza cualquier error inesperado durante la operación con la base de datos.
   Future<void> agregarACompra(int idProducto, double precio, String nombre, String supermercado,) async {
     try {
       final productosExistentes = await database
@@ -413,12 +353,6 @@ class CompraProvider extends ChangeNotifier {
   ///   - Inserta el producto actualizado en la lista agrupada correspondiente a su nuevo supermercado.
   ///   - Ordena las compras mediante [ordenarCompras].
   /// - Finalmente, notifica a los listeners para refrescar la interfaz.
-  ///
-  /// Parámetros:
-  /// - [productoActualizado]: Instancia de [ProductoModel] con los nuevos datos.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
   void actualizarProductoEnCompraLocal(ProductoModel productoActualizado) {
     final index =
     _compras.indexWhere((c) => c.idProducto == productoActualizado.id);

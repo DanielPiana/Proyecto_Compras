@@ -56,16 +56,29 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     nombreController.text = receta.nombre;
   }
 
+  /// METODO PARA OBTENER UNA LISTA DE LOS PRODUCTOS
   Future<List<Map<String, dynamic>>> obtenerProductos() async {
     final res = await Supabase.instance.client.from('productos').select();
     return List<Map<String, dynamic>>.from(res);
   }
 
+  /// Guarda los productos seleccionados para una receta en la base de datos.
+  ///
+  /// Flujo principal:
+  /// - Busca qué productos tiene actualmente guardados la receta en la tabla `receta_producto`.
+  /// - Compara esos productos con los que el usuario ha seleccionado ahora.
+  /// - Calcula:
+  ///   - [insertar]: los productos nuevos que hay que añadir.
+  ///   - [borrar]: los productos que ya no están seleccionados y hay que quitar.
+  /// - Añade a la base de datos los productos nuevos.
+  /// - Elimina los productos que ya no pertenecen a la receta.
   Future<void> guardarProductosEnReceta(int recetaId, Set<int> nuevosSeleccionados) async {
+
     final res = await Supabase.instance.client
         .from('receta_producto')
         .select('idproducto')
         .eq('idreceta', recetaId);
+
     final actuales = Set<int>.from(res.map((r) => r['idproducto'] as int));
 
     final insertar = nuevosSeleccionados.difference(actuales);
@@ -87,6 +100,19 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     }
   }
 
+
+  /// Muestra un cuadro de diálogo para seleccionar productos y guardarlos en una receta.
+  ///
+  /// Flujo principal:
+  /// - Obtiene la lista de productos disponibles desde el ProductoProvider.
+  /// - Obtiene los productos ya asociados a la receta desde el ProductosRecetaProvider.
+  /// - Crea un cuadro de diálogo con una lista de productos y casillas de verificación.
+  /// - El usuario puede marcar o desmarcar productos para añadir o quitar.
+  /// - Al pulsar Guardar:
+  ///   - Se sincroniza la selección con la base de datos llamando a syncProductos.
+  ///   - Si todo va bien, muestra un mensaje de éxito.
+  ///   - Si ocurre un error, muestra un mensaje de error.
+  /// - Al pulsar Cancelar, simplemente cierra el diálogo sin guardar cambios.
   void mostrarDialogoSeleccionProductos(BuildContext context) async {
     final productoProvider = context.read<ProductoProvider>();
     final recetaProvider = context.read<ProductosRecetaProvider>();
@@ -162,6 +188,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     );
   }
 
+  /// Muestra una ventana con los detalles de un producto.
   void mostrarDetalleProducto(BuildContext context, Map<String, dynamic> producto) {
     showDialog(
       context: context,
@@ -224,6 +251,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     );
   }
 
+  /// Abre la galería para seleccionar una nueva foto y la guarda temporalmente.
+  ///
+  /// Flujo principal:
+  /// - Abre la galería del dispositivo para elegir una imagen.
+  /// - Si el usuario no selecciona nada, no hace nada más.
+  /// - Si selecciona una imagen, la guarda en nuevaFotoFile.
+  /// - Marca en el DetalleRecetaProvider que la foto ha sido cambiada.
   void dialogEditarFoto() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -239,36 +273,14 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     context.read<DetalleRecetaProvider>().setCambioFoto(true);
   }
 
-  void dialogEditarNombre() {
-    final controller = TextEditingController(text: receta.nombre);
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.edit_name),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.new_name),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                nuevoNombre = controller.text.trim();
-              });
-              Navigator.pop(context);
-            },
-            child: Text(AppLocalizations.of(context)!.save),
-          ),
-        ],
-      ),
-    );
-  }
-
+  /// Actualiza en la base de datos el título y la descripción de un paso de la receta.
+  ///
+  /// Flujo principal:
+  /// - Busca el paso en la tabla pasos_receta usando el id de la receta y el número de paso.
+  /// - Si lo encuentra, actualiza el título y la descripción con los nuevos valores.
+  /// - Si no se encuentra el paso, devuelve false.
+  /// - Si la actualización se hace correctamente, devuelve true.
+  /// - Si ocurre un error durante el proceso, lo muestra por consola y devuelve false.
   Future<bool> actualizarPasoBBDD(int recetaId, int numeroPaso, String nuevoTitulo, String nuevaDescripcion,) async {
     try {
       final response =
@@ -281,18 +293,19 @@ class _DetalleRecetaState extends State<DetalleReceta> {
       }).select();
 
       if (response.isEmpty) {
-        print("⚠️ No se encontró el paso para actualizar");
+        print("No se encontró el paso para actualizar");
         return false;
       }
 
-      print("✅ Paso actualizado correctamente: $response");
+      print("Paso actualizado correctamente: $response");
       return true;
     } catch (e) {
-      print("❌ Error al actualizar el paso: $e");
+      print("Error al actualizar el paso: $e");
       return false;
     }
   }
 
+  /// METODO PARA MOSTRAR UN TEXTO AZUL PARA INTRODUCIR EL PRIMER PASO DE UNA RECETA SI NO TIENE PASOS.
   Widget textoAzulClickeable() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -317,6 +330,16 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     );
   }
 
+  /// Controla lo que ocurre al intentar salir de la pantalla de detalle de una receta.
+  ///
+  /// Flujo principal:
+  /// - Comprueba si hay cambios en el nombre, la foto o los pasos.
+  /// - Si no hay cambios, desactiva el modo edición y permite salir.
+  /// - Si hay cambios, muestra un cuadro de diálogo con tres opciones:
+  ///   - Cancelar: cierra el cuadro y sigue en la pantalla.
+  ///   - Salir sin guardar: muestra un aviso, borra los cambios y sale.
+  ///   - Guardar y salir: guarda los cambios y luego cierra la pantalla.
+  /// - Devuelve true si se puede salir, o false si debe mantenerse en la vista.
   Future<bool> _onWillPop() async {
     final detalleProvider = context.read<DetalleRecetaProvider>();
 
@@ -373,6 +396,16 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     return false;
   }
 
+  /// Guarda los cambios realizados en la receta.
+  ///
+  /// Flujo principal:
+  /// - Comprueba si se ha cambiado el nombre, la foto o los pasos de la receta.
+  /// - Si cambió el nombre o la descripción, actualiza la receta en la base de datos y en pantalla.
+  /// - Si cambió la foto, la sube a Supabase y actualiza la URL en la receta.
+  /// - Si cambió algún paso, recorre todos los pasos y los actualiza uno por uno.
+  /// - Marca que ya no hay cambios pendientes y muestra un mensaje de éxito.
+  /// - Si ocurre un error, muestra un mensaje de error.
+  /// - Si cerrarPantalla es true, cierra la vista al terminar.
   Future<void> guardarCambios({bool cerrarPantalla = false}) async {
     final detalleProvider = context.read<DetalleRecetaProvider>();
     final recetaProvider = context.read<RecetaProvider>();
@@ -435,7 +468,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
         contentType: asc.ContentType.success,
       );
     } catch (e) {
-      debugPrint("❌ Error en guardarCambios: $e");
+      debugPrint("Error en guardarCambios: $e");
       showAwesomeSnackBar(
         context,
         title: "Error",

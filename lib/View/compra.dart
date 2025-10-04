@@ -38,17 +38,6 @@ class CompraState extends State<Compra> {
   /// - Se muestra un snackbar de éxito si la eliminación es correcta.
   /// - Si ocurre un error durante la operación, se captura la excepción y
   ///   se muestra un snackbar de error.
-  ///
-  /// Parámetros:
-  /// - [context]: Contexto de la aplicación.
-  /// - [idProducto]: Identificador del producto a eliminar.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  ///
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la eliminación en la base de datos,
-  ///   aunque son capturados y notificados al usuario.
   void dialogoEliminacion(BuildContext context, int idProducto) {
     showDialog(
       context: context,
@@ -120,6 +109,8 @@ class CompraState extends State<Compra> {
     double precioTotalCompra = context.read<CompraProvider>().precioTotalCompra;
 
     return Scaffold(
+
+      // ---------- APP BAR ----------
       appBar: AppBar(
         title: Text(
           AppLocalizations.of(context)!.shoppingList,
@@ -130,6 +121,8 @@ class CompraState extends State<Compra> {
           ),
         ),
         centerTitle: true,
+
+        // ---------- GENERAR FACTURA ----------
         actions: [
           IconButton(
             icon: const Icon(Icons.receipt),
@@ -175,6 +168,8 @@ class CompraState extends State<Compra> {
           )
         ],
       ),
+
+      // ---------- BODY ----------
       body: comprasAgrupadas.isEmpty ? const Center(
         child: CircularProgressIndicator(),
       ) :
@@ -198,6 +193,8 @@ class CompraState extends State<Compra> {
                       border: Border.all(color: Colors.grey.shade600, width: 0.8),
                       borderRadius: BorderRadius.circular(10),
                       color: Colors.white),
+
+                  // ---------- SECCIÓN DE SUPERMERCADO ----------
                   child: ExpansionTile(
                     shape: const Border(),
                     collapsedShape: const Border(),
@@ -224,11 +221,19 @@ class CompraState extends State<Compra> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 4),
                               child: Center(
+
+                                // ---------- LISTA DE PRODUCTOS ----------
                                 child: ListTile(
-                                  visualDensity: const VisualDensity(horizontal: -4), // HACE QUE HAYA MENOS ESPACIO ENTRE EL LEADING Y EL TITLE
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 4), // REDUCE EL PADDING LATERAL
-                                  leading: IconButton( // BOTON PARA MARCAR Y DESMARCAR PRODUCTO
-                                    icon: Icon( // SI producto['marcado'] ES 1, PONEMOS UN ESTILO Y SI NO, OTRO
+                                  // HACE QUE HAYA MENOS ESPACIO ENTRE EL LEADING Y EL TITLE
+                                  visualDensity: const VisualDensity(horizontal: -4),
+                                  // REDUCE EL PADDING LATERAL
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                                  // BOTON PARA MARCAR Y DESMARCAR PRODUCTO
+                                  leading: IconButton(
+
+                                    // ---------- CHECKBOX DE MARCADO ----------
+                                    // SI producto['marcado'] ES 1, PONEMOS UN ESTILO Y SI NO, OTRO
+                                    icon: Icon(
                                       producto.marcado == 1
                                           ? Icons.check_box
                                           : Icons.check_box_outline_blank,
@@ -248,6 +253,8 @@ class CompraState extends State<Compra> {
                                       context.read<CompraProvider>().alternarMarcado(producto);
                                     },
                                   ),
+
+                                  // ---------- NOMBRE Y PRECIO DEL PRODUCTO ----------
                                   title: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,9 +269,12 @@ class CompraState extends State<Compra> {
                                     ],
                                   ),
                                   trailing: Row(
-                                    mainAxisSize: MainAxisSize.min, // HACEMOS QUE OCUPE LO NECESARIO
+                                    // HACEMOS QUE OCUPE LO NECESARIO
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON -
+                                      // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON
+                                      // Icono -
+                                      SizedBox(
                                         width: 25,
                                         height: 25,
                                         child: IconButton(
@@ -284,10 +294,13 @@ class CompraState extends State<Compra> {
                                           padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
                                         ),
                                       ),
-                                      // TEXTO PARA VISUALIZAR LA CANTIDAD COMPRADA
                                       const SizedBox(width: 2),
+
+                                      // Cantidad del producto
                                       Text(producto.cantidad.toString(), style: const TextStyle(fontSize: 16)),
                                       const SizedBox(width: 2),
+
+                                      // Iconon +
                                       SizedBox( // SizedBox PARA TAMAÑO PERSONALIZADO DEL BOTON +
                                         width: 25,
                                         height: 25,
@@ -296,18 +309,19 @@ class CompraState extends State<Compra> {
                                           iconSize: 25.0,
                                           onPressed: () {
                                             setState(() {
-                                              // SI EL PRODUCTO ESTA MARCADO, LO SUMAMOS
                                               setState(() {
-                                                precioTotalCompra += producto.precio; // SUMAR SI EL PRECIO ESTA MARCADO
+                                                // SUMAR SI EL PRECIO ESTA MARCADO
+                                                precioTotalCompra += producto.precio;
                                               });
                                               context.read<CompraProvider>().sumar1Cantidad(producto.idProducto);
                                             });
                                           },
-                                          padding: EdgeInsets.zero, // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
+                                          // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
+                                          padding: EdgeInsets.zero,
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      Text( // FORMATEAMOS EL PRECIO A STRING PARA VISUALIZARLO BIEN
+                                      Text(
                                         '\$${(producto.precio * producto.cantidad).toStringAsFixed(2)}',
                                         style: TextStyle(
                                             color: Theme.of(context).colorScheme.primary,
@@ -315,7 +329,9 @@ class CompraState extends State<Compra> {
                                             fontSize: 16
                                         ),
                                       ),
-                                      IconButton( // ICONO PARA BORRAR EL PRODUCTO DE LA LISTA DE LA COMPRA
+
+                                      // ---------- ICONO DE BORRAR PRODUCTO ----------
+                                      IconButton(
                                         icon: const Icon(Icons.delete),
                                         constraints: const BoxConstraints(
                                           minWidth: 35,

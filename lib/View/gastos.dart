@@ -29,13 +29,6 @@ class GastosState extends State<Gastos> {
   /// - Pregunta al usuario si desea eliminar la factura.
   /// - Si confirma, lo elimina localmente y luego intenta eliminarlo en el servidor.
   /// - Si ocurre un error en el servidor, restaura la factura en local y muestra un mensaje de error.
-  ///
-  /// Parámetros:
-  /// - [context]: Contexto de la aplicación.
-  /// - [idFactura]: Identificador de la factura a eliminar.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
   void dialogoEliminacion(BuildContext context, int idFactura) {
     showDialog(
       context: context,

@@ -26,7 +26,6 @@ class FacturaProvider extends ChangeNotifier {
     await cargarFacturas();
   }
 
-
   /// Genera una factura a partir de los productos marcados de la lista de la compra
   ///
   /// Flujo principal:
@@ -37,12 +36,6 @@ class FacturaProvider extends ChangeNotifier {
   /// con el id de la factura asociado
   /// Creamos el modelo de [FacturaModel]
   /// Lo insertamos en la lista local y notificamos a los listeners
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  ///
-  /// Excepciones:
-  /// - Puede lanzar errores si fallan las inserciones a la base de datos
   Future<void> generarFactura(List<CompraModel> productosMarcados, String uuidUsuario,) async {
     try {
       final double precioTotal = productosMarcados.fold(
@@ -99,11 +92,6 @@ class FacturaProvider extends ChangeNotifier {
   /// - Consulta la tabla 'facturas' en la base de datos, filtrando por [userId]
   /// - Convierte los resultados en una lista de [FacturaModel]
   /// - Notifica a los listeners para actualizar la UI
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada)
-  /// Excepciones:
-  /// - Puede lanzar excepciones si falla la consulta a la base de datos
   Future<void> cargarFacturas() async {
     try {
       final facturasData = await database
@@ -151,16 +139,6 @@ class FacturaProvider extends ChangeNotifier {
   /// Eliminamos los productos asociados a esa factura de la tabla 'producto_factura'
   /// Eliminamos la factura de la base de datos, si da un error, volvemos a
   /// insertar la factura en la lista local y notificamos a los listeners
-  ///
-  /// Parametros:
-  /// - [idFactura]: Identificador de la factura
-  /// - [uuidUsuario]: Identificador del usuario
-  ///
-  /// Retorna:
-  ///- `void` (no retorna nada).
-  ///
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la eliminacion en la base de datos
   Future<void> borrarFactura(int idFactura, String uuidUsuario) async {
 
     final backup = List<FacturaModel>.from(facturas);

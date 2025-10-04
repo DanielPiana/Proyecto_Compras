@@ -22,13 +22,6 @@ class ProductoProvider with ChangeNotifier {
   /// - Normaliza el nombre del supermercado (primera letra mayúscula, resto minúsculas).
   /// - Ordena los productos alfabéticamente dentro de cada supermercado.
   /// - Ordena también los supermercados alfabéticamente por nombre.
-  ///
-  /// Retorna:
-  /// - [Map<String, List<ProductoModel>>]: Un mapa donde la clave es el nombre del supermercado
-  ///   y el valor es la lista de productos correspondientes, ambos ordenados.
-  ///
-  /// Excepciones:
-  /// - No lanza excepciones.
   Map<String, List<ProductoModel>> get productosPorSupermercado {
     final Map<String, List<ProductoModel>> agrupados = {};
 
@@ -69,11 +62,6 @@ class ProductoProvider with ChangeNotifier {
   /// - Convierte los resultados en una lista de [ProductoModel].
   /// - Ordena los productos mediante [ordenarProductos].
   /// - Notifica a los listeners para actualizar la UI.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada)
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la consulta a la base de datos o la conversión de datos.
   Future<void> cargarProductos() async {
     if (userId == null || userId!.isEmpty) {
       _productos = [];
@@ -100,14 +88,6 @@ class ProductoProvider with ChangeNotifier {
   /// - Convierte el resultado en una lista de instancias de [ProductoModel].
   /// - Si ocurre un error durante la consulta o la conversión, se captura la excepción,
   ///   se imprime un log de error y se retorna una lista vacía.
-  ///
-  /// Retorna:
-  /// - [Future<List<ProductoModel>>]: Una lista de productos obtenidos de la base de datos.
-  ///   Si ocurre un error, retorna una lista vacía.
-  ///
-  /// Excepciones:
-  /// - Puede lanzar errores relacionados con la consulta a la base de datos,
-  ///   aunque son capturados y gestionados internamente.
   Future<List<ProductoModel>> obtenerProductos() async {
     try {
       final res = await database
@@ -119,7 +99,7 @@ class ProductoProvider with ChangeNotifier {
           .map((map) => ProductoModel.fromMap(map))
           .toList();
     } catch (e) {
-      debugPrint("❌ Error al obtener productos: $e");
+      debugPrint("Error al obtener productos: $e");
       return [];
     }
   }
@@ -142,13 +122,6 @@ class ProductoProvider with ChangeNotifier {
   /// - Ordena los productos y notifica a los listeners para actualizar la UI.
   /// - Si ocurre un error, restaura la lista local desde la copia de respaldo,
   ///   notifica a los listeners y relanza la excepción.
-  ///
-  /// Parámetros:
-  /// - [nuevoProducto]: Instancia de [ProductoModel] que vamos a crear.
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la inserción en la base de datos.
   Future<void> crearProducto(ProductoModel nuevoProducto) async {
     final backupProductos = List<ProductoModel>.from(_productos);
 
@@ -190,16 +163,6 @@ class ProductoProvider with ChangeNotifier {
   /// - Actualiza en paralelo los registros de la tabla `compra` relacionados con ese producto.
   /// - Si ocurre un error, restaura la lista local desde el respaldo,
   ///   notifica a los listeners y relanza la excepción.
-  ///
-  /// Parámetros:
-  /// - [productoActualizado]: Instancia de [ProductoModel] con los nuevos datos.
-  /// - [compraProvider]: Proveedor de compras, usado para mantener consistencia local.
-  ///
-  /// Retorna:
-  /// - `void` (no retorna nada)
-  ///
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la actualización en la base de datos.
   Future<void> actualizarProducto(ProductoModel productoActualizado, CompraProvider compraProvider) async {
     final backupProductos = List<ProductoModel>.from(_productos);
 
@@ -247,14 +210,6 @@ class ProductoProvider with ChangeNotifier {
   /// - Intenta eliminar el producto en la tabla `productos` de la base de datos.
   /// - Si ocurre un error, restaura la lista local desde el respaldo,
   ///   vuelve a ordenar los productos, notifica a los listeners y relanza la excepción.
-  ///
-  /// Parámetros:
-  /// - [context]: Contexto de la aplicación, usado para acceder al [CompraProvider].
-  /// - [id]: Identificador del producto a eliminar.
-  /// Retorna:
-  /// - `void` (no retorna nada).
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la eliminación en la base de datos.
   Future<void> eliminarProducto(BuildContext context, int id) async {
     final backupProductos = List<ProductoModel>.from(_productos);
 
@@ -282,13 +237,6 @@ class ProductoProvider with ChangeNotifier {
   ///   presentes en dichos productos (ignorando los vacíos).
   /// - Si no hay productos cargados, consulta la tabla `productos` en la base de datos,
   ///   filtrando por el [userId], y extrae los supermercados únicos.
-  ///
-  /// Retorna:
-  /// - [Future<List<String>>]: Una lista con los nombres de supermercados únicos.
-  ///   La lista nunca contendrá cadenas vacías, pero puede estar vacía si no hay supermercados.
-  ///
-  /// Excepciones:
-  /// - Puede lanzar errores si falla la consulta a la base de datos.
   Future<List<String>> obtenerSupermercados() async {
     // SI HAY PRODUCTOS CARGADOS, USAMOS LA LISTA LOCAL
     if (_productos.isNotEmpty) {
