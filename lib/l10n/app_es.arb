@@ -108,5 +108,9 @@
    "error" : "Error",
    "register_try_ok" : "Cuenta creada correctamente",
    "register_try_error" : "Error al crear cuenta",
-   "unknown_error" : "Error desconocido"
-}
+   "unknown_error" : "Error desconocido",
+   "shopping_list" : "Lista de la compra",
+   "share_shopping_list_error" : "Error al compartir la lista de la compra",
+   "copied_list" : "Lista copiada al portapapeles",
+   "share_empty_list" : "Selecciona un producto para compartir"
+   }

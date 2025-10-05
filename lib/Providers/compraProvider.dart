@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../l10n/app_localizations.dart';
 import '../models/compraModel.dart';
 import '../models/productoModel.dart';
+import 'package:intl/intl.dart';
+
+import 'languageProvider.dart';
 
 class DuplicateProductException implements Exception {}
 
@@ -398,5 +402,49 @@ class CompraProvider extends ChangeNotifier {
     }
 
     return compras;
+  }
+
+
+  /// Metodo para generar la lista de la compra en formato String
+  ///
+  /// Flujo principal:
+  /// - Comprueba si hay productos marcados, si no hay, devuelve una cadena vacía para mostrar una alerta.
+  /// - Si es escritorio (Windows/Linux/macOS): copia el texto al portapapeles y muestra snackbar de éxito.
+  /// - Si es móvil (Android/iOS): intenta abrir WhatsApp con `https://wa.me/?text=...`.
+  ///   - Si no se puede abrir, usa el diálogo de compartir genérico (`Share.share`).
+  /// - Si ocurre cualquier error, muestra un snackbar de error y finaliza.
+  String generarMensajeListaCompra(context, Locale locale) {
+    final hayMarcados = comprasAgrupadas.values
+        .any((lista) => lista.any((producto) => producto.marcado == 1));
+
+    if (!hayMarcados) return '';
+
+    final buffer = StringBuffer();
+    buffer.writeln('---- ${AppLocalizations.of(context)!.shopping_list} ----');
+    buffer.writeln('');
+
+    comprasAgrupadas.forEach((supermercado, productos) {
+
+      final productosMarcados = productos.where((producto) => producto.marcado == 1).toList();
+      if (productosMarcados.isEmpty) return;
+
+      buffer.writeln(supermercado);
+      for (final p in productosMarcados) {
+        final precioUnidad = NumberFormat.currency(locale:locale.toString(), symbol: '€')
+            .format(p.precio);
+        final precioTotal = NumberFormat.currency(locale:locale.toString(), symbol: '€')
+            .format(p.precio * p.cantidad);
+
+        buffer.writeln(
+            ' [ ] • ${p.nombre} — $precioUnidad/u × ${p.cantidad} = $precioTotal');
+      }
+      buffer.writeln('');
+    });
+
+    final totalFormateado =
+    NumberFormat.currency(locale: locale.toString(), symbol: '€').format(precioTotalCompra);
+    buffer.writeln('Total: $totalFormateado');
+
+    return buffer.toString();
   }
 }

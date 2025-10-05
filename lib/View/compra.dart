@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../Providers/compraProvider.dart';
 import '../Providers/facturaProvider.dart';
 import '../Providers/themeProvider.dart';
@@ -8,6 +12,7 @@ import '../Providers/userProvider.dart';
 import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
+import 'package:share_plus/share_plus.dart';
 
 
 class Compra extends StatefulWidget {
@@ -100,6 +105,55 @@ class CompraState extends State<Compra> {
   }
 
 
+  /// Comparte la lista de la compra adaptándose a la plataforma (escritorio vs. móvil).
+  ///
+  /// Flujo principal:
+  /// - Si el [mensaje] está vacío, muestra un aviso y termina.
+  /// - En Windows/Linux/macOS: copia el [mensaje] al portapapeles y muestra un snackbar de éxito.
+  /// - En Android/iOS: intenta abrir WhatsApp con `https://wa.me/?text=...`.
+  ///   - Si no se puede abrir, usa el diálogo de compartir genérico (`Share.share`).
+  /// - Si ocurre cualquier excepción, muestra un snackbar de error.
+  Future<void> compartirLista(BuildContext context, String mensaje) async {
+    if (mensaje.trim().isEmpty) {
+      showAwesomeSnackBar(
+        context,
+        title: AppLocalizations.of(context)!.warning,
+        message: AppLocalizations.of(context)!.share_empty_list,
+        contentType: asc.ContentType.warning,
+      );
+      return;
+    }
+
+    try {
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        await Clipboard.setData(ClipboardData(text: mensaje));
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.success,
+          message: AppLocalizations.of(context)!.copied_list,
+          contentType: asc.ContentType.success,
+        );
+      } else if (Platform.isAndroid || Platform.isIOS) {
+        final encodedMessage = Uri.encodeComponent(mensaje);
+        final whatsappUrl = Uri.parse('https://wa.me/?text=$encodedMessage');
+
+        if (await canLaunchUrl(whatsappUrl)) {
+          await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+        } else {
+          Share.share(mensaje);
+        }
+      }
+    } catch (e) {
+      showAwesomeSnackBar(
+        context,
+        title: AppLocalizations.of(context)!.error,
+        message: AppLocalizations.of(context)!.share_shopping_list_error,
+        contentType: asc.ContentType.failure,
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
 
@@ -122,8 +176,9 @@ class CompraState extends State<Compra> {
         ),
         centerTitle: true,
 
-        // ---------- GENERAR FACTURA ----------
+        // ---------- ACCIONES ( Compartir / Generar factura ----------
         actions: [
+          // Generar factura
           IconButton(
             icon: const Icon(Icons.receipt),
             tooltip: AppLocalizations.of(context)!.generateReceipt,
@@ -156,6 +211,9 @@ class CompraState extends State<Compra> {
                   message: AppLocalizations.of(context)!.receipt_created_ok,
                   contentType: asc.ContentType.success,
                 );
+
+                context.read<CompraProvider>().resetearProductosListaCompra();
+
               } catch (e) {
                 showAwesomeSnackBar(
                   context,
@@ -165,7 +223,17 @@ class CompraState extends State<Compra> {
                 );
               }
             },
-          )
+          ),
+
+          // Compartir
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Compartir lista',
+            onPressed: () async {
+              final mensaje = context.read<CompraProvider>().generarMensajeListaCompra(context,Localizations.localeOf(context));
+              await compartirLista(context, mensaje);
+            },
+          ),
         ],
       ),
 

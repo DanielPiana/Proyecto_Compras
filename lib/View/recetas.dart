@@ -435,7 +435,20 @@ class RecetasState extends State<Recetas> {
                                   child: PopupMenuButton<String>(
                                     onSelected: (value) async {
                                       if (value == 'compartir') {
+
+
+
+
+
                                         // TODO: método compartir
+
+
+
+
+
+
+
+
                                       } else if (value == 'eliminar') {
 
                                         // Eliminar

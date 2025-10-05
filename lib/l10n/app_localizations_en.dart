@@ -342,4 +342,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unknown_error => 'Unknown error';
+
+  @override
+  String get shopping_list => 'Shopping list';
+
+  @override
+  String get share_shopping_list_error => 'Error sharing shopping list';
+
+  @override
+  String get copied_list => 'List copied to clipboard';
+
+  @override
+  String get share_empty_list => 'Select a producto to share';
 }

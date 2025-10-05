@@ -13,9 +13,11 @@ dependencies:
   file_picker: ^10.3.0
   flutter_slidable: ^3.0.0
   flutter_speed_dial: ^7.0.0
+  share_plus: ^10.0.2
   flutter:
     sdk: flutter
   sqflite: ^2.2.7
+  url_launcher: ^6.3.2
 
 dependency_overrides:
   awesome_snackbar_content: ^0.1.7

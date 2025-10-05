@@ -108,5 +108,9 @@
   "error" : "Error",
   "register_try_ok" : "Account created succesfully",
   "register_try_error" : "Error creating account",
-  "unknown_error" : "Unknown error"
+  "unknown_error" : "Unknown error",
+  "shopping_list" : "Shopping list",
+  "share_shopping_list_error" : "Error sharing shopping list",
+  "copied_list" : "List copied to clipboard",
+  "share_empty_list" : "Select a producto to share"
 }

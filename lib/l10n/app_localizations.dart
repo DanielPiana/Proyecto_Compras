@@ -751,6 +751,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Error desconocido'**
   String get unknown_error;
+
+  /// No description provided for @shopping_list.
+  ///
+  /// In es, this message translates to:
+  /// **'Lista de la compra'**
+  String get shopping_list;
+
+  /// No description provided for @share_shopping_list_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al compartir la lista de la compra'**
+  String get share_shopping_list_error;
+
+  /// No description provided for @copied_list.
+  ///
+  /// In es, this message translates to:
+  /// **'Lista copiada al portapapeles'**
+  String get copied_list;
+
+  /// No description provided for @share_empty_list.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona un producto para compartir'**
+  String get share_empty_list;
 }
 
 class _AppLocalizationsDelegate
