@@ -179,7 +179,7 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
 
                 const SizedBox(height: 16),
 
-
+                if (providerDetalle.estaEditando)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

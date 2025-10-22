@@ -487,7 +487,6 @@ class CompraProvider extends ChangeNotifier {
         comprasAgrupadas[compra.supermercado]!.add(compra);
       }
 
-      notifyListeners();
     } catch (e) {
       debugPrint('Error al eliminar productos marcados: $e');
       rethrow;
