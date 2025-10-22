@@ -206,14 +206,14 @@ class CompraState extends State<Compra> {
                   context.read<UserProvider>().uuid!,
                 );
 
+                await context.read<CompraProvider>().eliminarProductosMarcados();
+
                 showAwesomeSnackBar(
                   context,
                   title: AppLocalizations.of(context)!.success,
                   message: AppLocalizations.of(context)!.receipt_created_ok,
                   contentType: asc.ContentType.success,
                 );
-
-                context.read<CompraProvider>().resetearProductosListaCompra();
 
               } catch (e) {
                 showAwesomeSnackBar(

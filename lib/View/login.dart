@@ -291,7 +291,7 @@ class _LoginScreenState extends State<Login> {
                 },
               ),
               if (passwordTouched && !validPassword)
-                Text(AppLocalizations.of(context)!.invalid_email,
+                Text(AppLocalizations.of(context)!.password_short_error,
                     style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
 

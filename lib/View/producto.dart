@@ -361,11 +361,21 @@ class ProductoState extends State<Producto> {
                     ),
                     const SizedBox(height: 8),
                     if (nuevaImagenSeleccionada != null)
-                      Image.file(nuevaImagenSeleccionada!,
-                          height: 100, fit: BoxFit.cover)
+                      Center(
+                        child: Image.file(
+                          nuevaImagenSeleccionada!,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      )
                     else if (producto.foto.isNotEmpty)
-                      Image.network(producto.foto,
-                          height: 100, fit: BoxFit.cover),
+                      Center(
+                        child: Image.network(
+                          producto.foto,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -624,7 +634,7 @@ class ProductoState extends State<Producto> {
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      initialValue: supermercadoSeleccionado,
+                      value: supermercadoSeleccionado,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.supermarket,
@@ -735,10 +745,12 @@ class ProductoState extends State<Producto> {
                     ),
                     const SizedBox(height: 8),
                     if (imagenSeleccionada != null)
-                      Image.file(
-                        imagenSeleccionada!,
-                        height: 100,
-                        fit: BoxFit.cover,
+                      Center(
+                        child: Image.file(
+                          imagenSeleccionada!,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                   ],
                 ),
@@ -1081,6 +1093,7 @@ class ProductoState extends State<Producto> {
 
       // ---------- BOTÓN FLOTANTE ----------
       floatingActionButton: FloatingActionButton(
+        heroTag: "addProducts",
         onPressed: () {
           dialogoCreacion(context);
           },

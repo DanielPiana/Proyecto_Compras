@@ -455,4 +455,43 @@ class CompraProvider extends ChangeNotifier {
 
     return buffer.toString();
   }
+
+  /// Método para eliminar los productos marcados de la lista de la compra.
+  ///
+  /// Flujo principal:
+  /// - Filtramos los productos marcados (producto.marcado == 1)
+  /// - Eliminamos de la lista local y notificamos a los constructores para que lo vea instantáneo el usuario
+  /// - Luego elimina esos mismos productos de la base de datos en Supabase.
+  /// - Actualizamos la lista de la compra
+  /// - Si ocurre algún error durante el proceso, lo captura, lo muestra en consola y relanza la excepción.
+
+  Future<void> eliminarProductosMarcados() async {
+    try {
+      final productosMarcados = _compras.where((producto) => producto.marcado == 1).toList();
+
+      _compras.removeWhere((p) => p.marcado == 1);
+      notifyListeners();
+
+      for (var producto in productosMarcados) {
+        await database
+            .from('compra')
+            .delete()
+            .eq('idproducto', producto.idProducto)
+            .eq('usuariouuid', userId!);
+      }
+
+      // ACTUALIZAMOS LA LISTA DE LA COMPRA
+      comprasAgrupadas = {};
+      for (var compra in _compras) {
+        comprasAgrupadas.putIfAbsent(compra.supermercado, () => []);
+        comprasAgrupadas[compra.supermercado]!.add(compra);
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al eliminar productos marcados: $e');
+      rethrow;
+    }
+  }
+
 }
