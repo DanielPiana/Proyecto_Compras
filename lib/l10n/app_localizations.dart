@@ -302,17 +302,17 @@ abstract class AppLocalizations {
   /// **'Seleccionar foto'**
   String get select_photo;
 
-  /// No description provided for @register_or_login.
+  /// No description provided for @login.
   ///
   /// In es, this message translates to:
-  /// **'Iniciar Sesión o Registrarse'**
-  String get register_or_login;
+  /// **'Entrar'**
+  String get login;
 
-  /// No description provided for @login_register.
+  /// No description provided for @register.
   ///
   /// In es, this message translates to:
-  /// **'Entrar / Registrar'**
-  String get login_register;
+  /// **'Registrarse'**
+  String get register;
 
   /// No description provided for @new_recipe.
   ///
@@ -746,6 +746,12 @@ abstract class AppLocalizations {
   /// **'Error al crear cuenta'**
   String get register_try_error;
 
+  /// No description provided for @register_registered_email.
+  ///
+  /// In es, this message translates to:
+  /// **'Este correo ya está registrado. Intenta iniciar sesión.'**
+  String get register_registered_email;
+
   /// No description provided for @unknown_error.
   ///
   /// In es, this message translates to:
@@ -775,6 +781,102 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Selecciona un producto para compartir'**
   String get share_empty_list;
+
+  /// No description provided for @manually_create_product.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear producto manualmente'**
+  String get manually_create_product;
+
+  /// No description provided for @scan_barcode.
+  ///
+  /// In es, this message translates to:
+  /// **'Escanear código de barras'**
+  String get scan_barcode;
+
+  /// No description provided for @barcode_error_message.
+  ///
+  /// In es, this message translates to:
+  /// **'El código de barras debe ser un número'**
+  String get barcode_error_message;
+
+  /// No description provided for @password_short_error.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña debe tener al menos 6 caracteres'**
+  String get password_short_error;
+
+  /// No description provided for @invalid_email.
+  ///
+  /// In es, this message translates to:
+  /// **'Debe ser un correo válido (gmail o hotmail) y terminar en .com'**
+  String get invalid_email;
+
+  /// No description provided for @minumun_6_characteres.
+  ///
+  /// In es, this message translates to:
+  /// **'Mínimo 6 caracteres'**
+  String get minumun_6_characteres;
+
+  /// No description provided for @password_matching_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Las contraseñas no coinciden'**
+  String get password_matching_error;
+
+  /// No description provided for @fill_fields_correctly.
+  ///
+  /// In es, this message translates to:
+  /// **'Por favor, completa los campos correctamente'**
+  String get fill_fields_correctly;
+
+  /// No description provided for @have_an_account.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Ya tienes una cuenta?'**
+  String get have_an_account;
+
+  /// No description provided for @dont_have_an_account.
+  ///
+  /// In es, this message translates to:
+  /// **'¿No tienes una cuenta?'**
+  String get dont_have_an_account;
+
+  /// No description provided for @add_product_placeholder_title.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes productos'**
+  String get add_product_placeholder_title;
+
+  /// No description provided for @add_product_placeholder_body.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí podrás gestionar tus productos: añadir, editar o eliminar. Más tarde los usarás en tus lista de la compra, factura o recetas'**
+  String get add_product_placeholder_body;
+
+  /// No description provided for @add_product_placeholder_bottom.
+  ///
+  /// In es, this message translates to:
+  /// **'Añade un producto'**
+  String get add_product_placeholder_bottom;
+
+  /// No description provided for @shopping_placeholder_title.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes productos'**
+  String get shopping_placeholder_title;
+
+  /// No description provided for @shopping_placeholder_body.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí puedes gestionar tu lista de la compra, organizada por supermercado. Marca o desmarca productos, ajusta las cantidades, genera una factura o comparte la lista.\n\nLos productos se añaden desde la pestaña de productos, usando el icono + de cada uno.'**
+  String get shopping_placeholder_body;
+
+  /// No description provided for @shopping_placeholder_top.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea una factura o comparte'**
+  String get shopping_placeholder_top;
 }
 
 class _AppLocalizationsDelegate

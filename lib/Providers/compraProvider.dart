@@ -5,7 +5,6 @@ import '../models/compraModel.dart';
 import '../models/productoModel.dart';
 import 'package:intl/intl.dart';
 
-import 'languageProvider.dart';
 
 class DuplicateProductException implements Exception {}
 
@@ -15,8 +14,10 @@ class CompraProvider extends ChangeNotifier {
 
   // LISTA DE COMPRAS CARGADAS DESDE LA BASE DE DATOS
   List<CompraModel> _compras = [];
-
   List<CompraModel> get compras => _compras;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
   // LISTA AGRUPADA POR SUPERMERCADO
   Map<String, List<CompraModel>> comprasAgrupadas = {};
@@ -61,40 +62,47 @@ class CompraProvider extends ChangeNotifier {
   /// - Calcula el precio total de la compra sumando los productos marcados.
   /// - Notifica a los listeners para refrescar la interfaz.
   Future<void> cargarCompra() async {
-    final response = await database
-        .from('compra')
-        .select('*, productos(supermercado)')
-        .eq('usuariouuid', userId!);
-
-    final List productos = response as List;
-
-    _compras = [];
-    comprasAgrupadas = {};
-    precioTotalCompra = 0.0;
-
-    // CONSTRUIMOS LA LISTA LOCAL
-    for (var p in productos) {
-      final compra = CompraModel.fromMap(p);
-      _compras.add(compra);
-    }
-
-    ordenarCompras(_compras);
-
-    // AGRUPAMOS POR SUPERMERCADO, FORZANDO NUEVA REFERENCIA DEL MAP PARA QUE CARGUE BIEN
-    for (var compra in _compras) {
-      final supermercado =
-          compra.supermercado;
-
-      comprasAgrupadas = Map.from(comprasAgrupadas)
-        ..putIfAbsent(supermercado, () => [])
-        ..[supermercado]!.add(compra);
-
-    if (compra.marcado == 1) {
-    precioTotalCompra += compra.precio * compra.cantidad;
-    }
-  }
-
+    _isLoading = true;
     notifyListeners();
+
+    try {
+      final response = await database
+          .from('compra')
+          .select('*, productos(supermercado)')
+          .eq('usuariouuid', userId!);
+
+      final List productos = response as List;
+
+      _compras = [];
+      comprasAgrupadas = {};
+      precioTotalCompra = 0.0;
+
+      // Construimos la lista local
+      for (var p in productos) {
+        final compra = CompraModel.fromMap(p);
+        _compras.add(compra);
+      }
+
+      ordenarCompras(_compras);
+
+      // Agrupamos por supermercado
+      for (var compra in _compras) {
+        final supermercado = compra.supermercado;
+
+        comprasAgrupadas = Map.from(comprasAgrupadas)
+          ..putIfAbsent(supermercado, () => [])
+          ..[supermercado]!.add(compra);
+
+        if (compra.marcado == 1) {
+          precioTotalCompra += compra.precio * compra.cantidad;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al cargar la lista de compra: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
 

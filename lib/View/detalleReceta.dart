@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:image_picker/image_picker.dart';
@@ -293,14 +294,16 @@ class _DetalleRecetaState extends State<DetalleReceta> {
       }).select();
 
       if (response.isEmpty) {
-        print("No se encontró el paso para actualizar");
+        if (kDebugMode) {
+          print("No se encontró el paso para actualizar");
+        }
         return false;
       }
-
-      print("Paso actualizado correctamente: $response");
       return true;
     } catch (e) {
-      print("Error al actualizar el paso: $e");
+      if (kDebugMode) {
+        print("Error al actualizar el paso: $e");
+      }
       return false;
     }
   }

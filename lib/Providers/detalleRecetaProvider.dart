@@ -64,19 +64,16 @@ class DetalleRecetaProvider extends ChangeNotifier {
 
   void setCambioNombre(bool value) {
     _cambioNombre = value;
-    print("booleana cambio nombre: $_cambioNombre");
     notifyListeners();
   }
 
   void setCambioFoto(bool value) {
     _cambioFoto = value;
-    print("booleana cambio foto: $_cambioFoto");
     notifyListeners();
   }
 
   void setCambioPaso(bool value) {
     _cambioPaso = value;
-    print("booleana cambio paso: $_cambioPaso");
     notifyListeners();
   }
 

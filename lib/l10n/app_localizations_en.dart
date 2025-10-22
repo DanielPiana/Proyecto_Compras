@@ -117,10 +117,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get select_photo => 'Select photo';
 
   @override
-  String get register_or_login => 'Login or register';
+  String get login => 'Login';
 
   @override
-  String get login_register => 'Login / Register';
+  String get register => 'Register';
 
   @override
   String get new_recipe => 'New recipe';
@@ -341,6 +341,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get register_try_error => 'Error creating account';
 
   @override
+  String get register_registered_email =>
+      'This email is already registered. Try logging in';
+
+  @override
   String get unknown_error => 'Unknown error';
 
   @override
@@ -354,4 +358,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get share_empty_list => 'Select a producto to share';
+
+  @override
+  String get manually_create_product => 'Manually create product';
+
+  @override
+  String get scan_barcode => 'Scan barcode';
+
+  @override
+  String get barcode_error_message => 'The barcode must be a number';
+
+  @override
+  String get password_short_error =>
+      'Password must contain at least 6 characteres';
+
+  @override
+  String get invalid_email =>
+      'Must be a valid email (hotmail or gmail) and end with .com';
+
+  @override
+  String get minumun_6_characteres => 'Minimum 6 characteres';
+
+  @override
+  String get password_matching_error => 'Passwords don\'t match';
+
+  @override
+  String get fill_fields_correctly => 'Please, fill the fields correctly';
+
+  @override
+  String get have_an_account => 'Already have an account?';
+
+  @override
+  String get dont_have_an_account => 'Don\'t have an account?';
+
+  @override
+  String get add_product_placeholder_title => 'You don\'t have any products';
+
+  @override
+  String get add_product_placeholder_body =>
+      'Here you can manage your products: add, edit, or delete them. Later, you\'ll use them in your shopping lists, invoices, or recipes';
+
+  @override
+  String get add_product_placeholder_bottom => 'Add a product';
+
+  @override
+  String get shopping_placeholder_title => 'You don\'t have any products';
+
+  @override
+  String get shopping_placeholder_body =>
+      'Here you can manage your shopping list, organized by supermarket. Check or uncheck products, adjust quantities, generate an invoice, or share the list.\n\nProducts are added from the Products tab, using the + icon on each one';
+
+  @override
+  String get shopping_placeholder_top => 'Create an receipt or share';
 }

@@ -17,7 +17,11 @@ import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'Providers/productoProvider.dart';
 import 'Providers/themeProvider.dart';
+import 'Widgets/awesomeSnackbar.dart';
 import 'l10n/app_localizations.dart';
+import 'package:proyectocompras/services/supermercados/mercadona_service.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
+
 
 /*---------------------------------------------------------------------------------------*/
 void main() async {
@@ -306,6 +310,7 @@ class MainState extends State<Main> {
       "unselectedItem": const Color(0xFFA5D6A7),
     };
 
+
     String languageSelected = "en";
 
     List<DropdownMenuItem> language = [
@@ -352,13 +357,11 @@ class MainState extends State<Main> {
                 userProvider.setUuid(null);
 
                 await Supabase.instance.client.auth.signOut();
-
+                if (context.mounted) {
                 context.read<ProductoProvider>().setUserAndReload(null);
                 context.read<CompraProvider>().setUserAndReload(null);
                 context.read<FacturaProvider>().setUserAndReload(null);
                 context.read<RecetaProvider>().setUserAndReload(null);
-
-                if (context.mounted) {
                   Navigator.pushReplacementNamed(context, '/login');
                 }
               },
@@ -386,14 +389,50 @@ class MainState extends State<Main> {
                       setState(() {
                         languageSelected =
                             value;
-                        print(languageSelected);
                       });
                       context
                           .read<LanguageProvider>()
                           .setLocale(Locale("$value"));
                     },
                     value:
-                    context.watch<LanguageProvider>().locale.languageCode)),
+                    context.watch<LanguageProvider>().locale.languageCode)
+            ),
+            ListTile(
+              leading: const Icon(Icons.sync),
+              title: const Text("Actualizar productos Mercadona"),
+              onTap: () async {
+                Navigator.pop(context);
+                print('Actualizando productos...');
+                await actualizarProductosMercadona();
+                print('Productos actualizados ✅');
+              },
+            ),
+            ListTile(
+              title: const Text('Actualizar códigos de barras'),
+              onTap: () async {
+                await actualizarCodigosDeBarras();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Códigos de barras actualizados ✅')),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Actualizar productos personales'),
+              onTap: () async {
+                final productoProvider = context.read<ProductoProvider>();
+                final compraProvider = context.read<CompraProvider>();
+
+                await productoProvider.actualizarProductosDesdeSupabase(compraProvider);
+
+                showAwesomeSnackBar(
+                  context,
+                  title: 'Actualización completada',
+                  message: 'Tus productos han sido sincronizados con Mercadona ✅',
+                  contentType: asc.ContentType.success,
+                );
+
+              },
+            ),
             SwitchListTile(
               title: Text(AppLocalizations.of(context)!.darkTheme),
               value: context.watch<ThemeProvider>().isDarkMode,
@@ -414,22 +453,22 @@ class MainState extends State<Main> {
         items: [
           BottomNavigationBarItem(
             // PRODUCTOS
-            icon: Icon(Icons.fastfood),
+            icon: const Icon(Icons.fastfood),
             label: (AppLocalizations.of(context)!.products).toString(),
           ),
           BottomNavigationBarItem(
             // COMPRA
-            icon: Icon(Icons.shopping_cart_outlined),
+            icon: const Icon(Icons.shopping_cart_outlined),
             label: (AppLocalizations.of(context)!.shoppingList).toString(),
           ),
           BottomNavigationBarItem(
             // GASTOS
-            icon: Icon(Icons.attach_money),
+            icon: const Icon(Icons.attach_money),
             label: (AppLocalizations.of(context)!.receipt).toString(),
           ),
           BottomNavigationBarItem(
             // RECETAS
-            icon: Icon(Icons.restaurant_menu),
+            icon: const Icon(Icons.restaurant_menu),
             label: (AppLocalizations.of(context)!.recipes).toString(),
           ),
         ],

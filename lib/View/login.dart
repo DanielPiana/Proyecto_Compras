@@ -21,11 +21,37 @@ class Login extends StatefulWidget {
 class _LoginScreenState extends State<Login> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
 
   bool isLoading = false;
   String error = '';
+  bool isRegistering = false;
 
-  Future<void> loginORegistro() async {
+  // Estados para validación
+  bool emailTouched = false;
+  bool passwordTouched = false;
+  bool confirmPasswordTouched = false;
+
+  bool validEmail = false;
+  bool validPassword = false;
+  bool validConfirmPassword = false;
+
+  final emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@(gmail\.com|hotmail\.com)$',
+    caseSensitive: false,
+  );
+
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // ---------- LOGIN ----------
+  Future<void> login() async {
     setState(() {
       isLoading = true;
       error = '';
@@ -35,25 +61,13 @@ class _LoginScreenState extends State<Login> {
     final password = passwordController.text.trim();
 
     try {
-      // INTENTO DE INICIO DE SESION
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      // SI FUNCIONA, GUARDAMOS USUARIO
       if (response.user != null) {
-        final uid = response.user!.id;
-
-        await guardarUUID(uid);
-        context.read<UserProvider>().setUuid(uid);
-
-        // RECARGAMOS LOS PROVIDERS
-        await context.read<ProductoProvider>().setUserAndReload(uid);
-        await context.read<CompraProvider>().setUserAndReload(uid);
-        await context.read<FacturaProvider>().setUserAndReload(uid);
-        await context.read<RecetaProvider>().setUserAndReload(uid);
-
+        await _setupUserSession(response.user!.id);
         if (!mounted) return;
 
         showAwesomeSnackBar(
@@ -64,133 +78,333 @@ class _LoginScreenState extends State<Login> {
         );
 
         Navigator.pushReplacementNamed(context, '/home');
-        return;
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+
+      if (e.message.contains("Invalid login credentials")) {
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.error,
+          message: AppLocalizations.of(context)!.login_try_error,
+          contentType: asc.ContentType.failure,
+        );
+        // IRRELEVANTE SI NO AÑADO CONFIRMACION DE EMAIL
+      } else if (e.message.contains("Email not confirmed")) {
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.error,
+          message: 'Por favor, confirma tu correo electrónico',
+          contentType: asc.ContentType.warning,
+        );
+      } else {
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.error,
+          message: e.message,
+          contentType: asc.ContentType.failure,
+        );
       }
     } catch (e) {
-      final errorMsg = e.toString();
-
-      if (errorMsg.contains("Invalid login credentials")) {
-        // EL CORREO EXISTE PERO LA CONTRASEÑA NO COINCIDE
-        if (mounted) {
-          showAwesomeSnackBar(
-            context,
-            title: AppLocalizations.of(context)!.error,
-            message: AppLocalizations.of(context)!.login_try_error,
-            contentType: asc.ContentType.failure,
-          );
-        }
-      } else if (errorMsg.contains("User not found") ||
-          errorMsg.contains("Email not confirmed") ||
-          errorMsg.contains("Invalid login credentials")) {
-        // INTENTAMOS REGISTRAR SI EL USUARIO NO EXISTE
-        try {
-          final signUp = await Supabase.instance.client.auth.signUp(
-            email: email,
-            password: password,
-          );
-
-          final user = signUp.user;
-
-          if (user != null) {
-            final usuarioUUID = user.id;
-            final fechaCreacion = DateTime.now().toIso8601String();
-
-            // INSERTAMOS EL USUARIO
-            await Supabase.instance.client.from('usuario').insert({
-              'usuariouuid': usuarioUUID,
-              'nombreusuario': email.split('@').first,
-              'correo': email,
-              'fechacreacion': fechaCreacion,
-            });
-
-            // ESTABLECEMOS EL USUARIO LOGEADO Y RESETEAMOS PROVEEDORES
-            await guardarUUID(usuarioUUID);
-            context.read<UserProvider>().setUuid(usuarioUUID);
-
-            if (mounted) {
-              showAwesomeSnackBar(
-                context,
-                title: AppLocalizations.of(context)!.success,
-                message: AppLocalizations.of(context)!.register_try_ok,
-                contentType: asc.ContentType.success,
-              );
-            }
-
-            // LE MANDAMOS A LA PESTAÑA PRINCIPAL
-            if (!mounted) return;
-            Navigator.pushReplacementNamed(context, '/home');
-            return;
-          }
-        } catch (signupError) {
-          // ERROR AL REGISTRAR
-          if (mounted) {
-            showAwesomeSnackBar(
-              context,
-              title: AppLocalizations.of(context)!.error,
-              message:
-              '${AppLocalizations.of(context)!.register_try_error} $signupError',
-              contentType: asc.ContentType.failure,
-            );
-          }
-        }
-      } else {
-        // ERROR GENÉRICO
-        if (mounted) {
-          showAwesomeSnackBar(
-            context,
-            title: AppLocalizations.of(context)!.error,
-            message: AppLocalizations.of(context)!.unknown_error,
-            contentType: asc.ContentType.failure,
-          );
-          print("Error: $errorMsg");
-        }
-      }
+      if (!mounted) return;
+      showAwesomeSnackBar(
+        context,
+        title: AppLocalizations.of(context)!.error,
+        message: AppLocalizations.of(context)!.unknown_error,
+        contentType: asc.ContentType.failure,
+      );
+      print("Error en login: $e");
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-
-    setState(() {
-      isLoading = false;
-    });
   }
 
+  // ---------- REGISTRO ----------
+  Future<void> registro() async {
+    setState(() {
+      isLoading = true;
+      error = '';
+    });
 
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    try {
+      final signUp = await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      if (signUp.user != null) {
+        final usuarioUUID = signUp.user!.id;
+        final fechaCreacion = DateTime.now().toIso8601String();
+
+        await Supabase.instance.client.from('usuario').insert({
+          'usuariouuid': usuarioUUID,
+          'nombreusuario': email.split('@').first,
+          'correo': email,
+          'fechacreacion': fechaCreacion,
+        });
+
+        await _setupUserSession(usuarioUUID);
+        if (!mounted) return;
+
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.success,
+          message: AppLocalizations.of(context)!.register_try_ok,
+          contentType: asc.ContentType.success,
+        );
+
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+
+      if (e.message.contains("User already registered")) {
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.error,
+          message: AppLocalizations.of(context)!.register_registered_email,
+          contentType: asc.ContentType.failure,
+        );
+      } else if (e.message.contains("Password should be at least")) {
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.error,
+          message: AppLocalizations.of(context)!.password_short_error,
+          contentType: asc.ContentType.failure,
+        );
+      } else {
+        showAwesomeSnackBar(
+          context,
+          title: AppLocalizations.of(context)!.error,
+          message: e.message,
+          contentType: asc.ContentType.failure,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showAwesomeSnackBar(
+        context,
+        title: AppLocalizations.of(context)!.error,
+        message: '${AppLocalizations.of(context)!.register_try_error} $e',
+        contentType: asc.ContentType.failure,
+      );
+      print("Error en registro: $e");
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _setupUserSession(String uuid) async {
+    await guardarUUID(uuid);
+    if (!mounted) return;
+
+    context.read<UserProvider>().setUuid(uuid);
+    await context.read<ProductoProvider>().setUserAndReload(uuid);
+    await context.read<CompraProvider>().setUserAndReload(uuid);
+    await context.read<FacturaProvider>().setUserAndReload(uuid);
+    await context.read<RecetaProvider>().setUserAndReload(uuid);
+  }
 
   Future<void> guardarUUID(String uuid) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('usuarioUUID', uuid);
   }
 
+  // ---------- INTERFAZ ----------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title:Text(AppLocalizations.of(context)!.register_or_login)),
+      appBar: AppBar(
+        title: Text(isRegistering
+            ? AppLocalizations.of(context)!.register
+            : AppLocalizations.of(context)!.login),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.mail),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.password),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLoading ? null : loginORegistro,
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : Text(AppLocalizations.of(context)!.login_register),
-            ),
-            if (error.isNotEmpty) ...[
-              const SizedBox(height: 20),
-              Text(error, style: const TextStyle(color: Colors.red)),
-            ]
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isRegistering ? Icons.person_add : Icons.login,
+                size: 80,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(height: 40),
+
+              // EMAIL
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.mail,
+                  prefixIcon: const Icon(Icons.email),
+                  suffixIcon: emailTouched
+                      ? (validEmail
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : const Icon(Icons.cancel, color: Colors.red))
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    emailTouched = true;
+                    validEmail = emailRegex.hasMatch(value.trim());
+                  });
+                },
+              ),
+              if (emailTouched && !validEmail)
+                Text(AppLocalizations.of(context)!.invalid_email,
+                    style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+
+              // PASSWORD
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.password,
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: passwordTouched
+                      ? (validPassword
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : const Icon(Icons.cancel, color: Colors.red))
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    passwordTouched = true;
+                    validPassword = value.trim().length >= 6;
+                    if (isRegistering && confirmPasswordTouched) {
+                      validConfirmPassword =
+                          value.trim() == confirmPasswordController.text.trim();
+                    }
+                  });
+                },
+              ),
+              if (passwordTouched && !validPassword)
+                Text(AppLocalizations.of(context)!.invalid_email,
+                    style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+
+              // CONFIRMAR CONTRASEÑA
+              if (isRegistering) ...[
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Confirmar contraseña',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: confirmPasswordTouched
+                        ? (validConfirmPassword
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : const Icon(Icons.cancel, color: Colors.red))
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      confirmPasswordTouched = true;
+                      validConfirmPassword =
+                          value.trim() == passwordController.text.trim();
+                    });
+                  },
+                ),
+                if (confirmPasswordTouched && !validConfirmPassword)
+                  Text(AppLocalizations.of(context)!.password_matching_error,
+                      style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 24),
+              ],
+
+              // BOTÓN PRINCIPAL
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : _handleSubmit,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                    isRegistering
+                        ? AppLocalizations.of(context)!.register
+                        : AppLocalizations.of(context)!.login,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // CAMBIO DE MODO
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(isRegistering
+                      ? AppLocalizations.of(context)!.have_an_account
+                      : AppLocalizations.of(context)!.dont_have_an_account),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        isRegistering = !isRegistering;
+                        error = '';
+                        confirmPasswordController.clear();
+                        emailTouched = passwordTouched =
+                            confirmPasswordTouched = false;
+                      });
+                    },
+                    child: Text(
+                      isRegistering
+                          ? AppLocalizations.of(context)!.login
+                          : AppLocalizations.of(context)!.register,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              if (error.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(error, style: const TextStyle(color: Colors.red)),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  // ---------- VALIDAR Y ENVIAR ----------
+  Future<void> _handleSubmit() async {
+    if (!validEmail || !validPassword) {
+      setState(() {
+        error = AppLocalizations.of(context)!.fill_fields_correctly;
+      });
+      return;
+    }
+
+    if (isRegistering) {
+      if (!validConfirmPassword) {
+        setState(() {
+          error = AppLocalizations.of(context)!.password_matching_error;
+        });
+        return;
+      }
+      await registro();
+    } else {
+      await login();
+    }
   }
 }

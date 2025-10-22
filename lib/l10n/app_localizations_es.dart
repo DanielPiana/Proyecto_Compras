@@ -117,10 +117,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get select_photo => 'Seleccionar foto';
 
   @override
-  String get register_or_login => 'Iniciar Sesión o Registrarse';
+  String get login => 'Entrar';
 
   @override
-  String get login_register => 'Entrar / Registrar';
+  String get register => 'Registrarse';
 
   @override
   String get new_recipe => 'Nueva receta';
@@ -340,6 +340,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get register_try_error => 'Error al crear cuenta';
 
   @override
+  String get register_registered_email =>
+      'Este correo ya está registrado. Intenta iniciar sesión.';
+
+  @override
   String get unknown_error => 'Error desconocido';
 
   @override
@@ -354,4 +358,57 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get share_empty_list => 'Selecciona un producto para compartir';
+
+  @override
+  String get manually_create_product => 'Crear producto manualmente';
+
+  @override
+  String get scan_barcode => 'Escanear código de barras';
+
+  @override
+  String get barcode_error_message => 'El código de barras debe ser un número';
+
+  @override
+  String get password_short_error =>
+      'La contraseña debe tener al menos 6 caracteres';
+
+  @override
+  String get invalid_email =>
+      'Debe ser un correo válido (gmail o hotmail) y terminar en .com';
+
+  @override
+  String get minumun_6_characteres => 'Mínimo 6 caracteres';
+
+  @override
+  String get password_matching_error => 'Las contraseñas no coinciden';
+
+  @override
+  String get fill_fields_correctly =>
+      'Por favor, completa los campos correctamente';
+
+  @override
+  String get have_an_account => '¿Ya tienes una cuenta?';
+
+  @override
+  String get dont_have_an_account => '¿No tienes una cuenta?';
+
+  @override
+  String get add_product_placeholder_title => 'No tienes productos';
+
+  @override
+  String get add_product_placeholder_body =>
+      'Aquí podrás gestionar tus productos: añadir, editar o eliminar. Más tarde los usarás en tus lista de la compra, factura o recetas';
+
+  @override
+  String get add_product_placeholder_bottom => 'Añade un producto';
+
+  @override
+  String get shopping_placeholder_title => 'No tienes productos';
+
+  @override
+  String get shopping_placeholder_body =>
+      'Aquí puedes gestionar tu lista de la compra, organizada por supermercado. Marca o desmarca productos, ajusta las cantidades, genera una factura o comparte la lista.\n\nLos productos se añaden desde la pestaña de productos, usando el icono + de cada uno.';
+
+  @override
+  String get shopping_placeholder_top => 'Crea una factura o comparte';
 }

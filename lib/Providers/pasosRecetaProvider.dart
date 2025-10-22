@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/PasoReceta.dart';
 
@@ -38,7 +38,9 @@ class PasosRecetaProvider extends ChangeNotifier {
             (map) => PasoReceta.fromJson(map, map['numero_paso']),
       ).toList();
     } catch (e) {
-      print("Error al cargar pasos: $e");
+      if (kDebugMode) {
+        print("Error al cargar pasos: $e");
+      }
     } finally {
       _estaCargando = false;
       notifyListeners();
@@ -76,7 +78,9 @@ class PasosRecetaProvider extends ChangeNotifier {
     try {
       await database.from('pasos_receta').insert(nuevoPaso.toMap(recetaId: recetaId));
     } catch (e) {
-      print("Error al crear paso: $e");
+      if (kDebugMode) {
+        print("Error al crear paso: $e");
+      }
       _pasos.removeWhere((p) => p.numeroPaso == nuevoNumeroPaso);
       notifyListeners();
     }
@@ -105,7 +109,9 @@ class PasosRecetaProvider extends ChangeNotifier {
         'numero_paso': paso.numeroPaso,
       });
     } catch (e) {
-      print("Error al actualizar paso: $e");
+      if (kDebugMode) {
+        print("Error al actualizar paso: $e");
+      }
     }
   }
 
@@ -130,9 +136,13 @@ class PasosRecetaProvider extends ChangeNotifier {
         'numero_paso': numeroPaso,
       });
 
-      print("Paso $numeroPaso eliminado en Supabase");
+      if (kDebugMode) {
+        print("Paso $numeroPaso eliminado en Supabase");
+      }
     } catch (e) {
-      print("Error al eliminar paso: $e");
+      if (kDebugMode) {
+        print("Error al eliminar paso: $e");
+      }
       _pasos.add(eliminado);
       _pasos.sort((a, b) => a.numeroPaso.compareTo(b.numeroPaso));
       notifyListeners();

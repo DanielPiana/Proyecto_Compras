@@ -14,6 +14,11 @@ dependencies:
   flutter_slidable: ^3.0.0
   flutter_speed_dial: ^7.0.0
   share_plus: ^10.0.2
+  awesome_snackbar_content: ^0.1.7
+  path_provider: ^2.1.2
+  path: ^1.2.0
+  http: ^1.2.0
+  html: ^0.15.4
   flutter:
     sdk: flutter
   sqflite: ^2.2.7

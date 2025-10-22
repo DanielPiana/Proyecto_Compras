@@ -117,7 +117,7 @@ class RecetasState extends State<Recetas> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
-                    value: tiempoSeleccionado,
+                    initialValue: tiempoSeleccionado,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.estimated_time,
                       suffixIcon: tiempoTouched

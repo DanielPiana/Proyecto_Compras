@@ -9,6 +9,7 @@ import '../Providers/compraProvider.dart';
 import '../Providers/facturaProvider.dart';
 import '../Providers/themeProvider.dart';
 import '../Providers/userProvider.dart';
+import '../Widgets/PlaceHolderCompra.dart';
 import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
@@ -238,10 +239,11 @@ class CompraState extends State<Compra> {
       ),
 
       // ---------- BODY ----------
-      body: comprasAgrupadas.isEmpty ? const Center(
-        child: CircularProgressIndicator(),
-      ) :
-      Column(
+      body: compraProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : comprasAgrupadas.isEmpty
+          ? const PlaceholderCompra()
+          : Column(
         children: [
           Expanded( // EXPANDED PARA QUE EL ListView.Builder NO DE ERROR
             child: ListView.builder(

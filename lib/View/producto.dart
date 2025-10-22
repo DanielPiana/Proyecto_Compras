@@ -10,10 +10,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Providers/compraProvider.dart';
 import '../Providers/productoProvider.dart';
 import '../Providers/userProvider.dart';
+import '../Widgets/PlaceHolderProductos.dart';
 import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
 import '../models/productoModel.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
+import 'package:flutter/services.dart';
 
 class Producto extends StatefulWidget {
   const Producto({super.key});
@@ -482,18 +484,21 @@ class ProductoState extends State<Producto> {
     final TextEditingController nombreController = TextEditingController();
     final TextEditingController descripcionController = TextEditingController();
     final TextEditingController precioController = TextEditingController();
-    final TextEditingController nuevoSupermercadoController =
-    TextEditingController();
+    final TextEditingController nuevoSupermercadoController = TextEditingController();
+    final TextEditingController codigoBarrasController = TextEditingController();
 
+    String? codigoBarras;
     String? supermercadoSeleccionado;
     bool creandoSupermercado = false;
     File? imagenSeleccionada;
 
+    bool codigoBarrasValido = false;
     bool nombreValido = false;
     bool descripcionValida = false;
     bool precioValido = false;
     bool supermercadoValido = false;
 
+    bool codigoBarrasTouched = false;
     bool nombreTouched = false;
     bool descripcionTouched = false;
     bool precioTouched = false;
@@ -515,6 +520,36 @@ class ProductoState extends State<Producto> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ---------- ESCANEO DE CÓDIGO DE BARRAS ----------
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text("Escanear código de barras"),
+                      onPressed: () async {
+                        /*final resultado = await escanearCodigoBarras();
+                        if (resultado != null) {
+                          setState(() {
+                            codigoBarrasController.text = resultado;
+                            codigoBarrasValido = true;
+                            codigoBarrasTouched = true;
+                          });
+                        } else {
+                          print('⚠️ No se obtuvo código de barras.');
+                        }*/
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    // Si ya hay un código, mostramos el campo en solo lectura
+                    if (codigoBarrasController.text.isNotEmpty)
+                      TextField(
+                        controller: codigoBarrasController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: "Código de barras",
+                          suffixIcon: const Icon(Icons.check_circle, color: Colors.green),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+
                     TextField(
                       controller: nombreController,
                       decoration: InputDecoration(
@@ -533,6 +568,7 @@ class ProductoState extends State<Producto> {
                         });
                       },
                     ),
+
                     if (nombreTouched && !nombreValido)
                       Text(AppLocalizations.of(context)!.name_error_message,
                           style: const TextStyle(color: Colors.red)),
@@ -587,9 +623,8 @@ class ProductoState extends State<Producto> {
                       Text(AppLocalizations.of(context)!.price_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
-
                     DropdownButtonFormField<String>(
-                      value: supermercadoSeleccionado,
+                      initialValue: supermercadoSeleccionado,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.supermarket,
@@ -812,6 +847,32 @@ class ProductoState extends State<Producto> {
     );
   }
 
+
+
+
+  /*Future<String?> escanearCodigoBarras() async {
+    try {
+      final codigo = await FlutterBarcodeScanner.scanBarcode(
+        '#FF0000', // color del botón cancelar
+        'Cancelar',
+        true,
+        ScanMode.BARCODE,
+      );
+
+      if (codigo == '-1') {
+        print('❌ Escaneo cancelado por el usuario');
+        return null;
+      }
+
+      print('📦 Código escaneado: $codigo');
+      return codigo;
+    } on PlatformException catch (e) {
+      print('⚠️ Error al escanear: $e');
+      return null; // más adelante pediremos manualmente
+    }
+  }*/
+
+
   @override
   Widget build(BuildContext context) {
     final providerProducto = context.watch<ProductoProvider>();
@@ -832,18 +893,15 @@ class ProductoState extends State<Producto> {
       ),
 
       // ---------- BODY ----------
-      body: providerProducto.productos
-          .isEmpty // SI NO HAY PRODUCTOS MOSTRAMOS UN CIRCULO DE CARGA
-          ? const Center(
-        child: CircularProgressIndicator(),
-      )
+      body: providerProducto.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : providerProducto.productos.isEmpty
+          ? const PlaceholderProductos()
           : ListView(
         // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
         children: productosPorSupermercado.entries.map((entry) {
-          final supermercado =
-              entry.key; // AQUI OBTENEMOS EL NOMBRE DEL SUPERMERCADO
-          final productos = entry
-              .value; // AQUI OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
+          final supermercado = entry.key;
+          final productos = entry.value;
 
           return Container(
             margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
@@ -998,14 +1056,34 @@ class ProductoState extends State<Producto> {
           );
         }).toList(),
       ),
+      // floatingActionButton: SpeedDial(
+      //   heroTag: 'fab_productos',
+      //   animatedIcon: AnimatedIcons.add_event,
+      //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      //   buttonSize: const Size(58, 58),
+      //   children: [
+      //     SpeedDialChild(
+      //       child: const Icon(Icons.create),
+      //       label: AppLocalizations.of(context)!.manually_create_product,
+      //       onTap: () {
+      //         dialogoCreacion(context);
+      //       }
+      //     ),
+      //     SpeedDialChild(
+      //       child: const Icon(Icons.barcode_reader),
+      //       label: AppLocalizations.of(context)!.scan_barcode,
+      //       onTap: () {
+      //         // TODO Metodo para escanear codigo de barras
+      //       }
+      //     ),
+      //   ],
+      // ),
 
       // ---------- BOTÓN FLOTANTE ----------
       floatingActionButton: FloatingActionButton(
-        // BOTON FLOTANTE PARA AÑADIR NUEVO PRODUCTO
         onPressed: () {
-          // ABRIMOS EL DIALOGO DE CREACION
           dialogoCreacion(context);
-        },
+          },
         child: const Icon(Icons.add),
       ),
     );

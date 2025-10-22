@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/Providers/compraProvider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/productoModel.dart';
+import 'package:http/http.dart' as http;
 
 class ProductoProvider with ChangeNotifier {
   final SupabaseClient database;
@@ -11,8 +14,10 @@ class ProductoProvider with ChangeNotifier {
   ProductoProvider(this.database, this.userId);
 
   List<ProductoModel> _productos = [];
-
   List<ProductoModel> get productos => _productos;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
   /// Obtiene los productos agrupados por supermercado.
   ///
@@ -63,8 +68,12 @@ class ProductoProvider with ChangeNotifier {
   /// - Ordena los productos mediante [ordenarProductos].
   /// - Notifica a los listeners para actualizar la UI.
   Future<void> cargarProductos() async {
+    _isLoading = true;
+    notifyListeners();
+
     if (userId == null || userId!.isEmpty) {
       _productos = [];
+      _isLoading = false;
       notifyListeners();
       return;
     }
@@ -78,9 +87,11 @@ class ProductoProvider with ChangeNotifier {
 
     ordenarProductos(_productos);
 
+    _isLoading = false;
     notifyListeners();
   }
 
+  // SIN USO DE MOMENTO
   /// Obtiene los productos del usuario desde la base de datos.
   ///
   /// Flujo principal:
@@ -279,5 +290,70 @@ class ProductoProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+
+
+  Future<void> actualizarProductosDesdeSupabase(CompraProvider compraProvider) async {
+    try {
+      // 1️⃣ Descargar el JSON de Supabase Storage
+      const url = 'https://hrpcdkjacixsvlvsaxwn.supabase.co/storage/v1/object/public/jsonProductos/mercadona/productos_mercadona.json';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode != 200) {
+        debugPrint('❌ Error al descargar JSON (${response.statusCode})');
+        return;
+      }
+
+      // 2️⃣ Decodificar el JSON y crear un mapa {codigo_barras: producto}
+      final List<dynamic> listaMercadona = jsonDecode(response.body);
+      final Map<String, dynamic> mapaMercadona = {
+        for (final p in listaMercadona)
+          if (p['codigo_barras'] != null && p['codigo_barras'].toString().isNotEmpty)
+            p['codigo_barras'].toString(): p
+      };
+
+      debugPrint('✅ JSON de Mercadona cargado (${mapaMercadona.length} productos con código de barras)');
+
+      // 3️⃣ Recorrer los productos del usuario y buscar coincidencias
+      int actualizados = 0;
+      for (var producto in _productos) {
+        final ean = producto.codBarras;
+
+        if (ean.isNotEmpty && mapaMercadona.containsKey(ean)) {
+          final pMercadona = mapaMercadona[ean];
+
+          // Verificar si hay cambios relevantes
+          final nuevoPrecio = (pMercadona['precio'] as num?)?.toDouble() ?? producto.precio;
+          final nuevoNombre = pMercadona['nombre']?.toString() ?? producto.nombre;
+          final nuevaImagen = pMercadona['imagen']?.toString() ?? producto.foto;
+
+          final hayCambio = nuevoPrecio != producto.precio ||
+              nuevoNombre != producto.nombre ||
+              nuevaImagen != producto.foto;
+
+          if (hayCambio) {
+            final productoActualizado = ProductoModel(
+              id: producto.id,
+              codBarras: producto.codBarras,
+              nombre: nuevoNombre,
+              descripcion: producto.descripcion,
+              precio: nuevoPrecio,
+              supermercado: producto.supermercado,
+              usuarioUuid: producto.usuarioUuid,
+              foto: nuevaImagen,
+            );
+
+            await actualizarProducto(productoActualizado, compraProvider);
+            actualizados++;
+          }
+        }
+      }
+
+      debugPrint('✅ Actualizados $actualizados productos del usuario desde Mercadona');
+    } catch (e) {
+      debugPrint('❌ Error al actualizar productos desde Supabase: $e');
+    }
+  }
+
 
 }
