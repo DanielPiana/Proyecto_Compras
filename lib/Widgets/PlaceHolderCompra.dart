@@ -14,7 +14,7 @@ class PlaceholderCompra extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.shopping_cart, size: 80, color: Colors.grey),
+                const Icon(Icons.shopping_cart, size: 60, color: Colors.grey),
                 const SizedBox(height: 16),
                 Text(
                   AppLocalizations.of(context)!.shopping_placeholder_title,
@@ -37,8 +37,7 @@ class PlaceholderCompra extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: 16,
-          right: 8,
+          right: -10,
           child: IgnorePointer(
             ignoring: true,
             child: FloatingActionButton.extended(

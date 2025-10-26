@@ -129,5 +129,10 @@
    "add_product_placeholder_bottom" : "Añade un producto",
    "shopping_placeholder_title" : "No tienes productos",
    "shopping_placeholder_body" : "Aquí puedes gestionar tu lista de la compra, organizada por supermercado. Marca o desmarca productos, ajusta las cantidades, genera una factura o comparte la lista.\n\nLos productos se añaden desde la pestaña de productos, usando el icono + de cada uno.",
-   "shopping_placeholder_top" : "Crea una factura o comparte"
+   "shopping_placeholder_top" : "Crea una factura o comparte la lista",
+   "receipt_placeholder_title": "No tienes facturas",
+   "receipt_placeholder_body": "Aquí puede ver las facturas generadas para registrar tus gastos y mantener un control de tus compras\n Las facturas se generan desde la pestaña Compra.",
+   "recipe_placeholder_title": "No tienes recetas",
+   "recipe_placeholder_body": "Aquí puedes gestionar tus recetas: añadir, editar, eliminar o compartir, con pasos personalizados e ingredientes",
+   "recipe_placeholder_top": "Crea tu primera receta"
    }

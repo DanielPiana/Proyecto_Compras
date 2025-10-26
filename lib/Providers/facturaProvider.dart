@@ -13,6 +13,9 @@ class FacturaProvider extends ChangeNotifier {
   List<FacturaModel> _facturas = [];
   List<FacturaModel> get facturas => _facturas;
 
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
   FacturaProvider(this.database, this.userId);
 
   /// METODO PARA ESTABLECER UN USUARIO Y RECARGAR SUS PRODUCTOS
@@ -93,6 +96,9 @@ class FacturaProvider extends ChangeNotifier {
   /// - Convierte los resultados en una lista de [FacturaModel]
   /// - Notifica a los listeners para actualizar la UI
   Future<void> cargarFacturas() async {
+    _isLoading = true;
+    notifyListeners();
+
     try {
       final facturasData = await database
           .from('facturas')
@@ -104,6 +110,7 @@ class FacturaProvider extends ChangeNotifier {
 
       for (var factura in facturasData) {
         final idFactura = factura['id'];
+
         final productosData = await database
             .from('producto_factura')
             .select('cantidad, preciounidad, productos(nombre)')
@@ -125,9 +132,11 @@ class FacturaProvider extends ChangeNotifier {
       }
 
       _facturas = cargadas;
-      notifyListeners();
     } catch (e) {
       debugPrint('Error al cargar facturas: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

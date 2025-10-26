@@ -9,8 +9,11 @@ class RecetaProvider with ChangeNotifier {
   RecetaProvider(this.database, this.userId);
 
   List<RecetaModel> _recetas = [];
-
   List<RecetaModel> get recetas => _recetas;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
 
   /// METODO PARA ESTABLECER UN USUARIO Y RECARGAR SUS RECETAS
   Future<void> setUserAndReload(String? uuid) async {
@@ -31,6 +34,9 @@ class RecetaProvider with ChangeNotifier {
   /// - Llama al metodo ordenarRecetas para ordenarlas alfabéticamente
   /// - Notifica a los listeners para actualizar la UI
   Future<void> cargarRecetas() async {
+    _isLoading = true;
+    notifyListeners();
+
     try {
       final data = await database
           .from('recetas')
@@ -40,9 +46,11 @@ class RecetaProvider with ChangeNotifier {
 
       _recetas = data.map<RecetaModel>((r) => RecetaModel.fromMap(r)).toList();
       ordenarRecetas(_recetas);
-      notifyListeners();
     } catch (e) {
       debugPrint("Error al cargar recetas: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

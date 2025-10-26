@@ -11,6 +11,7 @@ import '../Providers/pasosRecetaProvider.dart';
 import '../Providers/recetaProvider.dart';
 import '../Providers/userProvider.dart';
 import 'package:flutter/foundation.dart';
+import '../Widgets/PlaceHolderRecetas.dart';
 import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
 import '../models/recetaModel.dart';
@@ -294,9 +295,9 @@ class RecetasState extends State<Recetas> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<RecetaProvider>();
-    return Scaffold(
+    final providerReceta = context.watch<RecetaProvider>();
 
+    return Scaffold(
       // ---------- APP BAR ----------
       appBar: AppBar(
         title: Text(
@@ -319,10 +320,10 @@ class RecetasState extends State<Recetas> {
       ),
 
       // ---------- BODY ----------
-      body: provider.recetas.isEmpty
-          ? const Center(
-        child: (CircularProgressIndicator()),
-      )
+      body: providerReceta.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : providerReceta.recetas.isEmpty
+          ? const PlaceholderRecetas()
           : LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
@@ -338,7 +339,7 @@ class RecetasState extends State<Recetas> {
 
           // ---------- SECCIÓN DE LAS RECETAS ----------
           return GridView.builder(
-            itemCount: provider.recetas.length,
+            itemCount: providerReceta.recetas.length,
             padding: const EdgeInsets.all(12),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
@@ -347,7 +348,7 @@ class RecetasState extends State<Recetas> {
               mainAxisSpacing: 12,
             ),
             itemBuilder: (context, index) {
-              final receta = provider.recetas[index];
+              final receta = providerReceta.recetas[index];
               return Card(
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -386,7 +387,7 @@ class RecetasState extends State<Recetas> {
                       ),
                     );
                     if (resultado == true) {
-                      provider.cargarRecetas();
+                      providerReceta.cargarRecetas();
                     }
                   },
                   child: Column(
@@ -453,7 +454,7 @@ class RecetasState extends State<Recetas> {
 
                                         // Eliminar
                                         try {
-                                          await provider
+                                          await providerReceta
                                               .eliminarReceta(receta.id!);
 
                                           showAwesomeSnackBar(

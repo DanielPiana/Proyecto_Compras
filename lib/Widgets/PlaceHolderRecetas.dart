@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
 import '../l10n/app_localizations.dart';
 
-class PlaceholderProductos extends StatelessWidget {
-  const PlaceholderProductos({super.key});
+class PlaceholderRecetas extends StatelessWidget {
+  const PlaceholderRecetas({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,17 +14,18 @@ class PlaceholderProductos extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.inventory_2_outlined, size: 60, color: Colors.grey),
+                const Icon(Icons.restaurant_menu, size: 80, color: Colors.grey),
                 const SizedBox(height: 16),
                 Text(
-                  AppLocalizations.of(context)!
-                      .add_product_placeholder_title,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  AppLocalizations.of(context)!.recipe_placeholder_title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  AppLocalizations.of(context)!
-                      .add_product_placeholder_body,
+                  AppLocalizations.of(context)!.recipe_placeholder_body,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
@@ -47,7 +47,7 @@ class PlaceholderProductos extends StatelessWidget {
                 children: [
                   Text(
                     AppLocalizations.of(context)!
-                        .add_product_placeholder_bottom,
+                        .recipe_placeholder_top,
                     style: const TextStyle(
                       color: Colors.grey,
                       fontStyle: FontStyle.italic,

@@ -125,9 +125,14 @@
   "have_an_account" : "Already have an account?",
   "dont_have_an_account" : "Don't have an account?",
   "add_product_placeholder_title" : "You don't have any products",
-  "add_product_placeholder_body" : "Here you can manage your products: add, edit, or delete them. Later, you'll use them in your shopping lists, invoices, or recipes",
+  "add_product_placeholder_body" : "Here you can manage your products: add, edit, or delete them. Later, you'll use them in your shopping lists, receipts, or recipes",
   "add_product_placeholder_bottom" : "Add a product",
   "shopping_placeholder_title" : "You don't have any products",
   "shopping_placeholder_body" : "Here you can manage your shopping list, organized by supermarket. Check or uncheck products, adjust quantities, generate an invoice, or share the list.\n\nProducts are added from the Products tab, using the + icon on each one",
-  "shopping_placeholder_top" : "Create an receipt or share"
+  "shopping_placeholder_top" : "Create an receipt or share list",
+  "receipt_placeholder_title": "You don't have any invoices",
+  "receipt_placeholder_body": "Here you can view the receipts generated to record your expenses and keep track of your purchases.\nReceipts are created from the Shopping tab.",
+  "recipe_placeholder_title": "You don't have any recipes",
+  "recipe_placeholder_body": "Here you can manage your recipes: add, edit, delete, or share them, with custom steps and ingredients.",
+  "recipe_placeholder_top": "Create your first recipe"
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Providers/facturaProvider.dart';
 import '../Providers/userProvider.dart';
+import '../Widgets/PlaceHolderFacturas.dart';
 import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
@@ -93,6 +94,7 @@ class GastosState extends State<Gastos> {
   @override
   Widget build(BuildContext context) {
     final facturas = context.watch<FacturaProvider>().facturas;
+    final providerFactura = context.watch<FacturaProvider>();
     return Scaffold(
       // ---------- APP BAR ----------
       appBar: AppBar(
@@ -108,8 +110,10 @@ class GastosState extends State<Gastos> {
       ),
 
       // ---------- BODY ----------
-      body: facturas.isEmpty
+      body: providerFactura.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : providerFactura.facturas.isEmpty
+          ? const PlaceholderFacturas()
           : ListView.builder(
         itemCount: facturas.length,
         itemBuilder: (context, index) {

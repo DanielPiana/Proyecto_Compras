@@ -875,8 +875,38 @@ abstract class AppLocalizations {
   /// No description provided for @shopping_placeholder_top.
   ///
   /// In es, this message translates to:
-  /// **'Crea una factura o comparte'**
+  /// **'Crea una factura o comparte la lista'**
   String get shopping_placeholder_top;
+
+  /// No description provided for @receipt_placeholder_title.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes facturas'**
+  String get receipt_placeholder_title;
+
+  /// No description provided for @receipt_placeholder_body.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí puede ver las facturas generadas para registrar tus gastos y mantener un control de tus compras\n Las facturas se generan desde la pestaña Compra.'**
+  String get receipt_placeholder_body;
+
+  /// No description provided for @recipe_placeholder_title.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes recetas'**
+  String get recipe_placeholder_title;
+
+  /// No description provided for @recipe_placeholder_body.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí puedes gestionar tus recetas: añadir, editar, eliminar o compartir, con pasos personalizados e ingredientes'**
+  String get recipe_placeholder_body;
+
+  /// No description provided for @recipe_placeholder_top.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu primera receta'**
+  String get recipe_placeholder_top;
 }
 
 class _AppLocalizationsDelegate

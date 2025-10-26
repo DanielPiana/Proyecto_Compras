@@ -396,7 +396,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get add_product_placeholder_body =>
-      'Here you can manage your products: add, edit, or delete them. Later, you\'ll use them in your shopping lists, invoices, or recipes';
+      'Here you can manage your products: add, edit, or delete them. Later, you\'ll use them in your shopping lists, receipts, or recipes';
 
   @override
   String get add_product_placeholder_bottom => 'Add a product';
@@ -409,5 +409,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here you can manage your shopping list, organized by supermarket. Check or uncheck products, adjust quantities, generate an invoice, or share the list.\n\nProducts are added from the Products tab, using the + icon on each one';
 
   @override
-  String get shopping_placeholder_top => 'Create an receipt or share';
+  String get shopping_placeholder_top => 'Create an receipt or share list';
+
+  @override
+  String get receipt_placeholder_title => 'You don\'t have any invoices';
+
+  @override
+  String get receipt_placeholder_body =>
+      'Here you can view the receipts generated to record your expenses and keep track of your purchases.\nReceipts are created from the Shopping tab.';
+
+  @override
+  String get recipe_placeholder_title => 'You don\'t have any recipes';
+
+  @override
+  String get recipe_placeholder_body =>
+      'Here you can manage your recipes: add, edit, delete, or share them, with custom steps and ingredients.';
+
+  @override
+  String get recipe_placeholder_top => 'Create your first recipe';
 }

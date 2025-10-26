@@ -410,5 +410,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aquí puedes gestionar tu lista de la compra, organizada por supermercado. Marca o desmarca productos, ajusta las cantidades, genera una factura o comparte la lista.\n\nLos productos se añaden desde la pestaña de productos, usando el icono + de cada uno.';
 
   @override
-  String get shopping_placeholder_top => 'Crea una factura o comparte';
+  String get shopping_placeholder_top => 'Crea una factura o comparte la lista';
+
+  @override
+  String get receipt_placeholder_title => 'No tienes facturas';
+
+  @override
+  String get receipt_placeholder_body =>
+      'Aquí puede ver las facturas generadas para registrar tus gastos y mantener un control de tus compras\n Las facturas se generan desde la pestaña Compra.';
+
+  @override
+  String get recipe_placeholder_title => 'No tienes recetas';
+
+  @override
+  String get recipe_placeholder_body =>
+      'Aquí puedes gestionar tus recetas: añadir, editar, eliminar o compartir, con pasos personalizados e ingredientes';
+
+  @override
+  String get recipe_placeholder_top => 'Crea tu primera receta';
 }
