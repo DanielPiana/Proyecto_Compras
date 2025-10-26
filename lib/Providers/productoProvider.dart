@@ -193,6 +193,7 @@ class ProductoProvider with ChangeNotifier {
         'precio': productoActualizado.precio,
         'supermercado': productoActualizado.supermercado,
         'usuariouuid': productoActualizado.usuarioUuid,
+        'foto': productoActualizado.foto,
       }).eq('id', productoActualizado.id!)
           .eq('usuariouuid', productoActualizado.usuarioUuid);
 

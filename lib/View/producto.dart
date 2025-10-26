@@ -56,11 +56,11 @@ class ProductoState extends State<Producto> {
   ///
   /// Parámetros:
   /// - [context]: Contexto de la aplicación.
-  /// - [idProducto]: Identificador del producto a eliminar.
+  /// - [productId]: Identificador del producto a eliminar.
   ///
   /// Retorna:
   /// - `void` (no retorna nada).
-  void dialogoEliminacion(BuildContext context, int idProducto) {
+  void dialogoEliminacion(BuildContext context, int productId) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -92,35 +92,52 @@ class ProductoState extends State<Producto> {
             // Eliminar
             TextButton(
               onPressed: () async {
-                final provider = context.read<ProductoProvider>();
+                final productProvider = context.read<ProductoProvider>();
+                final allProducts = List.of(productProvider.productos);
+                final isLastProduct = allProducts.length == 1;
 
-                final backup =
-                provider.productos.firstWhere((p) => p.id == idProducto);
+                final backupProduct =
+                productProvider.productos.firstWhere((p) => p.id == productId);
 
-                provider.removeProductoLocal(idProducto);
+                productProvider.removeProductoLocal(productId);
 
                 Navigator.of(dialogContext).pop();
 
                 try {
-                  await provider.eliminarProducto(context, idProducto);
+                  if (isLastProduct) {
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.success,
+                      message:
+                      AppLocalizations.of(context)!.product_deleted_ok,
+                      contentType: asc.ContentType.success,
+                    );
+                  }
 
-                  showAwesomeSnackBar(
-                    context,
-                    title: AppLocalizations.of(context)!.success,
-                    message: AppLocalizations.of(context)!.product_deleted_ok,
-                    contentType: asc.ContentType.success,
-                  );
-                } catch (e) {
-                  debugPrint("Error al eliminar producto: $e");
-                  provider.addProductoLocal(backup);
+                  await productProvider.eliminarProducto(context, productId);
 
-                  showAwesomeSnackBar(
-                    context,
-                    title: 'Error',
-                    message:
-                    AppLocalizations.of(context)!.product_deleted_error,
-                    contentType: asc.ContentType.failure,
-                  );
+                  if (!isLastProduct && context.mounted) {
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.success,
+                      message:
+                      AppLocalizations.of(context)!.product_deleted_ok,
+                      contentType: asc.ContentType.success,
+                    );
+                  }
+
+                } catch (error) {
+                  productProvider.addProductoLocal(backupProduct);
+
+                  if (context.mounted) {
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.error,
+                      message:
+                      AppLocalizations.of(context)!.product_deleted_error,
+                      contentType: asc.ContentType.failure,
+                    );
+                  }
                 }
               },
               child: Text(
@@ -553,9 +570,9 @@ class ProductoState extends State<Producto> {
                       TextField(
                         controller: codigoBarrasController,
                         readOnly: true,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: "Código de barras",
-                          suffixIcon: const Icon(Icons.check_circle, color: Colors.green),
+                          suffixIcon: Icon(Icons.check_circle, color: Colors.green),
                         ),
                       ),
                     const SizedBox(height: 10),

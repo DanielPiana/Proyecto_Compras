@@ -427,4 +427,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recipe_placeholder_top => 'Create your first recipe';
+
+  @override
+  String get products_added_to_list =>
+      'All products were added to the shopping list';
+
+  @override
+  String get products_already_in_list =>
+      'All selected products were already in the list';
+
+  @override
+  String get add_ingredients_to_list => 'Add to list';
 }

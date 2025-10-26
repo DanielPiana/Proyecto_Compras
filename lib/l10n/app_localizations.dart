@@ -907,6 +907,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Crea tu primera receta'**
   String get recipe_placeholder_top;
+
+  /// No description provided for @products_added_to_list.
+  ///
+  /// In es, this message translates to:
+  /// **'Se añadieron todos los productos a la lista de la compra'**
+  String get products_added_to_list;
+
+  /// No description provided for @products_already_in_list.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los productos seleccionados ya estaban en la lista'**
+  String get products_already_in_list;
+
+  /// No description provided for @add_ingredients_to_list.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir a lista'**
+  String get add_ingredients_to_list;
 }
 
 class _AppLocalizationsDelegate

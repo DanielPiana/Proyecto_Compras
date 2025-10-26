@@ -30,7 +30,7 @@ class GastosState extends State<Gastos> {
   /// - Pregunta al usuario si desea eliminar la factura.
   /// - Si confirma, lo elimina localmente y luego intenta eliminarlo en el servidor.
   /// - Si ocurre un error en el servidor, restaura la factura en local y muestra un mensaje de error.
-  void dialogoEliminacion(BuildContext context, int idFactura) {
+  void dialogoEliminacion(BuildContext context, int invoiceId) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -43,48 +43,62 @@ class GastosState extends State<Gastos> {
             AppLocalizations.of(context)!.deleteConfirmationR,
             style: const TextStyle(fontSize: 16),
           ),
-
-          // ---------- ACCION (Eliminar / Cancelar) ----------
           actions: [
-
-            // Cancelar
+            // Cancel
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(
-                AppLocalizations.of(context)!.cancel,
-              ),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
 
-            // Eliminar
+            // Delete
             ElevatedButton(
               onPressed: () async {
+                final invoiceProvider = context.read<FacturaProvider>();
+                final userUuid = context.read<UserProvider>().uuid!;
+                final allReceipts = List.of(invoiceProvider.facturas);
+                final isLastInvoice = allReceipts.length == 1;
+
                 Navigator.of(dialogContext).pop();
+
                 try {
-                  await context.read<FacturaProvider>().borrarFactura(
-                    idFactura,
-                    context.read<UserProvider>().uuid!,
-                  );
-                  showAwesomeSnackBar(
-                    context,
-                    title: AppLocalizations.of(context)!.success,
-                    message: AppLocalizations.of(context)!.receipt_deleted_ok,
-                    contentType: asc.ContentType.success,
-                  );
-                } catch (e) {
-                  showAwesomeSnackBar(
-                    context,
-                    title: 'Error',
-                    message:
-                    AppLocalizations.of(context)!.receipt_deleted_error,
-                    contentType: asc.ContentType.failure,
-                  );
+                  if (isLastInvoice) {
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.success,
+                      message:
+                      AppLocalizations.of(context)!.receipt_deleted_ok,
+                      contentType: asc.ContentType.success,
+                    );
+                  }
+
+                  await invoiceProvider.borrarFactura(invoiceId, userUuid);
+
+                  if (!isLastInvoice && context.mounted) {
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.success,
+                      message:
+                      AppLocalizations.of(context)!.receipt_deleted_ok,
+                      contentType: asc.ContentType.success,
+                    );
+                  }
+                } catch (error) {
+                  if (context.mounted) {
+                    showAwesomeSnackBar(
+                      context,
+                      title: AppLocalizations.of(context)!.error,
+                      message: AppLocalizations.of(context)!
+                          .receipt_deleted_error,
+                      contentType: asc.ContentType.failure,
+                    );
+                  }
                 }
               },
               child: Text(
                 AppLocalizations.of(context)!.delete,
                 style: const TextStyle(color: Colors.red),
               ),
-            )
+            ),
           ],
         );
       },

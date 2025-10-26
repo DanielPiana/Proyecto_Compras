@@ -464,7 +464,6 @@ class CompraProvider extends ChangeNotifier {
   /// - Luego elimina esos mismos productos de la base de datos en Supabase.
   /// - Actualizamos la lista de la compra
   /// - Si ocurre algún error durante el proceso, lo captura, lo muestra en consola y relanza la excepción.
-
   Future<void> eliminarProductosMarcados() async {
     try {
       final productosMarcados = _compras.where((producto) => producto.marcado == 1).toList();
@@ -486,7 +485,7 @@ class CompraProvider extends ChangeNotifier {
         comprasAgrupadas.putIfAbsent(compra.supermercado, () => []);
         comprasAgrupadas[compra.supermercado]!.add(compra);
       }
-
+      notifyListeners();
     } catch (e) {
       debugPrint('Error al eliminar productos marcados: $e');
       rethrow;

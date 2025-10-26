@@ -134,5 +134,8 @@
   "receipt_placeholder_body": "Here you can view the receipts generated to record your expenses and keep track of your purchases.\nReceipts are created from the Shopping tab.",
   "recipe_placeholder_title": "You don't have any recipes",
   "recipe_placeholder_body": "Here you can manage your recipes: add, edit, delete, or share them, with custom steps and ingredients.",
-  "recipe_placeholder_top": "Create your first recipe"
+  "recipe_placeholder_top": "Create your first recipe",
+  "products_added_to_list" : "All products were added to the shopping list",
+  "products_already_in_list" : "All selected products were already in the list",
+  "add_ingredients_to_list" : "Add to list"
 }

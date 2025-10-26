@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../Providers/compraProvider.dart';
 import '../Providers/pasosRecetaProvider.dart';
 import '../Providers/productoProvider.dart';
 import '../Providers/productosRecetaProvider.dart';
@@ -73,8 +74,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   ///   - [borrar]: los productos que ya no están seleccionados y hay que quitar.
   /// - Añade a la base de datos los productos nuevos.
   /// - Elimina los productos que ya no pertenecen a la receta.
-  Future<void> guardarProductosEnReceta(int recetaId, Set<int> nuevosSeleccionados) async {
-
+  Future<void> guardarProductosEnReceta(
+      int recetaId, Set<int> nuevosSeleccionados) async {
     final res = await Supabase.instance.client
         .from('receta_producto')
         .select('idproducto')
@@ -101,7 +102,6 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     }
   }
 
-
   /// Muestra un cuadro de diálogo para seleccionar productos y guardarlos en una receta.
   ///
   /// Flujo principal:
@@ -117,11 +117,10 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   void mostrarDialogoSeleccionProductos(BuildContext context) async {
     final productoProvider = context.read<ProductoProvider>();
     final recetaProvider = context.read<ProductosRecetaProvider>();
-
     final productosDisponibles = productoProvider.productos;
 
     final Set<int> seleccionados =
-    recetaProvider.productos.map((p) => p.id!).toSet();
+        recetaProvider.productos.map((p) => p.id!).toSet();
 
     showDialog(
       context: context,
@@ -153,34 +152,89 @@ class _DetalleRecetaState extends State<DetalleReceta> {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(AppLocalizations.of(context)!.cancel),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(AppLocalizations.of(context)!.cancel),
+                        ),
+                        ElevatedButton(
+                          child: Text(AppLocalizations.of(context)!.save),
+                          onPressed: () async {
+                            try {
+                              await recetaProvider.syncProductos(context, seleccionados);
+
+                              Navigator.pop(context);
+                              showAwesomeSnackBar(
+                                context,
+                                title: AppLocalizations.of(context)!.success,
+                                message: AppLocalizations.of(context)!.products_linked_ok,
+                                contentType: asc.ContentType.success,
+                              );
+                            } catch (e) {
+                              Navigator.pop(context);
+                              showAwesomeSnackBar(
+                                context,
+                                title: 'Error',
+                                message:
+                                AppLocalizations.of(context)!.products_linked_error,
+                                contentType: asc.ContentType.failure,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    )
+                  ],
+                ),
               ),
-              ElevatedButton(
-                child: Text(AppLocalizations.of(context)!.save),
-                onPressed: () async {
-                  try {
-                    await recetaProvider.syncProductos(context, seleccionados);
+              const SizedBox(height: 10),
+              Center(
+                child: ElevatedButton.icon(
+                  label: Text(
+                      AppLocalizations.of(context)!.add_ingredients_to_list),
+                  onPressed: () async {
+                    final compraProvider = context.read<CompraProvider>();
+                    final productoProvider = context.read<ProductoProvider>();
+
+                    final productosMarcados = productoProvider.productos
+                        .where((p) => seleccionados.contains(p.id))
+                        .toList();
+
+                    int addedProducts = 0;
+
+                    for (var producto in productosMarcados) {
+                      final existe = compraProvider.compras
+                          .any((c) => c.idProducto == producto.id);
+
+                      if (!existe) {
+                        await compraProvider.agregarACompra(
+                          producto.id!,
+                          producto.precio,
+                          producto.nombre,
+                          producto.supermercado,
+                        );
+                        addedProducts++;
+                      }
+                    }
 
                     Navigator.pop(context);
+
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
-                      message: AppLocalizations.of(context)!.products_linked_ok,
+                      message: addedProducts > 0
+                          ? AppLocalizations.of(context)!.products_added_to_list
+                          : AppLocalizations.of(context)!.products_already_in_list,
                       contentType: asc.ContentType.success,
                     );
-                  } catch (e) {
-                    Navigator.pop(context);
-                    showAwesomeSnackBar(
-                      context,
-                      title: 'Error',
-                      message:
-                      AppLocalizations.of(context)!.products_linked_error,
-                      contentType: asc.ContentType.failure,
-                    );
-                  }
-                },
+                  },
+                ),
               ),
             ],
           ),
@@ -190,15 +244,16 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   }
 
   /// Muestra una ventana con los detalles de un producto.
-  void mostrarDetalleProducto(BuildContext context, Map<String, dynamic> producto) {
+  void mostrarDetalleProducto(
+      BuildContext context, Map<String, dynamic> producto) {
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           insetPadding:
-          const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -282,10 +337,15 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   /// - Si no se encuentra el paso, devuelve false.
   /// - Si la actualización se hace correctamente, devuelve true.
   /// - Si ocurre un error durante el proceso, lo muestra por consola y devuelve false.
-  Future<bool> actualizarPasoBBDD(int recetaId, int numeroPaso, String nuevoTitulo, String nuevaDescripcion,) async {
+  Future<bool> actualizarPasoBBDD(
+    int recetaId,
+    int numeroPaso,
+    String nuevoTitulo,
+    String nuevaDescripcion,
+  ) async {
     try {
       final response =
-      await Supabase.instance.client.from('pasos_receta').update({
+          await Supabase.instance.client.from('pasos_receta').update({
         'titulo': nuevoTitulo,
         'descripcion': nuevaDescripcion,
       }).match({
@@ -345,7 +405,6 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   /// - Devuelve true si se puede salir, o false si debe mantenerse en la vista.
   Future<bool> _onWillPop() async {
     final detalleProvider = context.read<DetalleRecetaProvider>();
-
 
     final hayCambios = detalleProvider.cambioNombre ||
         detalleProvider.cambioFoto ||
@@ -441,13 +500,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
         final path = 'recetas/${widget.receta.usuarioUuid}/$nombreArchivo.jpg';
 
         await Supabase.instance.client.storage.from('fotos').uploadBinary(
-          path,
-          bytes,
-          fileOptions: const FileOptions(contentType: 'image/jpeg'),
-        );
+              path,
+              bytes,
+              fileOptions: const FileOptions(contentType: 'image/jpeg'),
+            );
 
         final nuevaFotoUrlFinal =
-        Supabase.instance.client.storage.from('fotos').getPublicUrl(path);
+            Supabase.instance.client.storage.from('fotos').getPublicUrl(path);
 
         final recetaFinal = widget.receta.copyWith(foto: nuevaFotoUrlFinal);
         await recetaProvider.actualizarReceta(recetaFinal);
@@ -492,7 +551,6 @@ class _DetalleRecetaState extends State<DetalleReceta> {
       child: Scaffold(
         body: CustomScrollView(
           slivers: [
-
             // ---------- APP BAR ----------
             SliverAppBar(
               pinned: true,
@@ -508,34 +566,34 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                     borderRadius: BorderRadius.circular(12),
                     child: nuevaFotoFile != null
                         ? Image.file(
-                      nuevaFotoFile!,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.contain,
-                    )
+                            nuevaFotoFile!,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.contain,
+                          )
                         : (receta.foto.isNotEmpty
-                        ? (receta.foto.startsWith("http")
-                        ? Image.network(
-                      receta.foto,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.contain,
-                    )
-                        : Image.file(
-                      File(receta.foto),
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.contain,
-                    ))
-                        : Container(
-                      width: double.infinity,
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(Icons.image,
-                            size: 60, color: Colors.white70),
-                      ),
-                    )),
+                            ? (receta.foto.startsWith("http")
+                                ? Image.network(
+                                    receta.foto,
+                                    width: double.infinity,
+                                    height: 200,
+                                    fit: BoxFit.contain,
+                                  )
+                                : Image.file(
+                                    File(receta.foto),
+                                    width: double.infinity,
+                                    height: 200,
+                                    fit: BoxFit.contain,
+                                  ))
+                            : Container(
+                                width: double.infinity,
+                                height: 200,
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(Icons.image,
+                                      size: 60, color: Colors.white70),
+                                ),
+                              )),
                   ),
                 ),
               ),
@@ -549,9 +607,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                 firstChild: Text(
                   receta.nombre,
                   style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold
-                  ),
+                      fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 secondChild: Container(
                   decoration: BoxDecoration(
@@ -576,9 +632,9 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                       final nombreOriginal = widget.receta.nombre.trim();
                       final nuevoValor = capitalize(value.trim());
 
-                      context.read<DetalleRecetaProvider>().setCambioNombre(
-                          nuevoValor != nombreOriginal
-                      );
+                      context
+                          .read<DetalleRecetaProvider>()
+                          .setCambioNombre(nuevoValor != nombreOriginal);
                     },
                   ),
                 ),
@@ -587,13 +643,12 @@ class _DetalleRecetaState extends State<DetalleReceta> {
             SliverPadding(
               padding: const EdgeInsets.all(16.0),
               sliver: SliverList(
-
                 // ---------- STEPPER PERSONALIZADO ----------
                 delegate: SliverChildListDelegate([
                   Builder(builder: (context) {
                     final pasosProvider = context.watch<PasosRecetaProvider>();
                     final detalleProvider =
-                    context.watch<DetalleRecetaProvider>();
+                        context.watch<DetalleRecetaProvider>();
 
                     if (pasosProvider.estaCargando) {
                       return const Center(
@@ -655,38 +710,39 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                   Consumer<ProductosRecetaProvider>(
                     builder: (context, prov, _) {
                       if (prov.productos.isEmpty) {
-                        return Text(AppLocalizations.of(context)!.no_linked_products);
+                        return Text(
+                            AppLocalizations.of(context)!.no_linked_products);
                       }
                       return Column(
                         children: prov.productos.map((producto) {
                           return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                            margin: const EdgeInsets.symmetric(
+                                vertical: 6, horizontal: 4),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade600, width: 0.8),
+                              border: Border.all(
+                                  color: Colors.grey.shade600, width: 0.8),
                               borderRadius: BorderRadius.circular(10),
                               color: Colors.white,
                             ),
                             child: SizedBox(
                               height: 85,
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
                                 child: Center(
                                   child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(vertical: 8),
                                     leading: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: AspectRatio(
                                         aspectRatio: 1.4,
-                                        child: producto.foto.isNotEmpty
-                                            ? Image.network(
+                                        child: Image.network(
                                           producto.foto,
                                           fit: BoxFit.contain,
                                           errorBuilder: (_, __, ___) =>
-                                          const Icon(Icons.image_not_supported,
-                                              size: 50, color: Colors.grey),
-                                        )
-                                            : const Icon(Icons.image_not_supported,
-                                            size: 50, color: Colors.grey),
+                                          const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                                        ),
                                       ),
                                     ),
                                     title: Text(
@@ -696,9 +752,12 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    trailing: const Icon(Icons.arrow_forward_ios,
-                                        size: 16, color: Colors.grey),
-                                    onTap: () => mostrarDetalleProducto(context, producto.toMap()),
+                                    trailing: const Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 16,
+                                        color: Colors.grey),
+                                    onTap: () => mostrarDetalleProducto(
+                                        context, producto.toMap()),
                                   ),
                                 ),
                               ),
@@ -714,89 +773,90 @@ class _DetalleRecetaState extends State<DetalleReceta> {
           ],
         ),
         floatingActionButton: (!editandoNombre &&
-            !context.watch<DetalleRecetaProvider>().estaEditando)
+                !context.watch<DetalleRecetaProvider>().estaEditando)
             ? SpeedDial(
-          heroTag: 'fab-menu',
-          animatedIcon: AnimatedIcons.menu_close,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          buttonSize: const Size(58, 58),
-          children: [
+                heroTag: 'fab-menu',
+                animatedIcon: AnimatedIcons.menu_close,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                buttonSize: const Size(58, 58),
+                children: [
+                  // ---------- ICONO EDITAR PASOS ----------
+                  SpeedDialChild(
+                    child: const Icon(Icons.description),
+                    label: AppLocalizations.of(context)!.edit_step,
+                    onTap: () async {
+                      final pasosProvider = context.read<PasosRecetaProvider>();
 
-            // ---------- ICONO EDITAR PASOS ----------
-            SpeedDialChild(
-              child: const Icon(Icons.description),
-              label: AppLocalizations.of(context)!.edit_step,
-              onTap: () async {
-                final pasosProvider = context.read<PasosRecetaProvider>();
+                      if (pasosProvider.pasos.isEmpty) {
+                        await pasosProvider.crearPaso("", "");
+                      }
 
-                if (pasosProvider.pasos.isEmpty) {
-                  await pasosProvider.crearPaso("", "");
-                }
+                      context.read<DetalleRecetaProvider>().setEdicion(true);
+                    },
+                  ),
 
-                context.read<DetalleRecetaProvider>().setEdicion(true);
-              },
-            ),
+                  // ---------- ICONO EDITAR IMAGEN ----------
+                  SpeedDialChild(
+                    child: const Icon(Icons.image),
+                    label: AppLocalizations.of(context)!.change_photo,
+                    onTap: () {
+                      dialogEditarFoto();
+                    },
+                  ),
 
-            // ---------- ICONO EDITAR IMAGEN ----------
-            SpeedDialChild(
-              child: const Icon(Icons.image),
-              label: AppLocalizations.of(context)!.change_photo,
-              onTap: () {
-                dialogEditarFoto();
-              },
-            ),
+                  // ---------- ICONO EDITAR NOMBRE ----------
+                  SpeedDialChild(
+                    child: const Icon(Icons.edit),
+                    label: AppLocalizations.of(context)!.edit_name,
+                    onTap: () {
+                      setState(() {
+                        editandoNombre = true;
+                      });
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _focusNode.requestFocus();
+                        Future.delayed(const Duration(milliseconds: 1), () {
+                          nombreController.selection = TextSelection.collapsed(
+                            offset: nombreController.text.length,
+                          );
+                        });
+                      });
+                    },
+                  ),
+                ],
+              )
 
-            // ---------- ICONO EDITAR NOMBRE ----------
-            SpeedDialChild(
-              child: const Icon(Icons.edit),
-              label: AppLocalizations.of(context)!.edit_name,
-              onTap: () {
-                setState(() {
-                  editandoNombre = true;
-                });
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _focusNode.requestFocus();
-                  Future.delayed(const Duration(milliseconds: 1), () {
-                    nombreController.selection = TextSelection.collapsed(
-                      offset: nombreController.text.length,
-                    );
-                  });
-                });
-              },
-            ),
-          ],
-        )
-
-        // ---------- FABS CONFIRMAR CAMBIOS / CANCELAR CAMBIOS ----------
+            // ---------- FABS CONFIRMAR CAMBIOS / CANCELAR CAMBIOS ----------
             : Row(
-          children: [
-            const Spacer(),
-            FloatingActionButton(
-              heroTag: 'fab-save',
-              onPressed: () async {
-                await guardarCambios();
-                context.read<DetalleRecetaProvider>().setEdicion(false);
-                setState(() {editandoNombre = false;
-                });
-              },
-              backgroundColor: Colors.green,
-              child: const Icon(Icons.check, color: Colors.white),
-            ),
-            const SizedBox(width: 16),
-            FloatingActionButton(
-              heroTag: 'fab-cancel',
-              onPressed: () {
-                context.read<DetalleRecetaProvider>().setEdicion(false);
-                editandoNombre = false;
-                context
-                    .read<DetalleRecetaProvider>()
-                    .setCambioNombre(false);
-              },
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.cancel, color: Colors.white),
-            ),
-          ],
-        ),
+                children: [
+                  const Spacer(),
+                  FloatingActionButton(
+                    heroTag: 'fab-save',
+                    onPressed: () async {
+                      await guardarCambios();
+                      context.read<DetalleRecetaProvider>().setEdicion(false);
+                      setState(() {
+                        editandoNombre = false;
+                      });
+                    },
+                    backgroundColor: Colors.green,
+                    child: const Icon(Icons.check, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  FloatingActionButton(
+                    heroTag: 'fab-cancel',
+                    onPressed: () {
+                      context.read<DetalleRecetaProvider>().setEdicion(false);
+                      editandoNombre = false;
+                      context
+                          .read<DetalleRecetaProvider>()
+                          .setCambioNombre(false);
+                    },
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.cancel, color: Colors.white),
+                  ),
+                ],
+              ),
       ),
     );
   }
