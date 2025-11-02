@@ -4,12 +4,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Providers/compraProvider.dart';
 import '../Providers/productoProvider.dart';
 import '../Providers/userProvider.dart';
+import '../Widgets/EscanearCodigoBarras.dart';
 import '../Widgets/PlaceHolderProductos.dart';
 import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
@@ -187,12 +189,11 @@ class ProductoState extends State<Producto> {
     File? nuevaImagenSeleccionada;
 
     bool nombreValido = producto.nombre.trim().isNotEmpty;
-    bool descripcionValida = producto.descripcion.trim().isNotEmpty;
+    bool descripcionValida = true;
     bool precioValido = true;
     bool supermercadoValido = producto.supermercado.trim().isNotEmpty;
 
     bool nombreTouched = false;
-    bool descripcionTouched = false;
     bool precioTouched = false;
     bool supermercadoTouched = false;
 
@@ -242,25 +243,10 @@ class ProductoState extends State<Producto> {
                       controller: descripcionController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.description,
-                        suffixIcon: descripcionTouched
-                            ? (descripcionValida
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
-                            : null,
+                        suffixIcon: const Icon(Icons.check_circle, color: Colors.green),
                       ),
-                      onChanged: (value) {
-                        setState(() {
-                          descripcionTouched = true;
-                          descripcionValida = value.trim().isNotEmpty;
-                        });
-                      },
+                      onChanged: (_) {},
                     ),
-                    if (descripcionTouched && !descripcionValida)
-                      Text(
-                          AppLocalizations.of(context)!
-                              .description_error_message,
-                          style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
 
                     // ---------- CAMPO DE PRECIO ----------
@@ -514,20 +500,19 @@ class ProductoState extends State<Producto> {
     final TextEditingController nuevoSupermercadoController = TextEditingController();
     final TextEditingController codigoBarrasController = TextEditingController();
 
-    String? codigoBarras;
+    String? imagenActualUrl; // Imagen de escaneo
+    File? imagenActualFile;  // Imagen seleccionada del usuario
+    String? urlImagenTemporal;
     String? supermercadoSeleccionado;
     bool creandoSupermercado = false;
     File? imagenSeleccionada;
 
-    bool codigoBarrasValido = false;
     bool nombreValido = false;
-    bool descripcionValida = false;
+    bool descripcionValida = true;
     bool precioValido = false;
     bool supermercadoValido = false;
 
-    bool codigoBarrasTouched = false;
     bool nombreTouched = false;
-    bool descripcionTouched = false;
     bool precioTouched = false;
     bool supermercadoTouched = false;
 
@@ -552,31 +537,115 @@ class ProductoState extends State<Producto> {
                       icon: const Icon(Icons.qr_code_scanner),
                       label: const Text("Escanear código de barras"),
                       onPressed: () async {
-                        /*final resultado = await escanearCodigoBarras();
-                        if (resultado != null) {
-                          setState(() {
-                            codigoBarrasController.text = resultado;
-                            codigoBarrasValido = true;
-                            codigoBarrasTouched = true;
-                          });
-                        } else {
-                          print('⚠️ No se obtuvo código de barras.');
-                        }*/
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const EscanearCodigoScreen()),
+                        );
+
+                        if (result != null && result is String) {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) => const Center(child: CircularProgressIndicator()),
+                          );
+
+                          try {
+                            OpenFoodAPIConfiguration.userAgent = UserAgent(
+                              name: 'ProyectoCompras',
+                              version: '1.0.0',
+                              system: 'Flutter',
+                            );
+
+                            final config = ProductQueryConfiguration(
+                              result,
+                              language: OpenFoodFactsLanguage.SPANISH,
+                              fields: [
+                                ProductField.ALL,
+                                ProductField.IMAGE_FRONT_URL,
+                              ],
+                              version: ProductQueryVersion.v3,
+                            );
+
+                            final ProductResultV3 response =
+                            await OpenFoodAPIClient.getProductV3(config);
+
+                            Navigator.pop(context);
+
+                            if (response.product != null) {
+                              final product = response.product!;
+                              final imageUrl = product.imageFrontUrl;
+
+                              if (imageUrl != null && imageUrl.isNotEmpty) {
+                                setState(() {
+                                  imagenActualUrl = imageUrl;
+                                  imagenActualFile = null;
+                                });
+                              }
+
+                              print('--- 📦 PRODUCTO ESCANEADO ---');
+                              print('Nombre: ${product.productName}');
+                              print('Nombre genérico: ${product.genericName}');
+                              print('Marca: ${product.brands}');
+                              print('Categorías: ${product.categories}');
+                              print('Descripción: ${product.ingredientsText}');
+                              print('Código de barras: ${product.barcode}');
+                              print('Imagen: ${product.imageFrontUrl}');
+                              print('Países: ${product.countries}');
+                              print('Cantidad: ${product.quantity}');
+                              print('Ingredientes: ${product.ingredientsText}');
+                              print('--- 🔚 FIN DEL PRODUCTO ---');
+
+                              setState(() {
+                                codigoBarrasController.text = result;
+                                nombreController.text =
+                                    product.productName ?? product.genericName ?? '';
+                                descripcionController.text =
+                                    product.ingredientsText ?? product.genericName ?? '';
+
+                                if (imageUrl != null && imageUrl.isNotEmpty) {
+                                  urlImagenTemporal = imageUrl;
+                                }
+                              });
+
+                              showAwesomeSnackBar(
+                                context,
+                                title: "Éxito",
+                                message: "Producto encontrado y completado automáticamente",
+                                contentType: asc.ContentType.success,
+                              );
+                            } else {
+                              showAwesomeSnackBar(
+                                context,
+                                title: "No encontrado",
+                                message:
+                                "No se encontró información del producto en OpenFoodFacts",
+                                contentType: asc.ContentType.warning,
+                              );
+                            }
+                          } catch (e) {
+                            Navigator.pop(context);
+                            showAwesomeSnackBar(
+                              context,
+                              title: "Error",
+                              message: "Error al obtener datos del producto",
+                              contentType: asc.ContentType.failure,
+                            );
+                          }
+                        }
                       },
                     ),
                     const SizedBox(height: 10),
-                    // Si ya hay un código, mostramos el campo en solo lectura
+
+                    // ---------- CAMPO DE CÓDIGO DE BARRAS ----------
                     if (codigoBarrasController.text.isNotEmpty)
                       TextField(
                         controller: codigoBarrasController,
                         readOnly: true,
-                        decoration: const InputDecoration(
-                          labelText: "Código de barras",
-                          suffixIcon: Icon(Icons.check_circle, color: Colors.green),
-                        ),
+                        decoration: const InputDecoration(labelText: "Código de barras"),
                       ),
-                    const SizedBox(height: 10),
 
+                    const SizedBox(height: 10),
+                    // ---------- NOMBRE ----------
                     TextField(
                       controller: nombreController,
                       decoration: InputDecoration(
@@ -600,32 +669,17 @@ class ProductoState extends State<Producto> {
                       Text(AppLocalizations.of(context)!.name_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
-
+                    // ---------- DESCRIPCION ----------
                     TextField(
                       controller: descripcionController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.description,
-                        suffixIcon: descripcionTouched
-                            ? (descripcionValida
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
-                            : null,
+                        suffixIcon: const Icon(Icons.check_circle, color: Colors.green),
                       ),
-                      onChanged: (value) {
-                        setState(() {
-                          descripcionTouched = true;
-                          descripcionValida = value.trim().isNotEmpty;
-                        });
-                      },
+                      onChanged: (_) {},
                     ),
-                    if (descripcionTouched && !descripcionValida)
-                      Text(
-                          AppLocalizations.of(context)!
-                              .description_error_message,
-                          style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
-
+                    // ---------- PRECIO ----------
                     TextField(
                       controller: precioController,
                       decoration: InputDecoration(
@@ -650,6 +704,7 @@ class ProductoState extends State<Producto> {
                       Text(AppLocalizations.of(context)!.price_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
+                    // ---------- SUPERMERCADO ----------
                     DropdownButtonFormField<String>(
                       value: supermercadoSeleccionado,
                       isExpanded: true,
@@ -732,43 +787,80 @@ class ProductoState extends State<Producto> {
                     const SizedBox(height: 10),
 
                     Center(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.image),
-                        label: Text(AppLocalizations.of(context)!.select_photo),
-                        onPressed: () async {
-                          File? imagen;
-                          if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
-                            final picker = ImagePicker();
-                            final pickedFile = await picker.pickImage(
-                                source: ImageSource.gallery);
-                            if (pickedFile != null) {
-                              imagen = File(pickedFile.path);
-                            }
-                          } else {
-                            final result = await FilePicker.platform
-                                .pickFiles(type: FileType.image);
-                            if (result != null &&
-                                result.files.single.path != null) {
-                              imagen = File(result.files.single.path!);
-                            }
-                          }
-                          if (imagen != null) {
-                            setState(() {
-                              imagenSeleccionada = imagen;
-                            });
-                          }
-                        },
+                      child: Column(
+                        children: [
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.image),
+                            label: Text(AppLocalizations.of(context)!.select_photo),
+                            onPressed: () async {
+                              File? imagen;
+                              if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+                                final picker = ImagePicker();
+                                final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                                if (pickedFile != null) {
+                                  imagen = File(pickedFile.path);
+                                }
+                              } else {
+                                final result = await FilePicker.platform.pickFiles(type: FileType.image);
+                                if (result != null && result.files.single.path != null) {
+                                  imagen = File(result.files.single.path!);
+                                }
+                              }
+
+                              if (imagen != null) {
+                                setState(() {
+                                  imagenActualFile = imagen;
+                                  imagenActualUrl = null;
+                                });
+                              }
+                            },
+
+                          ),
+                          const SizedBox(height: 10),
+
+                          // ---------- PREVIEW DE LA IMAGEN ----------
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: SizedBox(
+                              height: 180, // 👈 un poco más alta
+                              width: double.infinity,
+                              child: Builder(
+                                builder: (_) {
+                                  if (imagenActualFile != null) {
+                                    return Image.file(
+                                      imagenActualFile!,
+                                      fit: BoxFit.contain,
+                                    );
+                                  } else if (imagenActualUrl != null) {
+                                    return Image.network(
+                                      imagenActualUrl!,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: Colors.grey[300],
+                                        child: const Center(
+                                          child: Icon(Icons.broken_image, size: 50, color: Colors.white70),
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.image_outlined,
+                                          size: 60,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          )
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    if (imagenSeleccionada != null)
-                      Center(
-                        child: Image.file(
-                          imagenSeleccionada!,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -794,7 +886,6 @@ class ProductoState extends State<Producto> {
 
                     setState(() {
                       nombreTouched = true;
-                      descripcionTouched = true;
                       precioTouched = true;
                       supermercadoTouched = true;
 
@@ -816,22 +907,23 @@ class ProductoState extends State<Producto> {
                     final uuidUsuario = context.read<UserProvider>().uuid!;
                     String urlImagen = '';
 
-                    if (imagenSeleccionada != null) {
-                      final bytes = await imagenSeleccionada!.readAsBytes();
-                      final nombreArchivo =
-                          '${nombre}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+                    if (imagenActualFile != null) {
+                      // Subimos la imagen elegida manualmente
+                      final bytes = await imagenActualFile!.readAsBytes();
+                      final nombreArchivo = '${nombre}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
                       final path = 'productos/$uuidUsuario/$nombreArchivo.jpg';
 
                       await Supabase.instance.client.storage
                           .from('fotos')
                           .uploadBinary(path, bytes,
-                          fileOptions:
-                          const FileOptions(contentType: 'image/jpeg'));
+                          fileOptions: const FileOptions(contentType: 'image/jpeg'));
 
-                      urlImagen = Supabase.instance.client.storage
-                          .from('fotos')
-                          .getPublicUrl(path);
+                      urlImagen = Supabase.instance.client.storage.from('fotos').getPublicUrl(path);
+                    } else if (imagenActualUrl != null) {
+                      // Imagen remota (OpenFoodFacts)
+                      urlImagen = imagenActualUrl!;
                     }
+
 
                     final nuevoProducto = ProductoModel(
                       id: null,
@@ -875,31 +967,6 @@ class ProductoState extends State<Producto> {
       },
     );
   }
-
-
-
-
-  /*Future<String?> escanearCodigoBarras() async {
-    try {
-      final codigo = await FlutterBarcodeScanner.scanBarcode(
-        '#FF0000', // color del botón cancelar
-        'Cancelar',
-        true,
-        ScanMode.BARCODE,
-      );
-
-      if (codigo == '-1') {
-        print('❌ Escaneo cancelado por el usuario');
-        return null;
-      }
-
-      print('📦 Código escaneado: $codigo');
-      return codigo;
-    } on PlatformException catch (e) {
-      print('⚠️ Error al escanear: $e');
-      return null; // más adelante pediremos manualmente
-    }
-  }*/
 
 
   @override

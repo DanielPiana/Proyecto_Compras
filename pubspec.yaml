@@ -19,6 +19,8 @@ dependencies:
   path: ^1.2.0
   http: ^1.2.0
   html: ^0.15.4
+  mobile_scanner: ^6.0.2
+  openfoodfacts: ^3.2.0
   flutter:
     sdk: flutter
   sqflite: ^2.2.7
