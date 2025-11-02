@@ -289,12 +289,12 @@ class CompraState extends State<Compra> {
 
                           return Container(
                             margin: const EdgeInsets.symmetric(
-                                vertical: 6, horizontal: 4),
+                                vertical: 4, horizontal: 4),
                             decoration: BoxDecoration(
                                 border: Border.all(
                                     color: Colors.grey.shade600, width: 0.8),
                                 borderRadius: BorderRadius.circular(10),
-                                color: Colors.white),
+                                color: Theme.of(context).colorScheme.surface),
 
                             // ---------- SECCIÓN DE SUPERMERCADO ----------
                             child: ExpansionTile(
@@ -496,9 +496,11 @@ class CompraState extends State<Compra> {
                                     Divider(
                                       height: 1,
                                       thickness: 0.8,
-                                      indent: 16,
+                                      indent: 8,
+                                      endIndent: 8,
                                       color: Colors.grey.shade400,
                                     ),
+
                                   ],
                                 );
                               }).toList(),
@@ -511,7 +513,7 @@ class CompraState extends State<Compra> {
                       color: context.watch<ThemeProvider>().isDarkMode
                           ? const Color(0xFF424242)
                           : const Color(0xFFE8F5E9),
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(8),
                       child: Row(
                         // USAMOS spaceBetween PARA QUE SALGA UN Text AL PRINCIPIO Y OTRO AL FINAL
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -19,7 +19,7 @@ import 'Providers/productoProvider.dart';
 import 'Providers/themeProvider.dart';
 import 'Widgets/awesomeSnackbar.dart';
 import 'l10n/app_localizations.dart';
-import 'package:proyectocompras/services/supermercados/mercadona_service.dart';
+import 'package:proyectocompras/services/mercadona_service.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
 
@@ -98,7 +98,7 @@ class MainApp extends StatelessWidget {
           onPrimary: Colors.white,
           onSecondary: Colors.black,
           surface: Colors.white,
-          onSurface: Colors.black87,
+          onSurface: Colors.black,
           error: Color(0xFFF44336),
         ),
         scaffoldBackgroundColor: const Color(0xFFF1F8E9),
@@ -124,12 +124,12 @@ class MainApp extends StatelessWidget {
           labelStyle: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700]!,
+            color: Theme.of(context).colorScheme.onSurface
           ),
           hintStyle: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700]!,
+            color: Theme.of(context).colorScheme.onSurface
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -153,14 +153,14 @@ class MainApp extends StatelessWidget {
             ),
           ),
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4CAF50),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF4CAF50),
           titleTextStyle: TextStyle(
-            color: Colors.white,
+            color:Theme.of(context).colorScheme.onPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
         ),
         useMaterial3: true,
       ),
@@ -170,12 +170,12 @@ class MainApp extends StatelessWidget {
           primary: Color(0xFF4CAF50),
           onPrimary: Colors.white,
           onSecondary: Colors.black,
-          surface: Color(0xFF1E1E1E),
+          surface: Color(0xFF424242),
           onSurface: Colors.white70,
           error: Color(0xFFF44336),
           onError: Colors.white,
         ),
-        scaffoldBackgroundColor: const Color(0xFF121212),
+        scaffoldBackgroundColor: const Color(0xFF1E1E1E),
         inputDecorationTheme: InputDecorationTheme(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -183,15 +183,15 @@ class MainApp extends StatelessWidget {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(
-              color: Colors.white38,
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.onPrimary,
               width: 0.8,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(
-              color: Colors.white54,
+            borderSide: BorderSide(
+              color: Colors.grey[700]!,
               width: 0.8,
             ),
           ),
@@ -207,17 +207,17 @@ class MainApp extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: Colors.white70,
           ),
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontSize: 14,
-            color: Colors.white54,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             elevation: 2,
-            shadowColor: Colors.black,
+            shadowColor: Theme.of(context).colorScheme.onSecondary,
             side: const BorderSide(
-              color: Colors.white24,
+              color: Color(0xFF4CAF50),
               width: 0.8,
             ),
             shape: RoundedRectangleBorder(
@@ -233,14 +233,14 @@ class MainApp extends StatelessWidget {
             ),
           ),
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2C6B31),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF2C6B31),
           titleTextStyle: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
         ),
         useMaterial3: true,
       ),
@@ -336,10 +336,14 @@ class MainState extends State<Main> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
+                  style: const TextStyle(color: Colors.black),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search),
-                    hintText: (AppLocalizations.of(context)!.search),
+                    prefixIcon: const Icon(Icons.search, color: Colors.black),
+                    hintText: AppLocalizations.of(context)!.search,
+                    hintStyle: const TextStyle(color: Colors.black54),
                     border: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    enabledBorder: InputBorder.none,
                   ),
                 ),
               ),
@@ -365,7 +369,6 @@ class MainState extends State<Main> {
                   Navigator.pushReplacementNamed(context, '/login');
                 }
               },
-
             ),
           ],
         ),
@@ -385,7 +388,6 @@ class MainState extends State<Main> {
                 trailing: DropdownButton(
                     items: language,
                     onChanged: (value) {
-
                       setState(() {
                         languageSelected =
                             value;

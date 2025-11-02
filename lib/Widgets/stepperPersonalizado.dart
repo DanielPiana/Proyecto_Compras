@@ -53,7 +53,9 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
   Widget build(BuildContext context) {
     final providerDetalle = context.read<DetalleRecetaProvider>();
     // CARGAMOS PASOS DESDE EL PROVIDER
-    final pasos = context.watch<PasosRecetaProvider>().pasos;
+    final pasos = context
+        .watch<PasosRecetaProvider>()
+        .pasos;
 
     if (pasos.isEmpty) {
       if (pasoActual != 0) {
@@ -76,9 +78,13 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
         Container(
           margin: const EdgeInsets.all(8.0),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade600, width: 0.8),
-            borderRadius: BorderRadius.circular(10),
-            color: Colors.white,
+              border: Border.all(color: Colors.grey.shade600, width: 0.8),
+              borderRadius: BorderRadius.circular(10),
+              color: Theme
+                  .of(context)
+                  .brightness == Brightness.light
+                  ? Colors.white
+                  : const Color(0xFF424242),
           ),
           child: Padding(
             padding: const EdgeInsets.all(12.0),
@@ -86,14 +92,17 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.blue.withOpacity(0.3)),
                   ),
                   child: Text(
-                    '${AppLocalizations.of(context)!.step}: ${pasos.isEmpty ? 0 : pasoActual + 1} de ${pasos.length}',
+                    '${AppLocalizations.of(context)!.step}: ${pasos.isEmpty
+                        ? 0
+                        : pasoActual + 1} de ${pasos.length}',
                     style: const TextStyle(
                       color: Colors.blue,
                       fontSize: 12,
@@ -104,7 +113,9 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                 const SizedBox(height: 6),
                 AnimatedCrossFade(
                   duration: const Duration(milliseconds: 400),
-                  crossFadeState: context.watch<DetalleRecetaProvider>().estaEditando
+                  crossFadeState: context
+                      .watch<DetalleRecetaProvider>()
+                      .estaEditando
                       ? CrossFadeState.showSecond
                       : CrossFadeState.showFirst,
                   firstChild: (pasos.isEmpty)
@@ -116,8 +127,7 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                           pasos[pasoActual].titulo,
                           style: const TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            fontWeight: FontWeight.bold
                           ),
                         ),
                       ),
@@ -126,7 +136,6 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                         pasos[pasoActual].descripcion,
                         style: const TextStyle(
                           fontSize: 15,
-                          color: Colors.black54,
                           height: 1.5,
                         ),
                       ),
@@ -159,7 +168,8 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                           controller: _descripcionController,
                           maxLines: null,
                           decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context)!.description,
+                            labelText: AppLocalizations.of(context)!
+                                .description,
                           ),
                           onChanged: (value) {
                             if (pasos.isEmpty) return;
@@ -180,96 +190,105 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                 const SizedBox(height: 16),
 
                 if (providerDetalle.estaEditando)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
+                        onPressed: () {
+                          final pProv = context.read<PasosRecetaProvider>();
+                          pProv.crearPaso("", "");
+                          final nuevos = pProv.pasos;
+                          setState(() {
+                            pasoActual = nuevos.isEmpty ? 0 : nuevos.length - 1;
+                            _tituloController.text =
+                            nuevos.isNotEmpty ? nuevos.last.titulo : "";
+                            _descripcionController.text =
+                            nuevos.isNotEmpty ? nuevos.last.descripcion : "";
+                          });
+                          context.read<DetalleRecetaProvider>().setEdicion(
+                              true);
+                        },
+                        child: Text(AppLocalizations.of(context)!.add_step),
                       ),
-                      onPressed: () {
-                        final pProv = context.read<PasosRecetaProvider>();
-                        pProv.crearPaso("", "");
-                        final nuevos = pProv.pasos;
-                        setState(() {
-                          pasoActual = nuevos.isEmpty ? 0 : nuevos.length - 1;
-                          _tituloController.text =
-                          nuevos.isNotEmpty ? nuevos.last.titulo : "";
-                          _descripcionController.text =
-                          nuevos.isNotEmpty ? nuevos.last.descripcion : "";
-                        });
-                        context.read<DetalleRecetaProvider>().setEdicion(true);
-                      },
-                      child: Text(AppLocalizations.of(context)!.add_step),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
-                      ),
-                      onPressed: () async {
-                        final pProv = context.read<PasosRecetaProvider>();
-                        if (pProv.pasos.isEmpty) return;
-                        final paso = pProv.pasos[pasoActual];
+                        onPressed: () async {
+                          final pProv = context.read<PasosRecetaProvider>();
+                          if (pProv.pasos.isEmpty) return;
+                          final paso = pProv.pasos[pasoActual];
 
-                        final confirmacion = await showDialog<bool>(
-                          context: context,
-                          builder: (dialogContext) {
-                            return AlertDialog(
-                              title: Text(AppLocalizations.of(context)!.delete_step),
-                              content: Text(AppLocalizations.of(context)!.delete_step_confirmation),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(dialogContext, false),
-                                  child: Text(AppLocalizations.of(context)!.cancel),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
+                          final confirmacion = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) {
+                              return AlertDialog(
+                                title: Text(
+                                    AppLocalizations.of(context)!.delete_step),
+                                content: Text(AppLocalizations.of(context)!
+                                    .delete_step_confirmation),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, false),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.cancel),
                                   ),
-                                  onPressed: () => Navigator.pop(dialogContext, true),
-                                  child: Text(AppLocalizations.of(context)!.delete),
-                                ),
-                              ],
-                            );
-                          },
-                        );
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, true),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.delete),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
 
-                        if (confirmacion != true) return;
-                        await pProv.eliminarPaso(paso.numeroPaso);
+                          if (confirmacion != true) return;
+                          await pProv.eliminarPaso(paso.numeroPaso);
 
-                        if (!mounted) return;
-                        final len = pProv.pasos.length;
-                        if (len > 0) {
-                          setState(() {
-                            if (pasoActual >= len) pasoActual = len - 1;
-                            _tituloController.text = pProv.pasos[pasoActual].titulo;
-                            _descripcionController.text = pProv.pasos[pasoActual].descripcion;
-                          });
-                        } else {
-                          setState(() {
-                            _tituloController.clear();
-                            _descripcionController.clear();
-                          });
-                        }
-                      },
-                      child: Text(AppLocalizations.of(context)!.delete_step),
-                    )
-                  ],
-                ),
+                          if (!mounted) return;
+                          final len = pProv.pasos.length;
+                          if (len > 0) {
+                            setState(() {
+                              if (pasoActual >= len) pasoActual = len - 1;
+                              _tituloController.text =
+                                  pProv.pasos[pasoActual].titulo;
+                              _descripcionController.text =
+                                  pProv.pasos[pasoActual].descripcion;
+                            });
+                          } else {
+                            setState(() {
+                              _tituloController.clear();
+                              _descripcionController.clear();
+                            });
+                          }
+                        },
+                        child: Text(AppLocalizations.of(context)!.delete_step),
+                      )
+                    ],
+                  ),
               ],
             ),
           ),
@@ -281,20 +300,21 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             pasos.length,
-                (index) => AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              width: index == pasoActual ? 24 : 8,
-              height: 8,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: index == pasoActual
-                    ? Colors.blue
-                    : index < pasoActual
-                    ? Colors.green.withOpacity(0.6)
-                    : Colors.grey.withOpacity(0.4),
-              ),
-            ),
+                (index) =>
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: index == pasoActual ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: index == pasoActual
+                        ? Colors.blue
+                        : index < pasoActual
+                        ? Colors.green.withOpacity(0.6)
+                        : Colors.grey.withOpacity(0.4),
+                  ),
+                ),
           ),
         ),
 
@@ -342,7 +362,8 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                       : AppLocalizations.of(context)!.next,
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: (pasos.isNotEmpty && pasoActual == pasos.length - 1)
+                  backgroundColor: (pasos.isNotEmpty &&
+                      pasoActual == pasos.length - 1)
                       ? Colors.green
                       : Colors.blue,
                   foregroundColor: Colors.white,

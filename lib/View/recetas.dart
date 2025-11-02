@@ -141,7 +141,7 @@ class RecetasState extends State<Recetas> {
                             decoration: BoxDecoration(
                               border: Border.all(
                                   color: Colors.grey.shade400, width: 0.8),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(tiempo,
                                 style: const TextStyle(fontSize: 16)),
@@ -305,33 +305,23 @@ class RecetasState extends State<Recetas> {
     final providerReceta = context.watch<RecetaProvider>();
 
     return Scaffold(
-      // ---------- APP BAR ----------
-      appBar: AppBar(
-        title: Text(
-          AppLocalizations.of(context)!.recipes,
-          style: const TextStyle(
-              fontSize: 30,
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              // TODO: botón de compartir
-            },
-          ),
-        ],
-      ),
+        // ---------- APP BAR ----------
+        appBar: AppBar(
+            title: Text(
+              AppLocalizations.of(context)!.recipes,
+              style: const TextStyle(
+                  fontSize: 30,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true),
 
-      // ---------- BODY ----------
-      body: providerReceta.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : providerReceta.recetas.isEmpty
-              ? const PlaceholderRecetas()
-              : LayoutBuilder(
-                  builder: (context, constraints) {
+        // ---------- BODY ----------
+        body: providerReceta.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : providerReceta.recetas.isEmpty
+                ? const PlaceholderRecetas()
+                : LayoutBuilder(builder: (context, constraints) {
                     final width = constraints.maxWidth;
                     int crossAxisCount = 1;
 
@@ -344,231 +334,244 @@ class RecetasState extends State<Recetas> {
                     }
 
                     // ---------- SECCIÓN DE LAS RECETAS ----------
-                    return GridView.builder(
-                      itemCount: providerReceta.recetas.length,
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        mainAxisExtent: 280,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemBuilder: (context, index) {
-                        final receta = providerReceta.recetas[index];
-                        return Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(
-                                  color: Colors.grey.shade600, width: 0.8)),
-                          elevation: 4,
+                    return Builder(
+                      builder: (context) {
+                        final isLight =
+                            Theme.of(context).brightness == Brightness.light;
 
-                          // ---------- LISTENER DE LA RECETA ----------
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () async {
-                              final resultado = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => MultiProvider(
-                                    providers: [
-                                      ChangeNotifierProvider(
-                                        create: (_) => PasosRecetaProvider(
-                                          Supabase.instance.client,
-                                          receta.id!,
-                                        )..cargarPasos(),
-                                      ),
-                                      ChangeNotifierProvider(
-                                        create: (_) => ProductosRecetaProvider(
-                                          Supabase.instance.client,
-                                          receta.id!,
-                                        )..cargarProductos(),
-                                      ),
-                                    ],
-                                    child: DetalleReceta(receta: receta),
-                                  ),
+                        return GridView.builder(
+                          itemCount: providerReceta.recetas.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            mainAxisExtent: 280,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemBuilder: (context, index) {
+                            final receta = providerReceta.recetas[index];
+                            return Card(
+                              color: Theme.of(context).colorScheme.surface,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(
+                                  color: Colors.grey.shade600,
+                                  width: 0.8,
                                 ),
-                              );
-                              if (resultado == true) {
-                                providerReceta.cargarRecetas();
-                              }
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey.shade600,
-                                      width: 0.8,
+                              ),
+                              elevation: 4,
+
+                              // ---------- LISTENER DE LA RECETA ----------
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () async {
+                                  final resultado = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => MultiProvider(
+                                        providers: [
+                                          ChangeNotifierProvider(
+                                            create: (_) => PasosRecetaProvider(
+                                              Supabase.instance.client,
+                                              receta.id!,
+                                            )..cargarPasos(),
+                                          ),
+                                          ChangeNotifierProvider(
+                                            create: (_) =>
+                                                ProductosRecetaProvider(
+                                              Supabase.instance.client,
+                                              receta.id!,
+                                            )..cargarProductos(),
+                                          ),
+                                        ],
+                                        child: DetalleReceta(receta: receta),
+                                      ),
                                     ),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(16)),
-                                    child: Stack(
-                                      children: [
-                                        receta.foto.isNotEmpty
-                                            ? Image.network(
-                                                receta.foto,
-                                                width: double.infinity,
-                                                height: 150,
-                                                fit: BoxFit.contain,
-                                              )
-                                            : Container(
-                                                width: double.infinity,
-                                                height: 150,
-                                                alignment: Alignment.center,
-                                                child: const Icon(
-                                                  Icons.image_not_supported,
-                                                  size: 60,
-                                                  color: Colors.grey,
+                                  );
+                                  if (resultado == true) {
+                                    providerReceta.cargarRecetas();
+                                  }
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade600,
+                                          width: 0.8,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Stack(
+                                          children: [
+                                            receta.foto.isNotEmpty
+                                                ? Image.network(
+                                                    receta.foto,
+                                                    width: double.infinity,
+                                                    height: 150,
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : Container(
+                                                    width: double.infinity,
+                                                    height: 150,
+                                                    alignment: Alignment.center,
+                                                    child: const Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 60,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+
+                                            // ---------- ICONO PARA BORRAR Y COMPARTIR ----------
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: Container(
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.black54,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: PopupMenuButton<String>(
+                                                  onSelected: (value) async {
+                                                    if (value == 'compartir') {
+                                                      // TODO: método compartir
+                                                    } else if (value ==
+                                                        'eliminar') {
+                                                      // Eliminar
+                                                      final recipeProvider =
+                                                          context.read<
+                                                              RecetaProvider>();
+                                                      final allRecipes =
+                                                          List.of(recipeProvider
+                                                              .recetas);
+                                                      final isLastRecipe =
+                                                          allRecipes.length ==
+                                                              1;
+
+                                                      try {
+                                                        // Show snackbar before deleting if it’s the last recipe
+                                                        if (isLastRecipe) {
+                                                          showAwesomeSnackBar(
+                                                            context,
+                                                            title: AppLocalizations
+                                                                    .of(context)!
+                                                                .success,
+                                                            message: AppLocalizations
+                                                                    .of(context)!
+                                                                .recipe_deleted_ok,
+                                                            contentType: asc
+                                                                .ContentType
+                                                                .success,
+                                                          );
+                                                        }
+
+                                                        // Delete recipe
+                                                        await recipeProvider
+                                                            .eliminarReceta(
+                                                                receta.id!);
+
+                                                        if (!isLastRecipe &&
+                                                            context.mounted) {
+                                                          showAwesomeSnackBar(
+                                                            context,
+                                                            title: AppLocalizations
+                                                                    .of(context)!
+                                                                .success,
+                                                            message: AppLocalizations
+                                                                    .of(context)!
+                                                                .recipe_deleted_ok,
+                                                            contentType: asc
+                                                                .ContentType
+                                                                .success,
+                                                          );
+                                                        }
+                                                      } catch (error) {
+                                                        if (context.mounted) {
+                                                          showAwesomeSnackBar(
+                                                            context,
+                                                            title: AppLocalizations
+                                                                    .of(context)!
+                                                                .error,
+                                                            message: AppLocalizations
+                                                                    .of(context)!
+                                                                .recipe_deleted_error,
+                                                            contentType: asc
+                                                                .ContentType
+                                                                .failure,
+                                                          );
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  itemBuilder: (context) => [
+                                                    PopupMenuItem(
+                                                      value: 'compartir',
+                                                      child: Text(
+                                                          AppLocalizations.of(
+                                                                  context)!
+                                                              .share),
+                                                    ),
+                                                    PopupMenuItem(
+                                                      value: 'eliminar',
+                                                      child: Text(
+                                                          AppLocalizations.of(
+                                                                  context)!
+                                                              .delete),
+                                                    ),
+                                                  ],
+                                                  icon: const Icon(
+                                                      Icons.more_vert,
+                                                      color: Colors.white,
+                                                      size: 20),
+                                                  color: Theme.of(context).colorScheme.surface,
                                                 ),
                                               ),
-
-                                        // ---------- ICONO PARA BORRAR Y COMPARTIR ----------
-                                        Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: Container(
-                                            decoration: const BoxDecoration(
-                                              color: Colors.black54,
-                                              shape: BoxShape.circle,
                                             ),
-                                            child: PopupMenuButton<String>(
-                                              onSelected: (value) async {
-                                                if (value == 'compartir') {
-                                                  // TODO: método compartir
-                                                } else if (value ==
-                                                    'eliminar') {
-                                                  // Eliminar
-                                                  final recipeProvider = context
-                                                      .read<RecetaProvider>();
-                                                  final allRecipes = List.of(
-                                                      recipeProvider.recetas);
-                                                  final isLastRecipe =
-                                                      allRecipes.length == 1;
-
-                                                  try {
-                                                    // Show snackbar before deleting if it’s the last recipe
-                                                    if (isLastRecipe) {
-                                                      showAwesomeSnackBar(
-                                                        context,
-                                                        title:
-                                                            AppLocalizations.of(
-                                                                    context)!
-                                                                .success,
-                                                        message: AppLocalizations
-                                                                .of(context)!
-                                                            .recipe_deleted_ok,
-                                                        contentType: asc
-                                                            .ContentType
-                                                            .success,
-                                                      );
-                                                    }
-
-                                                    // Delete recipe
-                                                    await recipeProvider
-                                                        .eliminarReceta(
-                                                            receta.id!);
-
-                                                    if (!isLastRecipe &&
-                                                        context.mounted) {
-                                                      showAwesomeSnackBar(
-                                                        context,
-                                                        title:
-                                                            AppLocalizations.of(
-                                                                    context)!
-                                                                .success,
-                                                        message: AppLocalizations
-                                                                .of(context)!
-                                                            .recipe_deleted_ok,
-                                                        contentType: asc
-                                                            .ContentType
-                                                            .success,
-                                                      );
-                                                    }
-                                                  } catch (error) {
-                                                    if (context.mounted) {
-                                                      showAwesomeSnackBar(
-                                                        context,
-                                                        title: AppLocalizations
-                                                            .of(context)!
-                                                            .error,
-                                                        message: AppLocalizations
-                                                                .of(context)!
-                                                            .recipe_deleted_error,
-                                                        contentType: asc
-                                                            .ContentType
-                                                            .failure,
-                                                      );
-                                                    }
-                                                  }
-                                                }
-                                              },
-                                              itemBuilder: (context) => [
-                                                PopupMenuItem(
-                                                  value: 'compartir',
-                                                  child: Text(
-                                                      AppLocalizations.of(
-                                                              context)!
-                                                          .share),
-                                                ),
-                                                PopupMenuItem(
-                                                  value: 'eliminar',
-                                                  child: Text(
-                                                      AppLocalizations.of(
-                                                              context)!
-                                                          .delete),
-                                                ),
-                                              ],
-                                              icon: const Icon(Icons.more_vert,
-                                                  color: Colors.white,
-                                                  size: 20),
-                                              color: Colors.white,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    // ---------- SECCIÓN INFERIOR DE PRECIO TOTAL ----------
+                                    Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            receta.nombre,
+                                            style: const TextStyle(
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '${AppLocalizations.of(context)!.time}: ${receta.tiempo}',
+                                            style:
+                                                const TextStyle(fontSize: 18),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                // ---------- SECCIÓN INFERIOR DE PRECIO TOTAL ----------
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        receta.nombre,
-                                        style: const TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        '${AppLocalizations.of(context)!.time}: ${receta.tiempo}',
-                                        style: const TextStyle(fontSize: 18),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );
-                  },
-                ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          mostrarDialogoCrearReceta(context, indiceRecetaActual);
-        },
-        child: const Icon(Icons.add),
-      ),
-    );
+                    floatingActionButton:
+                    FloatingActionButton(
+                      onPressed: () {
+                        mostrarDialogoCrearReceta(context, indiceRecetaActual);
+                      },
+                      child: const Icon(Icons.add),
+                    );
+                  }));
   }
 }

@@ -933,11 +933,12 @@ class ProductoState extends State<Producto> {
           final productos = entry.value;
 
           return Container(
-            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
             decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey.shade600, width: 0.8),
                 borderRadius: BorderRadius.circular(10),
-                color: Colors.white),
+                color: Theme.of(context).colorScheme.surface,
+            ),
 
             // ---------- SECCIÓN DE SUPERMERCADO ----------
             child: ExpansionTile(
@@ -950,9 +951,10 @@ class ProductoState extends State<Producto> {
                 padding: const EdgeInsets.all(8),
                 child: Text(
                   supermercado,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -965,14 +967,13 @@ class ProductoState extends State<Producto> {
                       height: 85,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
+                          horizontal: 2,
                         ),
                         child: Center(
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: 8,
                             ),
-
                             // Miniatura del producto
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
@@ -1075,7 +1076,8 @@ class ProductoState extends State<Producto> {
                     Divider(
                       height: 1,
                       thickness: 0.8,
-                      indent: 16,
+                      indent: 8,
+                      endIndent: 8,
                       color: Colors.grey.shade400,
                     ),
                   ],

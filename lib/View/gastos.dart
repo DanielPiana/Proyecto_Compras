@@ -124,125 +124,143 @@ class GastosState extends State<Gastos> {
       ),
 
       // ---------- BODY ----------
-      body: providerFactura.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : providerFactura.facturas.isEmpty
-          ? const PlaceholderFacturas()
-          : ListView.builder(
-        itemCount: facturas.length,
-        itemBuilder: (context, index) {
-          final factura = facturas[index];
-          final double precioTotal = factura.productos.fold(
-            0.0,
-                (sum, p) => sum + (p.precioUnidad * p.cantidad),
-          );
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade600, width: 0.8),
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.white),
+        body: Builder(
+            builder: (context) {
+              final isLight = Theme
+                  .of(context)
+                  .brightness == Brightness.light;
+              return providerFactura.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : providerFactura.facturas.isEmpty
+                  ? const PlaceholderFacturas()
+                  : ListView.builder(
+                itemCount: facturas.length,
+                itemBuilder: (context, index) {
+                  final factura = facturas[index];
+                  final double precioTotal = factura.productos.fold(
+                    0.0,
+                        (sum, p) => sum + (p.precioUnidad * p.cantidad),
+                  );
+                  return Container(
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 4, horizontal: 4),
+                    decoration: BoxDecoration(
+                        border: Border.all(
+                            color: Colors.grey.shade600, width: 0.8),
+                        borderRadius: BorderRadius.circular(10),
+                        color: Theme.of(context).colorScheme.surface),
 
-            // ---------- SECCIÓN DE FECHA ----------
-            child: ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              title: Container(
-                constraints: const BoxConstraints(
-                  minHeight: 48,
-                ),
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      factura.fecha,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                    // ---------- SECCIÓN DE FECHA ----------
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      title: Container(
+                        constraints: const BoxConstraints(
+                          minHeight: 48,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              factura.fecha,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 35,
+                                minHeight: 35,
+                              ),
+                              onPressed: () {
+                                dialogoEliminacion(context, factura.id!);
+                              },
+                              icon: const Icon(Icons.delete),
+                              iconSize: 22,
+                              color: Colors.red.shade400,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 35,
-                        minHeight: 35,
-                      ),
-                      onPressed: () {
-                        dialogoEliminacion(context, factura.id!);
-                      },
-                      icon: const Icon(Icons.delete),
-                      iconSize: 22,
-                      color: Colors.red.shade400,
-                    ),
-                  ],
-                ),
-              ),
 
-              // ---------- LISTA DE FACTURAS ----------
-              children: [
-                ...factura.productos.map((producto) {
-                  return Column(
-                    children: [
-                      SizedBox(
-                        height: 75,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
+                      // ---------- LISTA DE FACTURAS ----------
+                      children: [
+                        ...factura.productos.map((producto) {
+                          return Column(
+                            children: [
+                              SizedBox(
+                                height: 75,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  child: Center(
+                                    child: ListTile(
+                                      title: Text(producto.nombre,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '${AppLocalizations.of(context)!
+                                            .quantity}${producto.cantidad}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      trailing: Text(
+                                        '\$${producto.precioUnidad
+                                            .toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme
+                                                .of(context)
+                                                .colorScheme
+                                                .primary,
+                                            fontSize: 15
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 0.8,
+                                indent: 8,
+                                endIndent: 8,
+                                color: Colors.grey.shade400,
+                              ),
+
+                            ],
+                          );
+                        }),
+                        ListTile(
+                          title: Text(
+                            AppLocalizations.of(context)!.totalPrice,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          child: Center(
-                            child: ListTile(
-                              title: Text(producto.nombre,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                '${AppLocalizations.of(context)!.quantity}${producto.cantidad}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              trailing: Text(
-                                '\$${producto.precioUnidad.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontSize: 15
-                                ),
-                              ),
+                          trailing: Text(
+                            '\$${precioTotal.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme
+                                  .of(context)
+                                  .colorScheme
+                                  .primary,
+                              fontSize: 20,
                             ),
                           ),
                         ),
-                      ),
-                      Divider(
-                        height: 1,
-                        thickness: 0.8,
-                        indent: 16,
-                        color: Colors.grey.shade400,
-                      ),
-                    ],
-                  );
-                }),
-                ListTile(
-                  title: Text(
-                    AppLocalizations.of(context)!.totalPrice,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  trailing: Text(
-                    '\$${precioTotal.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 20,
+                      ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+                  );
+                },
+              );
+            }),
     );
   }
 }
