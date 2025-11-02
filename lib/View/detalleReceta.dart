@@ -253,8 +253,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   }
 
   /// Muestra una ventana con los detalles de un producto.
-  void mostrarDetalleProducto(BuildContext context,
-      Map<String, dynamic> producto) {
+  void mostrarDetalleProducto(BuildContext context, Map<String, dynamic> producto) {
     showDialog(
       context: context,
       builder: (context) {
@@ -270,15 +269,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (producto['foto'] != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        producto['foto'],
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+
                   const SizedBox(height: 16),
                   Text(
                     producto['nombre'] ?? '',
@@ -349,8 +340,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   /// - Si no se encuentra el paso, devuelve false.
   /// - Si la actualización se hace correctamente, devuelve true.
   /// - Si ocurre un error durante el proceso, lo muestra por consola y devuelve false.
-  Future<bool> actualizarPasoBBDD(recetaId, int numeroPaso, String nuevoTitulo,
-      String nuevaDescripcion,) async {
+  Future<bool> actualizarPasoBBDD(recetaId, int numeroPaso, String nuevoTitulo, String nuevaDescripcion,) async {
     try {
       final response =
       await Supabase.instance.client.from('pasos_receta').update({
@@ -559,6 +549,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    // Padding dinámico para ajustar el SliverAppBar en Android
+    final topPadding = MediaQuery.of(context).padding.top + 50;
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
@@ -566,6 +558,15 @@ class _DetalleRecetaState extends State<DetalleReceta> {
           slivers: [
             // ---------- APP BAR ----------
             SliverAppBar(
+              leadingWidth: 48,
+              leading: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.maybePop(context),
+                ),
+              ),
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
@@ -577,6 +578,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
+                    // ---------- DEGRADADO DE FONDO ----------
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -591,7 +593,11 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 70),
+                      padding: EdgeInsets.only(
+                      top: topPadding,
+                      left: 8,
+                      right: 8,
+                    ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: AspectRatio(
@@ -631,49 +637,47 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                   ],
                 ),
               ),
-
-
               // ---------- TITLO DEL APP BAR ----------
               title: AnimatedCrossFade(
-                duration: const Duration(milliseconds: 400),
-                crossFadeState: editandoNombre
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                firstChild: Text(
-                  receta.nombre,
-                  style: const TextStyle(
-                      fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                secondChild: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: TextField(
-                    controller: nombreController,
-                    focusNode: _focusNode,
+                  duration: const Duration(milliseconds: 200),
+                  crossFadeState: editandoNombre
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  firstChild: Text(
+                    receta.nombre,
                     style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                        fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  secondChild: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        nuevoNombre = value.trim();
-                      });
-                      final nombreOriginal = widget.receta.nombre.trim();
-                      final nuevoValor = capitalize(value.trim());
+                    child: TextField(
+                      controller: nombreController,
+                      focusNode: _focusNode,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          nuevoNombre = value.trim();
+                        });
+                        final nombreOriginal = widget.receta.nombre.trim();
+                        final nuevoValor = capitalize(value.trim());
 
-                      context
-                          .read<DetalleRecetaProvider>()
-                          .setCambioNombre(nuevoValor != nombreOriginal);
-                    },
+                        context
+                            .read<DetalleRecetaProvider>()
+                            .setCambioNombre(nuevoValor != nombreOriginal);
+                      },
+                    ),
                   ),
                 ),
-              ),
             ),
             SliverPadding(
               padding: const EdgeInsets.all(8),
@@ -688,7 +692,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                     if (pasosProvider.estaCargando) {
                       return const Center(
                         child: Padding(
-                          padding: EdgeInsets.all(16.0),
+                          padding: EdgeInsets.all(8),
                           child: CircularProgressIndicator(),
                         ),
                       );

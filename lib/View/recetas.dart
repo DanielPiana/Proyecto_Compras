@@ -452,7 +452,6 @@ class RecetasState extends State<Recetas> {
                                                               1;
 
                                                       try {
-                                                        // Show snackbar before deleting if it’s the last recipe
                                                         if (isLastRecipe) {
                                                           showAwesomeSnackBar(
                                                             context,
@@ -467,8 +466,6 @@ class RecetasState extends State<Recetas> {
                                                                 .success,
                                                           );
                                                         }
-
-                                                        // Delete recipe
                                                         await recipeProvider
                                                             .eliminarReceta(
                                                                 receta.id!);

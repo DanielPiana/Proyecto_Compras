@@ -76,7 +76,7 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
     return Column(
       children: [
         Container(
-          margin: const EdgeInsets.all(8.0),
+          margin: const EdgeInsets.all(0),
           decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade600, width: 0.8),
               borderRadius: BorderRadius.circular(10),
@@ -87,7 +87,7 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                   : const Color(0xFF424242),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
