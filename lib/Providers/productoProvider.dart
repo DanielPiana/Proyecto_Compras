@@ -144,6 +144,7 @@ class ProductoProvider with ChangeNotifier {
         'supermercado': nuevoProducto.supermercado,
         'usuariouuid': nuevoProducto.usuarioUuid,
         'foto': nuevoProducto.foto,
+        'codbarras': nuevoProducto.codBarras
       }).select();
 
       if (response.isNotEmpty) {
@@ -194,6 +195,7 @@ class ProductoProvider with ChangeNotifier {
         'supermercado': productoActualizado.supermercado,
         'usuariouuid': productoActualizado.usuarioUuid,
         'foto': productoActualizado.foto,
+        'codbarras' : productoActualizado.codBarras,
       }).eq('id', productoActualizado.id!)
           .eq('usuariouuid', productoActualizado.usuarioUuid);
 
@@ -209,6 +211,12 @@ class ProductoProvider with ChangeNotifier {
       notifyListeners();
       rethrow;
     }
+  }
+
+  bool existsWithBarCode(String codigo) {
+    if (codigo.trim().isEmpty) return false;
+
+    return productos.any((p) => (p.codBarras ?? '') == codigo.trim());
   }
 
 

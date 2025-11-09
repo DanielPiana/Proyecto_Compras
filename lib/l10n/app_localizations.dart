@@ -925,6 +925,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Añadir a lista'**
   String get add_ingredients_to_list;
+
+  /// No description provided for @open_camera.
+  ///
+  /// In es, this message translates to:
+  /// **'Cámara'**
+  String get open_camera;
+
+  /// No description provided for @barcode_already_registered.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de barras ya registrado'**
+  String get barcode_already_registered;
 }
 
 class _AppLocalizationsDelegate

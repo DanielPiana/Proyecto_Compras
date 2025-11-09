@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,6 +19,11 @@ import '../l10n/app_localizations.dart';
 import '../models/productoModel.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 import 'package:flutter/services.dart';
+import 'dart:typed_data';
+import 'package:super_clipboard/super_clipboard.dart';
+
+import '../services/openfood_service.dart';
+import '../utils/imageNameNormalizer.dart';
 
 class Producto extends StatefulWidget {
   const Producto({super.key});
@@ -30,6 +36,10 @@ class ProductoState extends State<Producto> {
   late String userId;
 
   SupabaseClient database = Supabase.instance.client;
+
+  final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  final isDesktop =
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
   /*TODO-----------------INITIALIZE-----------------*/
   @override
@@ -49,6 +59,7 @@ class ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE ELIMINACION DE PRODUCTO-----------------*/
+
   /// Muestra un cuadro de diálogo de confirmación para eliminar un producto.
   ///
   /// Flujo principal:
@@ -67,7 +78,6 @@ class ProductoState extends State<Producto> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-
           // ---------- TÍTULO ----------
           title: Text(
             AppLocalizations.of(context)!.titleConfirmDialog,
@@ -82,7 +92,6 @@ class ProductoState extends State<Producto> {
 
           // ---------- ACCIONES (Cancelar / Eliminar) ----------
           actions: [
-
             // Cancelar
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -98,8 +107,8 @@ class ProductoState extends State<Producto> {
                 final allProducts = List.of(productProvider.productos);
                 final isLastProduct = allProducts.length == 1;
 
-                final backupProduct =
-                productProvider.productos.firstWhere((p) => p.id == productId);
+                final backupProduct = productProvider.productos
+                    .firstWhere((p) => p.id == productId);
 
                 productProvider.removeProductoLocal(productId);
 
@@ -110,8 +119,7 @@ class ProductoState extends State<Producto> {
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
-                      message:
-                      AppLocalizations.of(context)!.product_deleted_ok,
+                      message: AppLocalizations.of(context)!.product_deleted_ok,
                       contentType: asc.ContentType.success,
                     );
                   }
@@ -122,12 +130,10 @@ class ProductoState extends State<Producto> {
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
-                      message:
-                      AppLocalizations.of(context)!.product_deleted_ok,
+                      message: AppLocalizations.of(context)!.product_deleted_ok,
                       contentType: asc.ContentType.success,
                     );
                   }
-
                 } catch (error) {
                   productProvider.addProductoLocal(backupProduct);
 
@@ -136,7 +142,7 @@ class ProductoState extends State<Producto> {
                       context,
                       title: AppLocalizations.of(context)!.error,
                       message:
-                      AppLocalizations.of(context)!.product_deleted_error,
+                          AppLocalizations.of(context)!.product_deleted_error,
                       contentType: asc.ContentType.failure,
                     );
                   }
@@ -154,6 +160,7 @@ class ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE EDICION DE PRODUCTO-----------------*/
+
   /// Muestra un cuadro de diálogo para editar un producto existente.
   ///
   /// Flujo principal:
@@ -175,21 +182,18 @@ class ProductoState extends State<Producto> {
   /// Excepciones:
   /// - Puede lanzar errores relacionados con la carga de imágenes o la actualización en Supabase.
   void dialogoEdicion(BuildContext context, ProductoModel producto) async {
-    final TextEditingController nombreController =
-    TextEditingController(text: producto.nombre);
-    final TextEditingController descripcionController =
-    TextEditingController(text: producto.descripcion);
-    final TextEditingController precioController =
-    TextEditingController(text: producto.precio.toString());
+    final TextEditingController nombreController = TextEditingController(text: producto.nombre);
+    final TextEditingController descripcionController = TextEditingController(text: producto.descripcion);
+    final TextEditingController precioController = TextEditingController(text: producto.precio.toString());
+    final TextEditingController codigoBarrasController = TextEditingController(text: producto.codBarras);
 
-    final List<String> supermercados =
-    await context.read<ProductoProvider>().obtenerSupermercados();
+    final List<String> supermercados = await context.read<ProductoProvider>().obtenerSupermercados();
     String supermercadoSeleccionado = producto.supermercado;
 
-    File? nuevaImagenSeleccionada;
+    String? imageScanned = producto.foto.isNotEmpty ? producto.foto : null;
+    File? imageFilePicker; // Imagen seleccionada del usuario
 
     bool nombreValido = producto.nombre.trim().isNotEmpty;
-    bool descripcionValida = true;
     bool precioValido = true;
     bool supermercadoValido = producto.supermercado.trim().isNotEmpty;
 
@@ -203,7 +207,6 @@ class ProductoState extends State<Producto> {
         return StatefulBuilder(
           builder: (dialogCtx, setState) {
             return AlertDialog(
-
               // ---------- TÍTULO ----------
               title: Text(AppLocalizations.of(context)!.editProduct),
 
@@ -213,7 +216,69 @@ class ProductoState extends State<Producto> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (isMobile)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: Text(AppLocalizations.of(context)!.scan_barcode),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const EscanearCodigoScreen()),
+                          );
 
+                          if (result != null && result is String) {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => const Center(child: CircularProgressIndicator()),
+                            );
+
+                            try {
+                              final product = await OpenFoodService.obtenerProductoPorCodigo(result);
+                              Navigator.pop(context);
+
+                              if (product != null) {
+
+                                setState(() {
+                                  imageScanned = product.imageFrontUrl;
+                                  imageFilePicker = null;
+
+                                  codigoBarrasController.text = result;
+                                  nombreController.text =
+                                      product.productName ?? product.genericName ?? '';
+                                  descripcionController.text = product.brands ?? '';
+                                });
+
+                              } else {
+                                showAwesomeSnackBar(
+                                  context,
+                                  title: "No encontrado",
+                                  message: "No se encontró información del producto",
+                                  contentType: asc.ContentType.warning,
+                                );
+                              }
+                            } catch (_) {
+                              Navigator.pop(context);
+                              showAwesomeSnackBar(
+                                context,
+                                title: "Error",
+                                message: "Error al obtener datos",
+                                contentType: asc.ContentType.failure,
+                              );
+                            }
+                          }
+
+                        },
+                      ),
+                    const SizedBox(height: 10),
+
+                    // ---------- CAMPO DE CÓDIGO DE BARRAS ----------
+                    if (codigoBarrasController.text.isNotEmpty)
+                      TextField(
+                          decoration: const InputDecoration(labelText: "Código de barras"),
+                          controller: codigoBarrasController, readOnly: true
+                      ),
+                    const SizedBox(height: 10),
                     // ---------- CAMPO NOMBRE ----------
                     TextField(
                       controller: nombreController,
@@ -221,9 +286,9 @@ class ProductoState extends State<Producto> {
                         labelText: AppLocalizations.of(context)!.name,
                         suffixIcon: nombreTouched
                             ? (nombreValido
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
+                                ? const Icon(Icons.check_circle,
+                                    color: Colors.green)
+                                : const Icon(Icons.cancel, color: Colors.red))
                             : null,
                       ),
                       onChanged: (value) {
@@ -243,7 +308,8 @@ class ProductoState extends State<Producto> {
                       controller: descripcionController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.description,
-                        suffixIcon: const Icon(Icons.check_circle, color: Colors.green),
+                        suffixIcon:
+                            const Icon(Icons.check_circle, color: Colors.green),
                       ),
                       onChanged: (_) {},
                     ),
@@ -256,9 +322,9 @@ class ProductoState extends State<Producto> {
                         labelText: AppLocalizations.of(context)!.price,
                         suffixIcon: precioTouched
                             ? (precioValido
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
+                                ? const Icon(Icons.check_circle,
+                                    color: Colors.green)
+                                : const Icon(Icons.cancel, color: Colors.red))
                             : null,
                       ),
                       keyboardType: TextInputType.number,
@@ -282,9 +348,9 @@ class ProductoState extends State<Producto> {
                         labelText: AppLocalizations.of(context)!.supermarket,
                         suffixIcon: supermercadoTouched
                             ? (supermercadoValido
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
+                                ? const Icon(Icons.check_circle,
+                                    color: Colors.green)
+                                : const Icon(Icons.cancel, color: Colors.red))
                             : null,
                       ),
                       items: supermercados.map((s) {
@@ -301,7 +367,7 @@ class ProductoState extends State<Producto> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child:
-                              Text(s, style: const TextStyle(fontSize: 16)),
+                                  Text(s, style: const TextStyle(fontSize: 16)),
                             ),
                           ),
                         );
@@ -311,7 +377,7 @@ class ProductoState extends State<Producto> {
                           return Align(
                             alignment: Alignment.centerLeft,
                             child:
-                            Text(s, style: const TextStyle(fontSize: 16)),
+                                Text(s, style: const TextStyle(fontSize: 16)),
                           );
                         }).toList();
                       },
@@ -331,54 +397,193 @@ class ProductoState extends State<Producto> {
                               .supermarket_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 12),
-
-                    // ---------- SELECCIÓN DE FOTO ----------
                     Center(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.image),
-                        label: Text(AppLocalizations.of(context)!.select_photo),
-                        onPressed: () async {
-                          File? imagen;
-                          if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
-                            final picker = ImagePicker();
-                            final pickedFile = await picker.pickImage(
-                                source: ImageSource.gallery);
-                            if (pickedFile != null) {
-                              imagen = File(pickedFile.path);
-                            }
-                          } else {
-                            final result = await FilePicker.platform
-                                .pickFiles(type: FileType.image);
-                            if (result != null &&
-                                result.files.single.path != null) {
-                              imagen = File(result.files.single.path!);
-                            }
-                          }
-                          if (imagen != null) {
-                            setState(() {
-                              nuevaImagenSeleccionada = imagen;
-                            });
-                          }
-                        },
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // BOTÓN: Seleccionar imagen (galería en móvil, archivo en PC)
+                              Material(
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.grey[700]!, width: 0.8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.photo_library, color: Colors.green, size: 28),
+                                    tooltip: AppLocalizations.of(context)!.select_photo,
+                                    onPressed: () async {
+                                      File? imagen;
+
+                                      if (isMobile) {
+                                        final picker = ImagePicker();
+                                        final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                                        if (pickedFile != null) imagen = File(pickedFile.path);
+                                      } else if (isDesktop) {
+                                        final result = await FilePicker.platform.pickFiles(type: FileType.image);
+                                        if (result != null && result.files.single.path != null) {
+                                          imagen = File(result.files.single.path!);
+                                        }
+                                      }
+
+                                      if (imagen != null) {
+                                        setState(() {
+                                          imageFilePicker = imagen;
+                                          imageScanned = null; // Si elige manual, anulamos la remota
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 10),
+
+                              // BOTÓN: Cámara en móvil / pegar imagen desde portapapeles en PC
+                              Material(
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.grey[700]!, width: 0.8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.camera_alt, color: Colors.green, size: 28),
+                                    tooltip: isMobile
+                                        ? AppLocalizations.of(context)!.open_camera
+                                        : "Pegar imagen desde el portapapeles",
+                                    onPressed: () async {
+                                      if (isMobile) {
+                                        final picker = ImagePicker();
+                                        final pickedFile =
+                                        await picker.pickImage(
+                                            source: ImageSource.camera);
+
+                                        if (pickedFile != null) {
+                                          setState(() {
+                                            imageFilePicker =
+                                                File(pickedFile.path);
+                                            imageScanned = null;
+                                          });
+                                        }
+                                        return;
+                                      }
+
+                                      // Escritorio → pegar desde portapapeles
+                                      if (isDesktop) {
+                                        final clipboard =
+                                            SystemClipboard.instance;
+                                        if (clipboard == null) return;
+
+                                        final reader = await clipboard.read();
+                                        if (reader == null) return;
+
+                                        // Intenta leer imagen del portapapeles
+                                        String extension = 'png';
+
+                                        // Intenta PNG primero
+                                        if (reader.canProvide(Formats.png)) {
+                                          reader.getFile(Formats.png,
+                                                  (file) async {
+                                                // Lee el stream de la imagen
+                                                final stream = file.getStream();
+                                                final chunks = <int>[];
+
+                                                await for (final chunk in stream) {
+                                                  chunks.addAll(chunk);
+                                                }
+
+                                                final imageBytes =
+                                                Uint8List.fromList(chunks);
+
+                                                // Guardar bytes en archivo temporal
+                                                final tempDir =
+                                                await getTemporaryDirectory();
+                                                final tempFile = File(
+                                                  '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.png',
+                                                );
+
+                                                await tempFile
+                                                    .writeAsBytes(imageBytes);
+
+                                                setState(() {
+                                                  imageFilePicker = tempFile;
+                                                  imageScanned = null;
+                                                });
+                                              });
+                                        }
+                                        // Si no hay PNG, intenta JPEG
+                                        else if (reader
+                                            .canProvide(Formats.jpeg)) {
+                                          reader.getFile(Formats.jpeg,
+                                                  (file) async {
+                                                final stream = file.getStream();
+                                                final chunks = <int>[];
+
+                                                await for (final chunk in stream) {
+                                                  chunks.addAll(chunk);
+                                                }
+
+                                                final imageBytes =
+                                                Uint8List.fromList(chunks);
+
+                                                final tempDir =
+                                                await getTemporaryDirectory();
+                                                final tempFile = File(
+                                                  '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                                                );
+
+                                                await tempFile
+                                                    .writeAsBytes(imageBytes);
+
+                                                setState(() {
+                                                  imageFilePicker = tempFile;
+                                                  imageScanned = null;
+                                                });
+                                              });
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          // ---------- PREVIEW IMAGEN ----------
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: SizedBox(
+                              height: 180,
+                              width: double.infinity,
+                              child: Builder(
+                                builder: (_) {
+                                  if (imageFilePicker != null) {
+                                    return Image.file(imageFilePicker!, fit: BoxFit.contain);
+                                  } else if (imageScanned != null && imageScanned!.isNotEmpty) {
+                                    return Image.network(imageScanned!, fit: BoxFit.contain);
+                                  } else {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Center(
+                                        child: Icon(Icons.image_outlined, size: 60, color: Colors.white70),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    if (nuevaImagenSeleccionada != null)
-                      Center(
-                        child: Image.file(
-                          nuevaImagenSeleccionada!,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    else if (producto.foto.isNotEmpty)
-                      Center(
-                        child: Image.network(
-                          producto.foto,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+
                   ],
                 ),
               ),
@@ -389,16 +594,16 @@ class ProductoState extends State<Producto> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    final String codigoBarras = codigoBarrasController.text;
                     final String nuevoNombre = nombreController.text.trim();
                     final String nuevaDescripcion =
-                    descripcionController.text.trim();
+                        descripcionController.text.trim();
                     final String precioInput =
-                    precioController.text.trim().replaceAll(',', '.');
+                        precioController.text.trim().replaceAll(',', '.');
                     final double? nuevoPrecioParsed =
-                    double.tryParse(precioInput);
+                        double.tryParse(precioInput);
 
                     if (!nombreValido ||
-                        !descripcionValida ||
                         !precioValido ||
                         !supermercadoValido ||
                         nuevoPrecioParsed == null) {
@@ -408,28 +613,28 @@ class ProductoState extends State<Producto> {
                     final double nuevoPrecio = nuevoPrecioParsed;
                     String urlImagen = producto.foto;
 
-                    if (nuevaImagenSeleccionada != null) {
-                      final bytes =
-                      await nuevaImagenSeleccionada!.readAsBytes();
-                      final nombreArchivo =
-                          '${nuevoNombre}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
-                      final path =
-                          'productos/${producto.usuarioUuid}/$nombreArchivo.jpg';
+                    if (imageFilePicker != null) {
+                      final bytes = await imageFilePicker!.readAsBytes();
+                      final nombreArchivo = imageNameNormalizer(nuevoNombre);
+                      final path = 'productos/${producto.usuarioUuid}/$nombreArchivo.jpg';
 
                       await Supabase.instance.client.storage
                           .from('fotos')
                           .uploadBinary(path, bytes,
-                          fileOptions:
-                          const FileOptions(contentType: 'image/jpeg'));
+                          fileOptions: const FileOptions(contentType: 'image/jpeg'));
 
                       urlImagen = Supabase.instance.client.storage
                           .from('fotos')
                           .getPublicUrl(path);
                     }
+                    else if (imageScanned != null) {
+                      urlImagen = imageScanned!;
+                    }
+
 
                     final productoActualizado = ProductoModel(
                       id: producto.id,
-                      codBarras: producto.codBarras,
+                      codBarras: codigoBarras,
                       nombre: nuevoNombre,
                       descripcion: nuevaDescripcion,
                       precio: nuevoPrecio,
@@ -442,15 +647,15 @@ class ProductoState extends State<Producto> {
 
                     try {
                       await context.read<ProductoProvider>().actualizarProducto(
-                        productoActualizado,
-                        context.read<CompraProvider>(),
-                      );
+                            productoActualizado,
+                            context.read<CompraProvider>(),
+                          );
 
                       showAwesomeSnackBar(
                         context,
                         title: AppLocalizations.of(context)!.success,
                         message:
-                        AppLocalizations.of(context)!.product_updated_ok,
+                            AppLocalizations.of(context)!.product_updated_ok,
                         contentType: asc.ContentType.success,
                       );
                     } catch (e) {
@@ -458,7 +663,7 @@ class ProductoState extends State<Producto> {
                         context,
                         title: 'Error',
                         message:
-                        AppLocalizations.of(context)!.product_updated_error,
+                            AppLocalizations.of(context)!.product_updated_error,
                         contentType: asc.ContentType.failure,
                       );
                     }
@@ -474,6 +679,7 @@ class ProductoState extends State<Producto> {
   }
 
   /*TODO-----------------DIALOGO DE CREACION DE PRODUCTO-----------------*/
+
   /// Muestra un cuadro de diálogo para crear un nuevo producto.
   ///
   /// Flujo principal:
@@ -500,15 +706,12 @@ class ProductoState extends State<Producto> {
     final TextEditingController nuevoSupermercadoController = TextEditingController();
     final TextEditingController codigoBarrasController = TextEditingController();
 
-    String? imagenActualUrl; // Imagen de escaneo
-    File? imagenActualFile;  // Imagen seleccionada del usuario
-    String? urlImagenTemporal;
+    String? imageScanned; // Imagen de escaneo
+    File? imageFilePicker; // Imagen seleccionada del usuario
     String? supermercadoSeleccionado;
     bool creandoSupermercado = false;
-    File? imagenSeleccionada;
 
     bool nombreValido = false;
-    bool descripcionValida = true;
     bool precioValido = false;
     bool supermercadoValido = false;
 
@@ -533,117 +736,66 @@ class ProductoState extends State<Producto> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ---------- ESCANEO DE CÓDIGO DE BARRAS ----------
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.qr_code_scanner),
-                      label: const Text("Escanear código de barras"),
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const EscanearCodigoScreen()),
-                        );
-
-                        if (result != null && result is String) {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (_) => const Center(child: CircularProgressIndicator()),
+                    if (isMobile)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: Text(AppLocalizations.of(context)!.scan_barcode),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const EscanearCodigoScreen()),
                           );
 
-                          try {
-                            OpenFoodAPIConfiguration.userAgent = UserAgent(
-                              name: 'ProyectoCompras',
-                              version: '1.0.0',
-                              system: 'Flutter',
+                          if (result != null && result is String) {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => const Center(child: CircularProgressIndicator()),
                             );
 
-                            final config = ProductQueryConfiguration(
-                              result,
-                              language: OpenFoodFactsLanguage.SPANISH,
-                              fields: [
-                                ProductField.ALL,
-                                ProductField.IMAGE_FRONT_URL,
-                              ],
-                              version: ProductQueryVersion.v3,
-                            );
+                            try {
+                              final product = await OpenFoodService.obtenerProductoPorCodigo(result);
+                              Navigator.pop(context);
 
-                            final ProductResultV3 response =
-                            await OpenFoodAPIClient.getProductV3(config);
+                              if (product != null) {
 
-                            Navigator.pop(context);
-
-                            if (response.product != null) {
-                              final product = response.product!;
-                              final imageUrl = product.imageFrontUrl;
-
-                              if (imageUrl != null && imageUrl.isNotEmpty) {
                                 setState(() {
-                                  imagenActualUrl = imageUrl;
-                                  imagenActualFile = null;
+                                  imageScanned = product.imageFrontUrl;
+                                  imageFilePicker = null;
+
+                                  codigoBarrasController.text = result;
+                                  nombreController.text =
+                                      product.productName ?? product.genericName ?? '';
+                                  descripcionController.text = product.brands ?? '';
                                 });
+
+                              } else {
+                                showAwesomeSnackBar(
+                                  context,
+                                  title: "No encontrado",
+                                  message: "No se encontró información del producto",
+                                  contentType: asc.ContentType.warning,
+                                );
                               }
-
-                              print('--- 📦 PRODUCTO ESCANEADO ---');
-                              print('Nombre: ${product.productName}');
-                              print('Nombre genérico: ${product.genericName}');
-                              print('Marca: ${product.brands}');
-                              print('Categorías: ${product.categories}');
-                              print('Descripción: ${product.ingredientsText}');
-                              print('Código de barras: ${product.barcode}');
-                              print('Imagen: ${product.imageFrontUrl}');
-                              print('Países: ${product.countries}');
-                              print('Cantidad: ${product.quantity}');
-                              print('Ingredientes: ${product.ingredientsText}');
-                              print('--- 🔚 FIN DEL PRODUCTO ---');
-
-                              setState(() {
-                                codigoBarrasController.text = result;
-                                nombreController.text =
-                                    product.productName ?? product.genericName ?? '';
-                                descripcionController.text =
-                                    product.ingredientsText ?? product.genericName ?? '';
-
-                                if (imageUrl != null && imageUrl.isNotEmpty) {
-                                  urlImagenTemporal = imageUrl;
-                                }
-                              });
-
+                            } catch (_) {
+                              Navigator.pop(context);
                               showAwesomeSnackBar(
                                 context,
-                                title: "Éxito",
-                                message: "Producto encontrado y completado automáticamente",
-                                contentType: asc.ContentType.success,
-                              );
-                            } else {
-                              showAwesomeSnackBar(
-                                context,
-                                title: "No encontrado",
-                                message:
-                                "No se encontró información del producto en OpenFoodFacts",
-                                contentType: asc.ContentType.warning,
+                                title: "Error",
+                                message: "Error al obtener datos",
+                                contentType: asc.ContentType.failure,
                               );
                             }
-                          } catch (e) {
-                            Navigator.pop(context);
-                            showAwesomeSnackBar(
-                              context,
-                              title: "Error",
-                              message: "Error al obtener datos del producto",
-                              contentType: asc.ContentType.failure,
-                            );
                           }
-                        }
-                      },
-                    ),
+
+                        },
+                      ),
                     const SizedBox(height: 10),
 
                     // ---------- CAMPO DE CÓDIGO DE BARRAS ----------
                     if (codigoBarrasController.text.isNotEmpty)
                       TextField(
-                        controller: codigoBarrasController,
-                        readOnly: true,
-                        decoration: const InputDecoration(labelText: "Código de barras"),
-                      ),
-
+                          controller: codigoBarrasController, readOnly: true),
                     const SizedBox(height: 10),
                     // ---------- NOMBRE ----------
                     TextField(
@@ -652,9 +804,9 @@ class ProductoState extends State<Producto> {
                         labelText: AppLocalizations.of(context)!.name,
                         suffixIcon: nombreTouched
                             ? (nombreValido
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
+                                ? const Icon(Icons.check_circle,
+                                    color: Colors.green)
+                                : const Icon(Icons.cancel, color: Colors.red))
                             : null,
                       ),
                       onChanged: (value) {
@@ -674,7 +826,8 @@ class ProductoState extends State<Producto> {
                       controller: descripcionController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.description,
-                        suffixIcon: const Icon(Icons.check_circle, color: Colors.green),
+                        suffixIcon:
+                            const Icon(Icons.check_circle, color: Colors.green),
                       ),
                       onChanged: (_) {},
                     ),
@@ -686,9 +839,9 @@ class ProductoState extends State<Producto> {
                         labelText: AppLocalizations.of(context)!.price,
                         suffixIcon: precioTouched
                             ? (precioValido
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
+                                ? const Icon(Icons.check_circle,
+                                    color: Colors.green)
+                                : const Icon(Icons.cancel, color: Colors.red))
                             : null,
                       ),
                       keyboardType: TextInputType.number,
@@ -706,19 +859,19 @@ class ProductoState extends State<Producto> {
                     const SizedBox(height: 10),
                     // ---------- SUPERMERCADO ----------
                     DropdownButtonFormField<String>(
-                      value: supermercadoSeleccionado,
+                      initialValue: supermercadoSeleccionado,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.supermarket,
                         suffixIcon: supermercadoTouched
                             ? (supermercadoValido
-                            ? const Icon(Icons.check_circle,
-                            color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red))
+                                ? const Icon(Icons.check_circle,
+                                    color: Colors.green)
+                                : const Icon(Icons.cancel, color: Colors.red))
                             : null,
                       ),
                       hint:
-                      Text(AppLocalizations.of(context)!.selectSupermarket),
+                          Text(AppLocalizations.of(context)!.selectSupermarket),
                       items: supermercados.map((s) {
                         return DropdownMenuItem<String>(
                           value: s,
@@ -729,11 +882,11 @@ class ProductoState extends State<Producto> {
                                   horizontal: 8, vertical: 8),
                               decoration: BoxDecoration(
                                 border:
-                                Border.all(color: Colors.grey, width: 0.8),
+                                    Border.all(color: Colors.grey, width: 0.8),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child:
-                              Text(s, style: const TextStyle(fontSize: 16)),
+                                  Text(s, style: const TextStyle(fontSize: 16)),
                             ),
                           ),
                         );
@@ -743,7 +896,7 @@ class ProductoState extends State<Producto> {
                           return Align(
                             alignment: Alignment.centerLeft,
                             child:
-                            Text(s, style: const TextStyle(fontSize: 16)),
+                                Text(s, style: const TextStyle(fontSize: 16)),
                           );
                         }).toList();
                       },
@@ -752,8 +905,8 @@ class ProductoState extends State<Producto> {
                           supermercadoTouched = true;
                           supermercadoSeleccionado = value;
                           creandoSupermercado =
-                          (value == "Nuevo supermercado" ||
-                              value == "New supermarket");
+                              (value == "Nuevo supermercado" ||
+                                  value == "New supermarket");
                           supermercadoValido =
                               value != null && value.trim().isNotEmpty;
                         });
@@ -773,10 +926,10 @@ class ProductoState extends State<Producto> {
                           labelText: AppLocalizations.of(context)!
                               .selectSupermarketName,
                           suffixIcon:
-                          nuevoSupermercadoController.text.isNotEmpty
-                              ? const Icon(Icons.check_circle,
-                              color: Colors.green)
-                              : const Icon(Icons.cancel, color: Colors.red),
+                              nuevoSupermercadoController.text.isNotEmpty
+                                  ? const Icon(Icons.check_circle,
+                                      color: Colors.green)
+                                  : const Icon(Icons.cancel, color: Colors.red),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -789,32 +942,158 @@ class ProductoState extends State<Producto> {
                     Center(
                       child: Column(
                         children: [
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.image),
-                            label: Text(AppLocalizations.of(context)!.select_photo),
-                            onPressed: () async {
-                              File? imagen;
-                              if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
-                                final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                                if (pickedFile != null) {
-                                  imagen = File(pickedFile.path);
-                                }
-                              } else {
-                                final result = await FilePicker.platform.pickFiles(type: FileType.image);
-                                if (result != null && result.files.single.path != null) {
-                                  imagen = File(result.files.single.path!);
-                                }
-                              }
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Material(
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: Colors.grey[700]!, width: 0.8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.photo_library,
+                                        color: Colors.green, size: 28),
+                                    tooltip: AppLocalizations.of(context)!
+                                        .select_photo,
+                                    onPressed: () async {
+                                      File? imagen;
+                                      final picker = ImagePicker();
+                                      final pickedFile = await picker.pickImage(
+                                          source: ImageSource.gallery);
+                                      if (pickedFile != null) {
+                                        imagen = File(pickedFile.path);
+                                      }
 
-                              if (imagen != null) {
-                                setState(() {
-                                  imagenActualFile = imagen;
-                                  imagenActualUrl = null;
-                                });
-                              }
-                            },
+                                      if (imagen != null) {
+                                        setState(() {
+                                          imageFilePicker = imagen;
+                                          imageScanned = null;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
 
+                              const SizedBox(width: 10),
+
+                              // BOTÓN SEGÚN PLATAFORMA
+                              Material(
+                                elevation: 2,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: Colors.grey[700]!, width: 0.8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.camera_alt,
+                                        color: Colors.green, size: 28),
+                                    tooltip: isMobile
+                                        ? AppLocalizations.of(context)!
+                                            .open_camera
+                                        : "Pegar imagen desde el portapapeles",
+                                    onPressed: () async {
+                                      if (isMobile) {
+                                        final picker = ImagePicker();
+                                        final pickedFile =
+                                            await picker.pickImage(
+                                                source: ImageSource.camera);
+
+                                        if (pickedFile != null) {
+                                          setState(() {
+                                            imageFilePicker =
+                                                File(pickedFile.path);
+                                            imageScanned = null;
+                                          });
+                                        }
+                                        return;
+                                      }
+
+                                      // Escritorio → pegar desde portapapeles
+                                      if (isDesktop) {
+                                        final clipboard =
+                                            SystemClipboard.instance;
+                                        if (clipboard == null) return;
+
+                                        final reader = await clipboard.read();
+                                        if (reader == null) return;
+
+                                        // Intenta leer imagen del portapapeles
+                                        String extension = 'png';
+
+                                        // Intenta PNG primero
+                                        if (reader.canProvide(Formats.png)) {
+                                          reader.getFile(Formats.png,
+                                              (file) async {
+                                            // Lee el stream de la imagen
+                                            final stream = file.getStream();
+                                            final chunks = <int>[];
+
+                                            await for (final chunk in stream) {
+                                              chunks.addAll(chunk);
+                                            }
+
+                                            final imageBytes =
+                                                Uint8List.fromList(chunks);
+
+                                            // Guardar bytes en archivo temporal
+                                            final tempDir =
+                                                await getTemporaryDirectory();
+                                            final tempFile = File(
+                                              '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.png',
+                                            );
+
+                                            await tempFile
+                                                .writeAsBytes(imageBytes);
+
+                                            setState(() {
+                                              imageFilePicker = tempFile;
+                                              imageScanned = null;
+                                            });
+                                          });
+                                        }
+                                        // Si no hay PNG, intenta JPEG
+                                        else if (reader
+                                            .canProvide(Formats.jpeg)) {
+                                          reader.getFile(Formats.jpeg,
+                                              (file) async {
+                                            final stream = file.getStream();
+                                            final chunks = <int>[];
+
+                                            await for (final chunk in stream) {
+                                              chunks.addAll(chunk);
+                                            }
+
+                                            final imageBytes =
+                                                Uint8List.fromList(chunks);
+
+                                            final tempDir =
+                                                await getTemporaryDirectory();
+                                            final tempFile = File(
+                                              '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                                            );
+
+                                            await tempFile
+                                                .writeAsBytes(imageBytes);
+
+                                            setState(() {
+                                              imageFilePicker = tempFile;
+                                              imageScanned = null;
+                                            });
+                                          });
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 10),
 
@@ -822,23 +1101,24 @@ class ProductoState extends State<Producto> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: SizedBox(
-                              height: 180, // 👈 un poco más alta
+                              height: 180,
                               width: double.infinity,
                               child: Builder(
                                 builder: (_) {
-                                  if (imagenActualFile != null) {
+                                  if (imageFilePicker != null) {
                                     return Image.file(
-                                      imagenActualFile!,
+                                      imageFilePicker!,
                                       fit: BoxFit.contain,
                                     );
-                                  } else if (imagenActualUrl != null) {
+                                  } else if (imageScanned != null) {
                                     return Image.network(
-                                      imagenActualUrl!,
+                                      imageScanned!,
                                       fit: BoxFit.contain,
                                       errorBuilder: (_, __, ___) => Container(
                                         color: Colors.grey[300],
                                         child: const Center(
-                                          child: Icon(Icons.broken_image, size: 50, color: Colors.white70),
+                                          child: Icon(Icons.broken_image,
+                                              size: 50, color: Colors.white70),
                                         ),
                                       ),
                                     );
@@ -873,16 +1153,14 @@ class ProductoState extends State<Producto> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final String nombre =
-                    capitalize(nombreController.text.trim());
-                    final String descripcion =
-                    capitalize(descripcionController.text.trim());
-                    final String precioInput =
-                    precioController.text.trim().replaceAll(',', '.');
+                    final String nombre = capitalize(nombreController.text.trim());
+                    final String descripcion = capitalize(descripcionController.text.trim());
+                    final String precioInput = precioController.text.trim().replaceAll(',', '.');
                     final double? precioParsed = double.tryParse(precioInput);
                     final String supermercado = creandoSupermercado
                         ? capitalize(nuevoSupermercadoController.text.trim())
                         : capitalize(supermercadoSeleccionado ?? '');
+                    final String codigoBarras = codigoBarrasController.text.isEmpty ? '' : codigoBarrasController.text;
 
                     setState(() {
                       nombreTouched = true;
@@ -890,16 +1168,24 @@ class ProductoState extends State<Producto> {
                       supermercadoTouched = true;
 
                       nombreValido = nombre.isNotEmpty;
-                      descripcionValida = descripcion.isNotEmpty;
                       precioValido = precioParsed != null;
                       supermercadoValido = supermercado.isNotEmpty;
                     });
 
                     if (!nombreValido ||
-                        !descripcionValida ||
                         !precioValido ||
                         !supermercadoValido ||
                         precioParsed == null) {
+                      return;
+                    }
+                    if (provider.existsWithBarCode(codigoBarras)) {
+                      Navigator.pop(dialogCtx);
+                      showAwesomeSnackBar(
+                        dialogCtx,
+                        title: AppLocalizations.of(context)!.error,
+                        message:AppLocalizations.of(context)!.barcode_already_registered,
+                        contentType: asc.ContentType.failure,
+                      );
                       return;
                     }
 
@@ -907,23 +1193,24 @@ class ProductoState extends State<Producto> {
                     final uuidUsuario = context.read<UserProvider>().uuid!;
                     String urlImagen = '';
 
-                    if (imagenActualFile != null) {
+                    if (imageFilePicker != null) {
                       // Subimos la imagen elegida manualmente
-                      final bytes = await imagenActualFile!.readAsBytes();
-                      final nombreArchivo = '${nombre}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+                      final bytes = await imageFilePicker!.readAsBytes();
+                      final nombreArchivo = imageNameNormalizer(nombre);
                       final path = 'productos/$uuidUsuario/$nombreArchivo.jpg';
 
                       await Supabase.instance.client.storage
                           .from('fotos')
                           .uploadBinary(path, bytes,
-                          fileOptions: const FileOptions(contentType: 'image/jpeg'));
+                              fileOptions:
+                                  const FileOptions(contentType: 'image/jpeg'));
 
-                      urlImagen = Supabase.instance.client.storage.from('fotos').getPublicUrl(path);
-                    } else if (imagenActualUrl != null) {
-                      // Imagen remota (OpenFoodFacts)
-                      urlImagen = imagenActualUrl!;
+                      urlImagen = Supabase.instance.client.storage
+                          .from('fotos')
+                          .getPublicUrl(path);
+                    } else if (imageScanned != null) {
+                      urlImagen = imageScanned!;
                     }
-
 
                     final nuevoProducto = ProductoModel(
                       id: null,
@@ -932,7 +1219,7 @@ class ProductoState extends State<Producto> {
                       precio: precio,
                       supermercado: supermercado,
                       usuarioUuid: uuidUsuario,
-                      codBarras: '',
+                      codBarras: codigoBarras,
                       foto: urlImagen,
                     );
 
@@ -945,7 +1232,7 @@ class ProductoState extends State<Producto> {
                         context,
                         title: AppLocalizations.of(context)!.success,
                         message:
-                        AppLocalizations.of(context)!.product_created_ok,
+                            AppLocalizations.of(context)!.product_created_ok,
                         contentType: asc.ContentType.success,
                       );
                     } catch (e) {
@@ -953,7 +1240,7 @@ class ProductoState extends State<Producto> {
                         context,
                         title: "Error",
                         message:
-                        AppLocalizations.of(context)!.product_created_error,
+                            AppLocalizations.of(context)!.product_created_error,
                         contentType: asc.ContentType.failure,
                       );
                     }
@@ -968,13 +1255,11 @@ class ProductoState extends State<Producto> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final providerProducto = context.watch<ProductoProvider>();
     final productosPorSupermercado = providerProducto.productosPorSupermercado;
     return Scaffold(
-
       // ---------- APP BAR ----------
       appBar: AppBar(
         title: Text(
@@ -982,8 +1267,7 @@ class ProductoState extends State<Producto> {
           style: const TextStyle(
               fontSize: 30,
               fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.bold
-          ),
+              fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -992,197 +1276,189 @@ class ProductoState extends State<Producto> {
       body: providerProducto.isLoading
           ? const Center(child: CircularProgressIndicator())
           : providerProducto.productos.isEmpty
-          ? const PlaceholderProductos()
-          : ListView(
-        // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
-        children: productosPorSupermercado.entries.map((entry) {
-          final supermercado = entry.key;
-          final productos = entry.value;
+              ? const PlaceholderProductos()
+              : ListView(
+                  // SI HAY PRODUCTOS, MOSTRAMOS UNA LISTA
+                  children: productosPorSupermercado.entries.map((entry) {
+                    final supermercado = entry.key;
+                    final productos = entry.value;
 
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade600, width: 0.8),
-                borderRadius: BorderRadius.circular(10),
-                color: Theme.of(context).colorScheme.surface,
-            ),
+                    return Container(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 4, horizontal: 4),
+                      decoration: BoxDecoration(
+                        border:
+                            Border.all(color: Colors.grey.shade600, width: 0.8),
+                        borderRadius: BorderRadius.circular(10),
+                        color: Theme.of(context).colorScheme.surface,
+                      ),
 
-            // ---------- SECCIÓN DE SUPERMERCADO ----------
-            child: ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              title: Container(
-                constraints: const BoxConstraints(
-                  minHeight: 51,
-                ),
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  supermercado,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-
-              // ---------- LISTA DE PRODUCTOS ----------
-              children: productos.map((producto) {
-                return Column(
-                  children: [
-                    SizedBox(
-                      height: 85,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 2,
-                        ),
-                        child: Center(
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                            ),
-                            // Miniatura del producto
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: AspectRatio(
-                                aspectRatio: 1.4,
-                                child: Image.network(
-                                  producto.foto,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-                                ),
-                              ),
-                            ),
-
-                            // Nombre del producto
-                            title: Text(
-                              producto.nombre,
-                              style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold
-                              ),
-                            ),
-
-                            // ---------- ACCIONES (añadir / editar / eliminar) ----------
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-
-                                // Añadir a la lista de la compra
-                                IconButton(
-                                  icon: const Icon(Icons.add),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 35,
-                                    minHeight: 35,
-                                  ),
-                                  iconSize: 22,
-                                  onPressed: () async {
-                                    try {
-                                      await context.read<CompraProvider>().agregarACompra(
-                                          producto.id!,
-                                          producto.precio,
-                                          producto.nombre,
-                                          producto.supermercado);
-                                      showAwesomeSnackBar(
-                                        context,
-                                        title: AppLocalizations.of(context)!.success,
-                                        message: AppLocalizations.of(context)!
-                                            .snackBarAddedProduct,
-                                        contentType: asc.ContentType.success,
-                                      );
-                                    } catch (_) {
-                                      showAwesomeSnackBar(
-                                        context,
-                                        title: AppLocalizations.of(context)!.success,
-                                        message: AppLocalizations.of(context)!
-                                            .snackBarRepeatedProduct,
-                                        contentType: asc.ContentType.warning,
-                                      );
-                                    }
-                                  },
-                                  padding: EdgeInsets.zero,
-                                ),
-
-                                // Editar producto
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 35,
-                                    minHeight: 35,
-                                  ),
-                                  iconSize: 22,
-                                  onPressed: () {
-                                    dialogoEdicion(context, producto);
-                                  },
-                                  padding: EdgeInsets.zero,
-                                ),
-
-                                // Eliminar producto
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 35,
-                                    minHeight: 35,
-                                  ),
-                                  iconSize: 22,
-                                  color: Colors.red.shade400,
-                                  onPressed: () {
-                                    dialogoEliminacion(context, producto.id!);
-                                  },
-                                  padding: EdgeInsets.zero,
-                                ),
-                              ],
+                      // ---------- SECCIÓN DE SUPERMERCADO ----------
+                      child: ExpansionTile(
+                        shape: const Border(),
+                        collapsedShape: const Border(),
+                        title: Container(
+                          constraints: const BoxConstraints(
+                            minHeight: 51,
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: Text(
+                            supermercado,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
+
+                        // ---------- LISTA DE PRODUCTOS ----------
+                        children: productos.map((producto) {
+                          return Column(
+                            children: [
+                              SizedBox(
+                                height: 85,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
+                                  child: Center(
+                                    child: ListTile(
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      // Miniatura del producto
+                                      leading: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: AspectRatio(
+                                          aspectRatio: 1.4,
+                                          child: Image.network(
+                                            producto.foto,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, __, ___) =>
+                                                const Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 50,
+                                                    color: Colors.grey),
+                                          ),
+                                        ),
+                                      ),
+
+                                      // Nombre del producto
+                                      title: Text(
+                                        producto.nombre,
+                                        style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+
+                                      // ---------- ACCIONES (añadir / editar / eliminar) ----------
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Añadir a la lista de la compra
+                                          IconButton(
+                                            icon: const Icon(Icons.add),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 35,
+                                              minHeight: 35,
+                                            ),
+                                            iconSize: 22,
+                                            onPressed: () async {
+                                              try {
+                                                await context
+                                                    .read<CompraProvider>()
+                                                    .agregarACompra(
+                                                        producto.id!,
+                                                        producto.precio,
+                                                        producto.nombre,
+                                                        producto.supermercado);
+                                                showAwesomeSnackBar(
+                                                  context,
+                                                  title: AppLocalizations.of(
+                                                          context)!
+                                                      .success,
+                                                  message: AppLocalizations.of(
+                                                          context)!
+                                                      .snackBarAddedProduct,
+                                                  contentType:
+                                                      asc.ContentType.success,
+                                                );
+                                              } catch (_) {
+                                                showAwesomeSnackBar(
+                                                  context,
+                                                  title: AppLocalizations.of(
+                                                          context)!
+                                                      .success,
+                                                  message: AppLocalizations.of(
+                                                          context)!
+                                                      .snackBarRepeatedProduct,
+                                                  contentType:
+                                                      asc.ContentType.warning,
+                                                );
+                                              }
+                                            },
+                                            padding: EdgeInsets.zero,
+                                          ),
+
+                                          // Editar producto
+                                          IconButton(
+                                            icon: const Icon(Icons.edit),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 35,
+                                              minHeight: 35,
+                                            ),
+                                            iconSize: 22,
+                                            onPressed: () {
+                                              dialogoEdicion(context, producto);
+                                            },
+                                            padding: EdgeInsets.zero,
+                                          ),
+
+                                          // Eliminar producto
+                                          IconButton(
+                                            icon: const Icon(Icons.delete),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 35,
+                                              minHeight: 35,
+                                            ),
+                                            iconSize: 22,
+                                            color: Colors.red.shade400,
+                                            onPressed: () {
+                                              dialogoEliminacion(
+                                                  context, producto.id!);
+                                            },
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Separador entre productos
+                              Divider(
+                                height: 1,
+                                thickness: 0.8,
+                                indent: 8,
+                                endIndent: 8,
+                                color: Colors.grey.shade400,
+                              ),
+                            ],
+                          );
+                        }).toList(),
                       ),
-                    ),
-
-                    // Separador entre productos
-                    Divider(
-                      height: 1,
-                      thickness: 0.8,
-                      indent: 8,
-                      endIndent: 8,
-                      color: Colors.grey.shade400,
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          );
-        }).toList(),
-      ),
-      // floatingActionButton: SpeedDial(
-      //   heroTag: 'fab_productos',
-      //   animatedIcon: AnimatedIcons.add_event,
-      //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      //   buttonSize: const Size(58, 58),
-      //   children: [
-      //     SpeedDialChild(
-      //       child: const Icon(Icons.create),
-      //       label: AppLocalizations.of(context)!.manually_create_product,
-      //       onTap: () {
-      //         dialogoCreacion(context);
-      //       }
-      //     ),
-      //     SpeedDialChild(
-      //       child: const Icon(Icons.barcode_reader),
-      //       label: AppLocalizations.of(context)!.scan_barcode,
-      //       onTap: () {
-      //         // TODO Metodo para escanear codigo de barras
-      //       }
-      //     ),
-      //   ],
-      // ),
-
+                    );
+                  }).toList(),
+                ),
       // ---------- BOTÓN FLOTANTE ----------
       floatingActionButton: FloatingActionButton(
         heroTag: "addProducts",
         onPressed: () {
           dialogoCreacion(context);
-          },
+        },
         child: const Icon(Icons.add),
       ),
     );
