@@ -137,5 +137,8 @@
   "recipe_placeholder_top": "Create your first recipe",
   "products_added_to_list" : "All products were added to the shopping list",
   "products_already_in_list" : "All selected products were already in the list",
-  "add_ingredients_to_list" : "Add to list"
+  "add_ingredients_to_list" : "Add to list",
+  "scan_barcode" : "Scan barcode",
+  "open_camera" : "Camera",
+  "barcode_already_registered" : "Bar code already registered"
 }

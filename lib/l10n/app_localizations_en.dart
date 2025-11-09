@@ -438,4 +438,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get add_ingredients_to_list => 'Add to list';
+
+  @override
+  String get open_camera => 'Camera';
+
+  @override
+  String get barcode_already_registered => 'Bar code already registered';
 }
