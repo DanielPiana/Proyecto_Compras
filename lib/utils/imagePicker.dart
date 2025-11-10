@@ -2,89 +2,91 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 class ImagePickerHelper {
-  static bool get isMobile => Platform.isAndroid || Platform.isIOS;
-  static bool get isDesktop => Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  static bool get isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  static bool get isDesktop => !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-  /// Selecciona una imagen desde la cámara (móvil) o portapapeles (escritorio)
-  static Future<File?> seleccionarImagen() async {
+  static Future<File?> imageFromGallery() async {
     if (isMobile) {
-      return await _seleccionarImagenMovil();
-    } else if (isDesktop) {
-      return await _pegarImagenPortapapeles();
-    }
-    return null;
-  }
-
-  static Future<File?> _seleccionarImagenMovil() async {
-    try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.camera);
-
-      if (pickedFile != null) {
-        return File(pickedFile.path);
-      }
-    } catch (e) {
-      debugPrint('Error al seleccionar imagen móvil: $e');
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      return picked != null ? File(picked.path) : null;
     }
+
+    if (isDesktop) {
+      final result = await FilePicker.platform.pickFiles(type: FileType.image);
+      if (result != null && result.files.single.path != null) {
+        return File(result.files.single.path!);
+      }
+    }
+
     return null;
   }
 
-  static Future<File?> _pegarImagenPortapapeles() async {
-    try {
-      final clipboard = SystemClipboard.instance;
-      if (clipboard == null) return null;
-
-      final reader = await clipboard.read();
-      if (reader == null) return null;
-
-      // Intenta PNG primero, luego JPEG
-      if (reader.canProvide(Formats.png)) {
-        return await _procesarImagenPortapapeles(reader, Formats.png, 'png');
-      } else if (reader.canProvide(Formats.jpeg)) {
-        return await _procesarImagenPortapapeles(reader, Formats.jpeg, 'jpg');
-      }
-    } catch (e) {
-      debugPrint('Error al pegar imagen del portapapeles: $e');
+  static Future<File?> imageFromClipboard() async {
+    if (isMobile) {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.camera);
+      return picked != null ? File(picked.path) : null;
     }
+
+    if (isDesktop) {
+      return await _pasteImageClipboard();
+    }
+
     return null;
   }
 
-  static Future<File?> _procesarImagenPortapapeles(
+  static Future<File?> _pasteImageClipboard() async {
+    final clipboard = SystemClipboard.instance;
+    if (clipboard == null) return null;
+
+    final reader = await clipboard.read();
+    if (reader == null) return null;
+
+    if (reader.canProvide(Formats.png)) {
+      return await _processClipboard(reader, Formats.png, "png");
+    }
+
+    if (reader.canProvide(Formats.jpeg)) {
+      return await _processClipboard(reader, Formats.jpeg, "jpg");
+    }
+
+    return null;
+  }
+
+  static Future<File?> _processClipboard(
       ClipboardReader reader,
       SimpleFileFormat format,
       String extension,
       ) async {
-    try {
-      File? resultFile;
+    File? resultFile;
 
-      reader.getFile(format, (file) async {
-        final stream = file.getStream();
-        final chunks = <int>[];
+    reader.getFile(format, (file) async {
+      final stream = file.getStream();
+      final chunks = <int>[];
 
-        await for (final chunk in stream) {
-          chunks.addAll(chunk);
-        }
+      await for (final chunk in stream) {
+        chunks.addAll(chunk);
+      }
 
-        final imageBytes = Uint8List.fromList(chunks);
-        final tempDir = await getTemporaryDirectory();
-        final tempFile = File(
-          '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.$extension',
-        );
+      final imageBytes = Uint8List.fromList(chunks);
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
 
-        await tempFile.writeAsBytes(imageBytes);
-        resultFile = tempFile;
-      });
+      await tempFile.writeAsBytes(imageBytes);
 
-      // Espera un momento para que el callback termine
-      await Future.delayed(Duration(milliseconds: 100));
-      return resultFile;
-    } catch (e) {
-      debugPrint('Error al procesar imagen del portapapeles: $e');
-      return null;
-    }
+      resultFile = tempFile;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 80));
+
+    return resultFile;
   }
 }

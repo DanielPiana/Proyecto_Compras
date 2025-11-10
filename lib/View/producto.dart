@@ -1,9 +1,6 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,8 +14,6 @@ import '../l10n/app_localizations.dart';
 import '../models/productoModel.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 import 'package:flutter/services.dart';
-import 'dart:typed_data';
-import 'package:super_clipboard/super_clipboard.dart';
 
 import '../services/openfood_service.dart';
 import '../utils/imageNameNormalizer.dart';
@@ -415,23 +410,11 @@ class ProductoState extends State<Producto> {
                                     icon: const Icon(Icons.photo_library, color: Colors.green, size: 28),
                                     tooltip: AppLocalizations.of(context)!.select_photo,
                                     onPressed: () async {
-                                      File? imagen;
-
-                                      if (isMobile) {
-                                        final picker = ImagePicker();
-                                        final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                                        if (pickedFile != null) imagen = File(pickedFile.path);
-                                      } else if (isDesktop) {
-                                        final result = await FilePicker.platform.pickFiles(type: FileType.image);
-                                        if (result != null && result.files.single.path != null) {
-                                          imagen = File(result.files.single.path!);
-                                        }
-                                      }
-
-                                      if (imagen != null) {
+                                      final file = await ImagePickerHelper.imageFromGallery();
+                                      if (file != null) {
                                         setState(() {
-                                          imageFilePicker = imagen;
-                                          imageScanned = null; // Si elige manual, anulamos la remota
+                                          imageFilePicker = file;
+                                          imageScanned = null;
                                         });
                                       }
                                     },
@@ -456,15 +439,14 @@ class ProductoState extends State<Producto> {
                                         ? AppLocalizations.of(context)!.open_camera
                                         : "Pegar imagen desde el portapapeles",
                                     onPressed: () async {
-                                      final file = await ImagePickerHelper.seleccionarImagen();
-
+                                      final file = await ImagePickerHelper.imageFromClipboard();
                                       if (file != null) {
                                         setState(() {
                                           imageFilePicker = file;
                                           imageScanned = null;
                                         });
                                       }
-                                    }
+                                    },
                                     ),
                                 ),
                               ),
@@ -877,28 +859,21 @@ class ProductoState extends State<Producto> {
                                     tooltip: AppLocalizations.of(context)!
                                         .select_photo,
                                     onPressed: () async {
-                                      File? imagen;
-                                      final picker = ImagePicker();
-                                      final pickedFile = await picker.pickImage(
-                                          source: ImageSource.gallery);
-                                      if (pickedFile != null) {
-                                        imagen = File(pickedFile.path);
-                                      }
-
-                                      if (imagen != null) {
+                                      final file = await ImagePickerHelper.imageFromGallery();
+                                      if (file != null) {
                                         setState(() {
-                                          imageFilePicker = imagen;
+                                          imageFilePicker = file;
                                           imageScanned = null;
                                         });
                                       }
                                     },
+
                                   ),
                                 ),
                               ),
 
                               const SizedBox(width: 10),
 
-                              // BOTÓN SEGÚN PLATAFORMA
                               Material(
                                 elevation: 2,
                                 borderRadius: BorderRadius.circular(10),
@@ -916,86 +891,12 @@ class ProductoState extends State<Producto> {
                                             .open_camera
                                         : "Pegar imagen desde el portapapeles",
                                     onPressed: () async {
-                                      if (isMobile) {
-                                        final picker = ImagePicker();
-                                        final pickedFile =
-                                            await picker.pickImage(
-                                                source: ImageSource.camera);
-
-                                        if (pickedFile != null) {
-                                          setState(() {
-                                            imageFilePicker =
-                                                File(pickedFile.path);
-                                            imageScanned = null;
-                                          });
-                                        }
-                                        return;
-                                      }
-
-                                      // Escritorio → pegar desde portapapeles
-                                      if (isDesktop) {
-                                        final clipboard =
-                                            SystemClipboard.instance;
-                                        if (clipboard == null) return;
-
-                                        final reader = await clipboard.read();
-
-                                        // Intenta leer imagen del portapapeles
-                                        String extension = 'png';
-
-                                        // Intenta PNG primero
-                                        if (reader.canProvide(Formats.png)) {
-                                          reader.getFile(Formats.png,
-                                              (file) async {
-                                            // Lee el stream de la imagen
-                                            final stream = file.getStream();
-                                            final chunks = <int>[];
-
-                                            await for (final chunk in stream) {
-                                              chunks.addAll(chunk);
-                                            }
-
-                                            final imageBytes = Uint8List.fromList(chunks);
-
-                                            // Guardar bytes en archivo temporal
-                                            final tempDir = await getTemporaryDirectory();
-                                            final tempFile = File('${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.png');
-
-                                            await tempFile.writeAsBytes(imageBytes);
-
-                                            setState(() {
-                                              imageFilePicker = tempFile;
-                                              imageScanned = null;
-                                            });
-                                          });
-                                        }
-                                        // Si no hay PNG, intenta JPEG
-                                        else if (reader
-                                            .canProvide(Formats.jpeg)) {
-                                          reader.getFile(Formats.jpeg,
-                                              (file) async {
-                                            final stream = file.getStream();
-                                            final chunks = <int>[];
-
-                                            await for (final chunk in stream) {
-                                              chunks.addAll(chunk);
-                                            }
-
-                                            final imageBytes = Uint8List.fromList(chunks);
-
-                                            final tempDir = await getTemporaryDirectory();
-                                            final tempFile = File(
-                                              '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
-                                            );
-
-                                            await tempFile.writeAsBytes(imageBytes);
-
-                                            setState(() {
-                                              imageFilePicker = tempFile;
-                                              imageScanned = null;
-                                            });
-                                          });
-                                        }
+                                      final file = await ImagePickerHelper.imageFromClipboard();
+                                      if (file != null) {
+                                        setState(() {
+                                          imageFilePicker = file;
+                                          imageScanned = null;
+                                        });
                                       }
                                     },
                                   ),
