@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:openfoodfacts/openfoodfacts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
@@ -24,6 +22,7 @@ import 'package:super_clipboard/super_clipboard.dart';
 
 import '../services/openfood_service.dart';
 import '../utils/imageNameNormalizer.dart';
+import '../utils/imagePicker.dart';
 
 class Producto extends StatefulWidget {
   const Producto({super.key});
@@ -457,98 +456,16 @@ class ProductoState extends State<Producto> {
                                         ? AppLocalizations.of(context)!.open_camera
                                         : "Pegar imagen desde el portapapeles",
                                     onPressed: () async {
-                                      if (isMobile) {
-                                        final picker = ImagePicker();
-                                        final pickedFile =
-                                        await picker.pickImage(
-                                            source: ImageSource.camera);
+                                      final file = await ImagePickerHelper.seleccionarImagen();
 
-                                        if (pickedFile != null) {
-                                          setState(() {
-                                            imageFilePicker =
-                                                File(pickedFile.path);
-                                            imageScanned = null;
-                                          });
-                                        }
-                                        return;
+                                      if (file != null) {
+                                        setState(() {
+                                          imageFilePicker = file;
+                                          imageScanned = null;
+                                        });
                                       }
-
-                                      // Escritorio → pegar desde portapapeles
-                                      if (isDesktop) {
-                                        final clipboard =
-                                            SystemClipboard.instance;
-                                        if (clipboard == null) return;
-
-                                        final reader = await clipboard.read();
-                                        if (reader == null) return;
-
-                                        // Intenta leer imagen del portapapeles
-                                        String extension = 'png';
-
-                                        // Intenta PNG primero
-                                        if (reader.canProvide(Formats.png)) {
-                                          reader.getFile(Formats.png,
-                                                  (file) async {
-                                                // Lee el stream de la imagen
-                                                final stream = file.getStream();
-                                                final chunks = <int>[];
-
-                                                await for (final chunk in stream) {
-                                                  chunks.addAll(chunk);
-                                                }
-
-                                                final imageBytes =
-                                                Uint8List.fromList(chunks);
-
-                                                // Guardar bytes en archivo temporal
-                                                final tempDir =
-                                                await getTemporaryDirectory();
-                                                final tempFile = File(
-                                                  '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.png',
-                                                );
-
-                                                await tempFile
-                                                    .writeAsBytes(imageBytes);
-
-                                                setState(() {
-                                                  imageFilePicker = tempFile;
-                                                  imageScanned = null;
-                                                });
-                                              });
-                                        }
-                                        // Si no hay PNG, intenta JPEG
-                                        else if (reader
-                                            .canProvide(Formats.jpeg)) {
-                                          reader.getFile(Formats.jpeg,
-                                                  (file) async {
-                                                final stream = file.getStream();
-                                                final chunks = <int>[];
-
-                                                await for (final chunk in stream) {
-                                                  chunks.addAll(chunk);
-                                                }
-
-                                                final imageBytes =
-                                                Uint8List.fromList(chunks);
-
-                                                final tempDir =
-                                                await getTemporaryDirectory();
-                                                final tempFile = File(
-                                                  '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
-                                                );
-
-                                                await tempFile
-                                                    .writeAsBytes(imageBytes);
-
-                                                setState(() {
-                                                  imageFilePicker = tempFile;
-                                                  imageScanned = null;
-                                                });
-                                              });
-                                        }
-                                      }
-                                    },
-                                  ),
+                                    }
+                                    ),
                                 ),
                               ),
                             ],
@@ -1022,7 +939,6 @@ class ProductoState extends State<Producto> {
                                         if (clipboard == null) return;
 
                                         final reader = await clipboard.read();
-                                        if (reader == null) return;
 
                                         // Intenta leer imagen del portapapeles
                                         String extension = 'png';
@@ -1039,18 +955,13 @@ class ProductoState extends State<Producto> {
                                               chunks.addAll(chunk);
                                             }
 
-                                            final imageBytes =
-                                                Uint8List.fromList(chunks);
+                                            final imageBytes = Uint8List.fromList(chunks);
 
                                             // Guardar bytes en archivo temporal
-                                            final tempDir =
-                                                await getTemporaryDirectory();
-                                            final tempFile = File(
-                                              '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.png',
-                                            );
+                                            final tempDir = await getTemporaryDirectory();
+                                            final tempFile = File('${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.png');
 
-                                            await tempFile
-                                                .writeAsBytes(imageBytes);
+                                            await tempFile.writeAsBytes(imageBytes);
 
                                             setState(() {
                                               imageFilePicker = tempFile;
@@ -1070,17 +981,14 @@ class ProductoState extends State<Producto> {
                                               chunks.addAll(chunk);
                                             }
 
-                                            final imageBytes =
-                                                Uint8List.fromList(chunks);
+                                            final imageBytes = Uint8List.fromList(chunks);
 
-                                            final tempDir =
-                                                await getTemporaryDirectory();
+                                            final tempDir = await getTemporaryDirectory();
                                             final tempFile = File(
                                               '${tempDir.path}/clipboard_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
                                             );
 
-                                            await tempFile
-                                                .writeAsBytes(imageBytes);
+                                            await tempFile.writeAsBytes(imageBytes);
 
                                             setState(() {
                                               imageFilePicker = tempFile;
@@ -1194,7 +1102,6 @@ class ProductoState extends State<Producto> {
                     String urlImagen = '';
 
                     if (imageFilePicker != null) {
-                      // Subimos la imagen elegida manualmente
                       final bytes = await imageFilePicker!.readAsBytes();
                       final nombreArchivo = imageNameNormalizer(nombre);
                       final path = 'productos/$uuidUsuario/$nombreArchivo.jpg';
