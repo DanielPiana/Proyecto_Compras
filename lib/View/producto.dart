@@ -1168,18 +1168,23 @@ class ProductoState extends State<Producto> {
                                       borderRadius: BorderRadius.circular(8),
                                       child: AspectRatio(
                                         aspectRatio: 1.4,
-                                        child: Image.network(
+                                        child: (producto.foto.isNotEmpty)
+                                            ? Image.network(
                                           producto.foto,
                                           fit: BoxFit.contain,
-                                          errorBuilder: (_, __, ___) =>
-                                              const Icon(
-                                                  Icons.image_not_supported,
-                                                  size: 50,
-                                                  color: Colors.grey),
+                                          errorBuilder: (_, __, ___) => const Icon(
+                                            Icons.image_not_supported,
+                                            size: 50,
+                                            color: Colors.grey,
+                                          ),
+                                        )
+                                            : const Icon(
+                                          Icons.image_outlined,
+                                          size: 50,
+                                          color: Colors.grey,
                                         ),
                                       ),
                                     ),
-
                                     // Nombre del producto
                                     title: Text(
                                       maxLines: 2,
