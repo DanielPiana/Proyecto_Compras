@@ -307,6 +307,7 @@ class CompraState extends State<Compra> {
                                 ),
                                 padding: const EdgeInsets.all(8),
                                 child: Text(
+                                  maxLines: 1,
                                   supermercado,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
@@ -374,7 +375,10 @@ class CompraState extends State<Compra> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(producto.nombre),
+                                                Text(
+                                                    maxLines: 2,
+                                                    producto.nombre
+                                                ),
                                                 Text(
                                                     '\$${(producto.precio).toStringAsFixed(2)}',
                                                     style: TextStyle(

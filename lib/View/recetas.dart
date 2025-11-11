@@ -33,8 +33,7 @@ class RecetasState extends State<Recetas> {
     super.initState();
   }
 
-  Future<void> mostrarDialogoCrearReceta(
-      BuildContext context, int indiceRecetaActual) async {
+  Future<void> mostrarDialogoCrearReceta(BuildContext context, int indiceRecetaActual) async {
     final TextEditingController nombreController = TextEditingController();
     final TextEditingController descripcionController = TextEditingController();
     File? imagenSeleccionada;
@@ -539,6 +538,7 @@ class RecetasState extends State<Recetas> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
+                                            maxLines: 1,
                                             receta.nombre,
                                             style: const TextStyle(
                                               fontSize: 26,

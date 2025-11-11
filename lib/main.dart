@@ -242,6 +242,7 @@ class MainApp extends StatelessWidget {
           ),
           iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
         ),
+
         useMaterial3: true,
       ),
 
@@ -266,7 +267,6 @@ class MainApp extends StatelessWidget {
     );
   }
 }
-
 
 /*---------------------------------------------------------------------------------------*/
 class Main extends StatefulWidget {
@@ -337,6 +337,9 @@ class MainState extends State<Main> {
                 ),
                 child: TextField(
                   style: const TextStyle(color: Colors.black),
+                  onChanged: (query) {
+                    _onSearchChanged(query);
+                  },
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search, color: Colors.black),
                     hintText: AppLocalizations.of(context)!.search,
@@ -378,10 +381,19 @@ class MainState extends State<Main> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Colors.blue,
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF2C6B31) // Tema oscuro
+                    : const Color(0xFF4CAF50), // Tema claro
               ),
-              child: Text(AppLocalizations.of(context)!.menuSettings),
+              child: Text(
+                AppLocalizations.of(context)!.menuSettings,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             ListTile(
                 title: Text(AppLocalizations.of(context)!.language),
@@ -488,4 +500,25 @@ class MainState extends State<Main> {
       selectedIndex = index;
     });
   }
-} /*---------------------------------------------------------------------------------------*/
+
+  void _onSearchChanged(String query) {
+    switch (selectedIndex) {
+      case 0:
+        context.read<ProductoProvider>().setSearchText(query);
+        break;
+
+      case 1:
+        //context.read<CompraProvider>().filtrarLista(query);
+        break;
+
+      case 2:
+        //context.read<FacturaProvider>().filtrarGastos(query);
+        break;
+
+      case 3:
+        //context.read<RecetaProvider>().filtrarRecetas(query);
+        break;
+    }
+  }
+
+}

@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/productoModel.dart';
 import 'package:http/http.dart' as http;
 
+import '../utils/textNormalizer.dart';
+
 class ProductoProvider with ChangeNotifier {
   final SupabaseClient database;
   String? userId;
@@ -18,6 +20,61 @@ class ProductoProvider with ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  List<ProductoModel> filteredProducts = [];
+  String lastQuery = '';
+
+  bool get isFiltering =>
+      filteredProducts.isNotEmpty || lastQuery.isNotEmpty;
+
+  // METODO PARA CUANDO EL USUARIO HACE UNA BUSQUEDA
+  void setSearchText(String value) {
+    lastQuery = value;
+
+    if (value.trim().isEmpty) {
+      filteredProducts = [];
+      notifyListeners();
+      return;
+    }
+
+    final query = normalizeText(value);
+
+    filteredProducts = productos.where((p) {
+      final name = normalizeText(p.nombre ?? "");
+      final description = normalizeText(p.descripcion ?? "");
+      final supermarket = normalizeText(p.supermercado ?? "");
+
+      return name.contains(query) ||
+          description.contains(query) ||
+          supermarket.contains(query);
+    }).toList();
+
+    notifyListeners();
+  }
+
+
+  // METODO PARA AGRUPAR PRODUCTOS FILTRADOS
+  Map<String, List<ProductoModel>> get groupedProducts {
+    final list = isFiltering ? filteredProducts : productos;
+
+    final Map<String, List<ProductoModel>> grouped = {};
+
+    for (final p in list) {
+      if (!grouped.containsKey(p.supermercado)) {
+        grouped[p.supermercado] = [];
+      }
+      grouped[p.supermercado]!.add(p);
+    }
+
+    return grouped;
+  }
+
+
+  void clearSearch() {
+    lastQuery = '';
+    filteredProducts = [];
+    notifyListeners();
+  }
 
   /// Obtiene los productos agrupados por supermercado.
   ///
@@ -304,16 +361,16 @@ class ProductoProvider with ChangeNotifier {
 
   Future<void> actualizarProductosDesdeSupabase(CompraProvider compraProvider) async {
     try {
-      // 1️⃣ Descargar el JSON de Supabase Storage
+      // Descargar el JSON de Supabase Storage
       const url = 'https://hrpcdkjacixsvlvsaxwn.supabase.co/storage/v1/object/public/jsonProductos/mercadona/productos_mercadona.json';
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode != 200) {
-        debugPrint('❌ Error al descargar JSON (${response.statusCode})');
+        debugPrint('Error al descargar JSON (${response.statusCode})');
         return;
       }
 
-      // 2️⃣ Decodificar el JSON y crear un mapa {codigo_barras: producto}
+      // Decodificar el JSON y crear un mapa {codigo_barras: producto}
       final List<dynamic> listaMercadona = jsonDecode(response.body);
       final Map<String, dynamic> mapaMercadona = {
         for (final p in listaMercadona)
@@ -321,9 +378,9 @@ class ProductoProvider with ChangeNotifier {
             p['codigo_barras'].toString(): p
       };
 
-      debugPrint('✅ JSON de Mercadona cargado (${mapaMercadona.length} productos con código de barras)');
+      debugPrint('JSON de Mercadona cargado (${mapaMercadona.length} productos con código de barras)');
 
-      // 3️⃣ Recorrer los productos del usuario y buscar coincidencias
+      // Recorrer los productos del usuario y buscar coincidencias
       int actualizados = 0;
       for (var producto in _productos) {
         final ean = producto.codBarras;
@@ -358,9 +415,9 @@ class ProductoProvider with ChangeNotifier {
         }
       }
 
-      debugPrint('✅ Actualizados $actualizados productos del usuario desde Mercadona');
+      debugPrint('Actualizados $actualizados productos del usuario desde Mercadona');
     } catch (e) {
-      debugPrint('❌ Error al actualizar productos desde Supabase: $e');
+      debugPrint('Error al actualizar productos desde Supabase: $e');
     }
   }
 

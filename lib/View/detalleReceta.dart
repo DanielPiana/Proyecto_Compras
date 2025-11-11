@@ -254,49 +254,70 @@ class _DetalleRecetaState extends State<DetalleReceta> {
 
   /// Muestra una ventana con los detalles de un producto.
   void mostrarDetalleProducto(BuildContext context, Map<String, dynamic> producto) {
+    final String? foto = producto['foto'];
+    final String? descripcion = producto['descripcion'];
+    final bool tieneDescripcion = descripcion != null && descripcion.trim().isNotEmpty;
+
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding:
-          const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (producto['foto'] != null)
+                  // FOTO
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      height: 180,
+                      width: double.infinity,
+                      child: (foto != null && foto.isNotEmpty)
+                          ? Image.network(
+                        foto,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => _placeholderImage(),
+                      )
+                          : _placeholderImage(),
+                    ),
+                  ),
 
                   const SizedBox(height: 16),
+
+                  // NOMBRE
                   Text(
                     producto['nombre'] ?? '',
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    producto['descripcion'] ??
-                        AppLocalizations.of(context)!.no_description,
-                    style: const TextStyle(fontSize: 16),
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
+
                   const SizedBox(height: 12),
+
+                  // DESCRIPCIÓN SOLO SI EXISTE
+                  if (tieneDescripcion)
+                    Text(
+                      descripcion!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+
+                  if (tieneDescripcion) const SizedBox(height: 12),
+
+                  // SUPERMERCADO
                   Text(
-                    '${AppLocalizations.of(context)!
-                        .price}: ${producto['precio']?.toStringAsFixed(2) ??
-                        '-'} €',
-                    style: const TextStyle(fontSize: 16),
+                    '${AppLocalizations.of(context)!.supermarket}: ${producto['supermercado'] ?? '-'}',
+                    style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${AppLocalizations.of(context)!
-                        .supermarket}: ${producto['supermercado'] ?? '-'}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 24),
+
+                  // CERRAR
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(AppLocalizations.of(context)!.close),
@@ -307,6 +328,16 @@ class _DetalleRecetaState extends State<DetalleReceta> {
           ),
         );
       },
+    );
+  }
+
+// Imagen por defecto reutilizable
+  Widget _placeholderImage() {
+    return Container(
+      color: Colors.grey[300],
+      child: const Center(
+        child: Icon(Icons.image_not_supported, size: 60, color: Colors.white70),
+      ),
     );
   }
 
@@ -786,6 +817,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                       ),
                                     ),
                                     title: Text(
+                                      maxLines: 2,
                                       producto.nombre,
                                       style: const TextStyle(
                                         fontSize: 18,
@@ -794,7 +826,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                     ),
                                     trailing: const Icon(
                                         Icons.arrow_forward_ios,
-                                        size: 16,
+                                        size: 20,
                                         color: Colors.grey),
                                     onTap: () =>
                                         mostrarDetalleProducto(
