@@ -208,8 +208,7 @@ class CompraState extends State<Compra> {
               if (productosMarcados.isEmpty) {
                 showAwesomeSnackBar(
                   context,
-                  title: AppLocalizations.of(context)!
-                      .error,
+                  title: AppLocalizations.of(context)!.error,
                   message: AppLocalizations.of(context)!
                       .snackBarReceiptQuantityError,
                   contentType: asc.ContentType.failure,
@@ -262,24 +261,21 @@ class CompraState extends State<Compra> {
       // ---------- BODY ----------
       body: compraProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : comprasAgrupadas.isEmpty
+          : compraProvider.groupedComprasToShow.isEmpty
               ? const PlaceholderCompra()
               : Column(
                   children: [
                     Expanded(
-                      // EXPANDED PARA QUE EL ListView.Builder NO DE ERROR
                       child: ListView.builder(
-                        // TAMAÑO EN BASE A LA CANTIDAD DE SUPERMERCADOS QUE HAY
                         itemCount: context
                             .watch<CompraProvider>()
-                            .comprasAgrupadas
+                            .groupedComprasToShow
                             .entries
                             .length,
                         itemBuilder: (context, index) {
-                          // OBTENEMOS UN ELEMENTO DE LA LISTA BASANDONOS EN EL INDICE
                           final entry = context
                               .watch<CompraProvider>()
-                              .comprasAgrupadas
+                              .groupedComprasToShow
                               .entries
                               .toList()[index];
                           // OBTENEMOS EL SUPERMERCADO DE ESE ELEMENTO
@@ -377,8 +373,7 @@ class CompraState extends State<Compra> {
                                               children: [
                                                 Text(
                                                     maxLines: 2,
-                                                    producto.nombre
-                                                ),
+                                                    producto.nombre),
                                                 Text(
                                                     '\$${(producto.precio).toStringAsFixed(2)}',
                                                     style: TextStyle(
@@ -504,7 +499,6 @@ class CompraState extends State<Compra> {
                                       endIndent: 8,
                                       color: Colors.grey.shade400,
                                     ),
-
                                   ],
                                 );
                               }).toList(),

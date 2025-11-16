@@ -5,6 +5,8 @@ import '../models/compraModel.dart';
 import '../models/productoModel.dart';
 import 'package:intl/intl.dart';
 
+import '../utils/textNormalizer.dart';
+
 
 class DuplicateProductException implements Exception {}
 
@@ -23,7 +25,48 @@ class CompraProvider extends ChangeNotifier {
   Map<String, List<CompraModel>> comprasAgrupadas = {};
   double precioTotalCompra = 0.0;
 
+  // VARIABLES DE BUSQUEDA
+  List<CompraModel> filteredCompras = [];
+  String lastQuery = '';
+
+  // GETTER PARA MOSTRAR COMPRAS AGRUPADAS (FILTRADAS O TODAS)
+  Map<String, List<CompraModel>> get groupedComprasToShow {
+    if (filteredCompras.isEmpty && lastQuery.trim().isEmpty) {
+      return comprasAgrupadas;
+    }
+
+    // Agrupar las compras filtradas por supermercado
+    Map<String, List<CompraModel>> filteredGrouped = {};
+    for (var compra in filteredCompras) {
+      filteredGrouped.putIfAbsent(compra.supermercado, () => []);
+      filteredGrouped[compra.supermercado]!.add(compra);
+    }
+
+    return filteredGrouped;
+  }
+
   CompraProvider(this.database, this.userId);
+
+  void setSearchText(String value) {
+    lastQuery = value;
+
+    if (value.trim().isEmpty) {
+      filteredCompras = [];
+      notifyListeners();
+      return;
+    }
+
+    final query = normalizeText(value);
+
+    filteredCompras = _compras.where((c) {
+      final name = normalizeText(c.nombre);
+      final supermarket = normalizeText(c.supermercado);
+
+      return name.contains(query) || supermarket.contains(query);
+    }).toList();
+
+    notifyListeners();
+  }
 
   /// METODO PARA MARCAR O DESMARCAR UN PRODUCTO
   void alternarMarcado(CompraModel producto) {

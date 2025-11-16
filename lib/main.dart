@@ -508,7 +508,7 @@ class MainState extends State<Main> {
         break;
 
       case 1:
-        //context.read<CompraProvider>().filtrarLista(query);
+        context.read<CompraProvider>().setSearchText(query);
         break;
 
       case 2:
