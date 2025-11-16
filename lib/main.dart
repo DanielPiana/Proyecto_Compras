@@ -411,42 +411,6 @@ class MainState extends State<Main> {
                     value:
                     context.watch<LanguageProvider>().locale.languageCode)
             ),
-            ListTile(
-              leading: const Icon(Icons.sync),
-              title: const Text("Actualizar productos Mercadona"),
-              onTap: () async {
-                Navigator.pop(context);
-                print('Actualizando productos...');
-                await actualizarProductosMercadona();
-                print('Productos actualizados ✅');
-              },
-            ),
-            ListTile(
-              title: const Text('Actualizar códigos de barras'),
-              onTap: () async {
-                await actualizarCodigosDeBarras();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Códigos de barras actualizados ✅')),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('Actualizar productos personales'),
-              onTap: () async {
-                final productoProvider = context.read<ProductoProvider>();
-                final compraProvider = context.read<CompraProvider>();
-
-                await productoProvider.actualizarProductosDesdeSupabase(compraProvider);
-
-                showAwesomeSnackBar(
-                  context,
-                  title: 'Actualización completada',
-                  message: 'Tus productos han sido sincronizados con Mercadona ✅',
-                  contentType: asc.ContentType.success,
-                );
-
-              },
-            ),
             SwitchListTile(
               title: Text(AppLocalizations.of(context)!.darkTheme),
               value: context.watch<ThemeProvider>().isDarkMode,
