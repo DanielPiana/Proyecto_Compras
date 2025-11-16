@@ -516,7 +516,7 @@ class MainState extends State<Main> {
         break;
 
       case 3:
-        //context.read<RecetaProvider>().filtrarRecetas(query);
+        context.read<RecetaProvider>().setSearchText(query);
         break;
     }
   }

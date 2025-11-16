@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/recetaModel.dart';
+import '../utils/textNormalizer.dart';
 
 class RecetaProvider with ChangeNotifier {
   final SupabaseClient database;
@@ -14,6 +15,37 @@ class RecetaProvider with ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  List<RecetaModel> filteredRecetas = [];
+  String lastQuery = '';
+
+  // GETTER PARA MOSTRAR RECETAS (FILTRADAS O TODAS)
+  List<RecetaModel> get recetasToShow {
+    if (filteredRecetas.isEmpty && lastQuery.trim().isEmpty) {
+      return _recetas;
+    }
+    return filteredRecetas;
+  }
+
+  void setSearchText(String value) {
+    lastQuery = value;
+
+    if (value.trim().isEmpty) {
+      filteredRecetas = [];
+      notifyListeners();
+      return;
+    }
+
+    final query = normalizeText(value);
+
+    filteredRecetas = _recetas.where((receta) {
+      final nombre = normalizeText(receta.nombre);
+      final tiempo = receta.tiempo.toString() ?? "";
+
+      return nombre.contains(query) || tiempo.contains(query);
+    }).toList();
+
+    notifyListeners();
+  }
 
   /// METODO PARA ESTABLECER UN USUARIO Y RECARGAR SUS RECETAS
   Future<void> setUserAndReload(String? uuid) async {

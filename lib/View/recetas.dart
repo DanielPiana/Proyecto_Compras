@@ -316,11 +316,11 @@ class RecetasState extends State<Recetas> {
             centerTitle: true),
 
         // ---------- BODY ----------
-        body: providerReceta.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : providerReceta.recetas.isEmpty
-                ? const PlaceholderRecetas()
-                : LayoutBuilder(builder: (context, constraints) {
+      body: providerReceta.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : providerReceta.recetasToShow.isEmpty
+          ? const PlaceholderRecetas()
+          : LayoutBuilder(builder: (context, constraints) {
                     final width = constraints.maxWidth;
                     int crossAxisCount = 1;
 
@@ -339,16 +339,15 @@ class RecetasState extends State<Recetas> {
                             Theme.of(context).brightness == Brightness.light;
 
                         return GridView.builder(
-                          itemCount: providerReceta.recetas.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
+                          itemCount: providerReceta.recetasToShow.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount,
                             mainAxisExtent: 280,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
                           itemBuilder: (context, index) {
-                            final receta = providerReceta.recetas[index];
+                            final receta = providerReceta.recetasToShow[index];
                             return Card(
                               color: Theme.of(context).colorScheme.surface,
                               shape: RoundedRectangleBorder(
@@ -562,13 +561,15 @@ class RecetasState extends State<Recetas> {
                         );
                       },
                     );
-                    floatingActionButton:
-                    FloatingActionButton(
-                      onPressed: () {
-                        mostrarDialogoCrearReceta(context, indiceRecetaActual);
-                      },
-                      child: const Icon(Icons.add),
-                    );
-                  }));
+                  }
+                  ),
+        floatingActionButton:
+        FloatingActionButton(
+          onPressed: () {
+            mostrarDialogoCrearReceta(context, indiceRecetaActual);
+          },
+          child: const Icon(Icons.add),
+        ),
+    );
   }
 }
