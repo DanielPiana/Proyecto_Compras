@@ -512,7 +512,7 @@ class MainState extends State<Main> {
         break;
 
       case 2:
-        //context.read<FacturaProvider>().filtrarGastos(query);
+        context.read<FacturaProvider>().setSearchText(query);
         break;
 
       case 3:

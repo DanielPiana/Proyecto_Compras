@@ -124,19 +124,17 @@ class GastosState extends State<Gastos> {
       ),
 
       // ---------- BODY ----------
-        body: Builder(
-            builder: (context) {
-              final isLight = Theme
-                  .of(context)
-                  .brightness == Brightness.light;
-              return providerFactura.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : providerFactura.facturas.isEmpty
-                  ? const PlaceholderFacturas()
-                  : ListView.builder(
-                itemCount: facturas.length,
-                itemBuilder: (context, index) {
-                  final factura = facturas[index];
+      body: Builder(
+          builder: (context) {
+            final isLight = Theme.of(context).brightness == Brightness.light;
+            return providerFactura.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : providerFactura.facturasToShow.isEmpty
+                ? const PlaceholderFacturas()
+                : ListView.builder(
+              itemCount: providerFactura.facturasToShow.length,
+              itemBuilder: (context, index) {
+                final factura = providerFactura.facturasToShow[index];
                   final double precioTotal = factura.productos.fold(
                     0.0,
                         (sum, p) => sum + (p.precioUnidad * p.cantidad),

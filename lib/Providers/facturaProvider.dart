@@ -4,6 +4,7 @@ import 'package:proyectocompras/models/compraModel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/facturaModel.dart';
 import '../models/productoFacturaModel.dart';
+import '../utils/textNormalizer.dart';
 
 
 class FacturaProvider extends ChangeNotifier {
@@ -15,6 +16,67 @@ class FacturaProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  List<FacturaModel> filteredFacturas = [];
+  String lastQuery = '';
+
+  // GETTER PARA MOSTRAR FACTURAS
+  List<FacturaModel> get facturasToShow {
+    if (filteredFacturas.isEmpty && lastQuery.trim().isEmpty) {
+      return _facturas;
+    }
+    return filteredFacturas;
+  }
+
+  void setSearchText(String value) {
+    lastQuery = value;
+
+    if (value.trim().isEmpty) {
+      filteredFacturas = [];
+      notifyListeners();
+      return;
+    }
+
+    final query = normalizeText(value);
+
+
+    final mesesMap = {
+      'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+      'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+      'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+    };
+
+    // COMPROBAR SI LA BUSQUEDA DEL USUARIO COINCIDE CON ALGUN NOMBRE DE MES
+    String? mesNumero;
+    for (var entry in mesesMap.entries) {
+      if (entry.key.contains(query)) {
+        mesNumero = entry.value;
+        break;
+      }
+    }
+
+    filteredFacturas = _facturas.where((factura) {
+      final fecha = normalizeText(factura.fecha);
+
+      // BUSQUEDA DIRECTA DE NÚMERO
+      if (fecha.contains(query)) return true;
+
+      // SI LA BUSQUEDA COINCIDE CON UN MES, BUSCAMOS POR SU NUMERO
+      if (mesNumero != null && factura.fecha.contains('/$mesNumero/')) {
+        return true;
+      }
+
+      // BUSQUEDA POR NOMBRES DE PRODUCTO
+      final tieneProductoCoincidente = factura.productos.any((producto) {
+        final nombreProducto = normalizeText(producto.nombre);
+        return nombreProducto.contains(query);
+      });
+
+      return tieneProductoCoincidente;
+    }).toList();
+
+    notifyListeners();
+  }
 
   FacturaProvider(this.database, this.userId);
 
