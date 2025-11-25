@@ -7,11 +7,13 @@ void showAwesomeSnackBar(
       required String message,
       required asc.ContentType contentType,
       Color? color,
+      Duration? duration,
     }) {
   final snackBar = SnackBar(
     elevation: 0,
     behavior: SnackBarBehavior.floating,
     backgroundColor: Colors.transparent,
+    duration: duration ?? const Duration(milliseconds:1600),
     content: asc.AwesomeSnackbarContent(
       title: title,
       message: message,
