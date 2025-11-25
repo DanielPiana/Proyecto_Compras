@@ -585,262 +585,270 @@ class _DetalleRecetaState extends State<DetalleReceta> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            // ---------- APP BAR ----------
-            SliverAppBar(
-              leadingWidth: 48,
-              leading: Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.maybePop(context),
-                ),
-              ),
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              pinned: true,
-              centerTitle: true,
-              expandedHeight: MediaQuery.of(context).size.height * 0.35,
-              flexibleSpace: FlexibleSpaceBar(
-                collapseMode: CollapseMode.parallax,
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // ---------- DEGRADADO DE FONDO ----------
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Theme.of(context).colorScheme.primary,
-                            isLight ? const Color(0xFFF1F8E9) : const Color(0xFF1E1E1E),
-                          ],
-                          stops: const [0.25, 0.55],
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(
-                      top: topPadding,
-                      left: 8,
-                      right: 8,
-                    ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: nuevaFotoFile != null
-                              ? Image.file(
-                            nuevaFotoFile!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                              : (receta.foto.isNotEmpty
-                              ? (receta.foto.startsWith("http")
-                              ? Image.network(
-                            receta.foto,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                              : Image.file(
-                            File(receta.foto),
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ))
-                              : Container(
-                            width: double.infinity,
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: Icon(
-                                Icons.image,
-                                size: 60,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          )),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // ---------- TITLO DEL APP BAR ----------
-              title: AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 200),
-                  crossFadeState: editandoNombre
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  firstChild: Text(
-                    receta.nombre,
-                    style: const TextStyle(
-                        fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
-                  secondChild: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: TextField(
-                      controller: nombreController,
-                      focusNode: _focusNode,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          nuevoNombre = value.trim();
-                        });
-                        final nombreOriginal = widget.receta.nombre.trim();
-                        final nuevoValor = capitalize(value.trim());
+        body: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                // ---------- APP BAR ----------
+                SliverAppBar(
+                  automaticallyImplyLeading: false,
+                  backgroundColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  pinned: false,
+                  centerTitle: true,
+                  expandedHeight: MediaQuery.of(context).size.height * 0.55,
 
-                        context
-                            .read<DetalleRecetaProvider>()
-                            .setCambioNombre(nuevoValor != nombreOriginal);
-                      },
-                    ),
-                  ),
-                ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.all(8),
-              sliver: SliverList(
-                // ---------- STEPPER PERSONALIZADO ----------
-                delegate: SliverChildListDelegate([
-                  Builder(builder: (context) {
-                    final pasosProvider = context.watch<PasosRecetaProvider>();
-                    final detalleProvider =
-                    context.watch<DetalleRecetaProvider>();
-
-                    if (pasosProvider.estaCargando) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(8),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-
-                    if (pasosProvider.pasos.isEmpty) {
-                      if (detalleProvider.estaEditando) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          context
-                              .read<DetalleRecetaProvider>()
-                              .setEdicion(false);
-                        });
-                      }
-
-                      return textoAzulClickeable();
-                    }
-
-                    return StepperPersonalizado(
-                        pasosReceta: pasosProvider.pasos);
-                  }),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Text('${AppLocalizations.of(context)!.products}:',
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(60),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      child: AnimatedCrossFade(
+                        duration: const Duration(milliseconds: 200),
+                        crossFadeState: editandoNombre
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        firstChild: Text(
+                          receta.nombre,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold)),
-                      InkWell(
-                        onTap: () {
-                          mostrarDialogoSeleccionProductos(context);
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(width: 20),
-                            const Icon(Icons.link,
-                                size: 18, color: Colors.blue),
-                            const SizedBox(width: 4),
-                            Text(
-                              AppLocalizations.of(context)!.link_products,
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontSize: 16,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ],
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // ---------- LISTA DE PRODUCTOS ASOCIADOS A LA RECETA ----------
-                  Consumer<ProductosRecetaProvider>(
-                    builder: (context, prov, _) {
-                      if (prov.productos.isEmpty) {
-                        return Text(
-                            AppLocalizations.of(context)!.no_linked_products);
-                      }
-                      return Column(
-                        children: prov.productos.map((producto) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 6, horizontal: 4),
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: Colors.grey.shade600, width: 0.8),
-                                borderRadius: BorderRadius.circular(10),
-                                color: Theme.of(context).colorScheme.surface,
+                        secondChild: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: TextField(
+                            controller: nombreController,
+                            focusNode: _focusNode,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
-                            child: SizedBox(
-                              height: 85,
-                              child: Padding(
-                                padding:
-                                const EdgeInsets.symmetric(horizontal: 4),
-                                child: Center(
-                                  child: ListTile(
-                                    contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                    leading: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: AspectRatio(
-                                        aspectRatio: 1.4,
-                                        child: Image.network(
-                                          producto.foto,
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (_, __, ___) =>
-                                          const Icon(Icons.image_not_supported,
-                                              size: 50, color: Colors.grey),
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      maxLines: 2,
-                                      producto.nombre,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    trailing: const Icon(
-                                        Icons.arrow_forward_ios,
-                                        size: 20,
-                                        color: Colors.grey),
-                                    onTap: () =>
-                                        mostrarDetalleProducto(
-                                            context, producto.toMap()),
-                                  ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                nuevoNombre = value.trim();
+                              });
+                              final nombreOriginal = widget.receta.nombre.trim();
+                              final nuevoValor = capitalize(value.trim());
+
+                              context
+                                  .read<DetalleRecetaProvider>()
+                                  .setCambioNombre(nuevoValor != nombreOriginal);
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.parallax,
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Theme.of(context).colorScheme.primary,
+                                isLight ? const Color(0xFFF1F8E9) : const Color(0xFF1E1E1E),
+                              ],
+                              stops: const [0.25, 0.55],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: topPadding,
+                            left: 8,
+                            right: 8,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: nuevaFotoFile != null
+                                  ? Image.file(nuevaFotoFile!, width: double.infinity, fit: BoxFit.cover)
+                                  : (receta.foto.isNotEmpty
+                                  ? (receta.foto.startsWith("http")
+                                  ? Image.network(receta.foto, width: double.infinity, fit: BoxFit.cover)
+                                  : Image.file(File(receta.foto), width: double.infinity, fit: BoxFit.cover))
+                                  : Container(
+                                width: double.infinity,
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(Icons.image, size: 60, color: Colors.white70),
                                 ),
-                              ),
+                              )),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(8),
+                  sliver: SliverList(
+                    // ---------- STEPPER PERSONALIZADO ----------
+                    delegate: SliverChildListDelegate([
+                      Builder(builder: (context) {
+                        final pasosProvider = context.watch<PasosRecetaProvider>();
+                        final detalleProvider =
+                        context.watch<DetalleRecetaProvider>();
+
+                        if (pasosProvider.estaCargando) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(8),
+                              child: CircularProgressIndicator(),
                             ),
                           );
-                        }).toList(),
-                      );
-                    },
-                  )
-                ]),
+                        }
+
+                        if (pasosProvider.pasos.isEmpty) {
+                          if (detalleProvider.estaEditando) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              context
+                                  .read<DetalleRecetaProvider>()
+                                  .setEdicion(false);
+                            });
+                          }
+
+                          return textoAzulClickeable();
+                        }
+
+                        return StepperPersonalizado(
+                            pasosReceta: pasosProvider.pasos);
+                      }),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Text('${AppLocalizations.of(context)!.products}:',
+                              style: const TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.bold)),
+                          InkWell(
+                            onTap: () {
+                              mostrarDialogoSeleccionProductos(context);
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(width: 20),
+                                const Icon(Icons.link,
+                                    size: 18, color: Colors.blue),
+                                const SizedBox(width: 4),
+                                Text(
+                                  AppLocalizations.of(context)!.link_products,
+                                  style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 16,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // ---------- LISTA DE PRODUCTOS ASOCIADOS A LA RECETA ----------
+                      Consumer<ProductosRecetaProvider>(
+                        builder: (context, prov, _) {
+                          if (prov.productos.isEmpty) {
+                            return Text(
+                                AppLocalizations.of(context)!.no_linked_products);
+                          }
+                          return Column(
+                            children: prov.productos.map((producto) {
+                              return Container(
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 6, horizontal: 4),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: Colors.grey.shade600, width: 0.8),
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: Theme.of(context).colorScheme.surface,
+                                ),
+                                child: SizedBox(
+                                  height: 85,
+                                  child: Padding(
+                                    padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Center(
+                                      child: ListTile(
+                                        contentPadding:
+                                        const EdgeInsets.symmetric(vertical: 8),
+                                        leading: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: AspectRatio(
+                                            aspectRatio: 1.4,
+                                            child: Image.network(
+                                              producto.foto,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (_, __, ___) =>
+                                              const Icon(Icons.image_not_supported,
+                                                  size: 50, color: Colors.grey),
+                                            ),
+                                          ),
+                                        ),
+                                        title: Text(
+                                          maxLines: 2,
+                                          producto.nombre,
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        trailing: const Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 20,
+                                            color: Colors.grey),
+                                        onTap: () =>
+                                            mostrarDetalleProducto(
+                                                context, producto.toMap()),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      )
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+
+            // ✅ NUEVO: Botón flotante fijo
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.maybePop(context),
+                ),
               ),
             ),
           ],
