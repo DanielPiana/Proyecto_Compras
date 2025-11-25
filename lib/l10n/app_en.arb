@@ -140,5 +140,6 @@
   "add_ingredients_to_list" : "Add to list",
   "scan_barcode" : "Scan barcode",
   "open_camera" : "Camera",
-  "barcode_already_registered" : "Bar code already registered"
+  "barcode_already_registered" : "Bar code already registered",
+  "logout" : "Logout"
 }

@@ -445,4 +445,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get barcode_already_registered => 'Código de barras ya registrado';
+
+  @override
+  String get logout => 'Cerrar sesión';
 }

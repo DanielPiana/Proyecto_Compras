@@ -937,6 +937,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Código de barras ya registrado'**
   String get barcode_already_registered;
+
+  /// No description provided for @logout.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar sesión'**
+  String get logout;
 }
 
 class _AppLocalizationsDelegate

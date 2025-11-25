@@ -140,5 +140,6 @@
    "add_ingredients_to_list" : "Añadir a lista",
    "scan_barcode" : "Escanear código de barras",
    "open_camera" : "Cámara",
-   "barcode_already_registered" : "Código de barras ya registrado"
+   "barcode_already_registered" : "Código de barras ya registrado",
+   "logout" : "Cerrar sesión"
 }

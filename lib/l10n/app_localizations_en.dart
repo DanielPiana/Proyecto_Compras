@@ -444,4 +444,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get barcode_already_registered => 'Bar code already registered';
+
+  @override
+  String get logout => 'Logout';
 }

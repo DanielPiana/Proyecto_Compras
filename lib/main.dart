@@ -351,28 +351,6 @@ class MainState extends State<Main> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              color: Colors.white,
-              onPressed: () async {
-                // CERRAR SESIÓN
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.remove('usuarioUUID');
-
-                final userProvider = context.read<UserProvider>();
-                userProvider.setUuid(null);
-
-                await Supabase.instance.client.auth.signOut();
-                if (context.mounted) {
-                context.read<ProductoProvider>().setUserAndReload(null);
-                context.read<CompraProvider>().setUserAndReload(null);
-                context.read<FacturaProvider>().setUserAndReload(null);
-                context.read<RecetaProvider>().setUserAndReload(null);
-                  Navigator.pushReplacementNamed(context, '/login');
-                }
-              },
-            ),
           ],
         ),
       ),
@@ -386,13 +364,19 @@ class MainState extends State<Main> {
                     ? const Color(0xFF2C6B31) // Tema oscuro
                     : const Color(0xFF4CAF50), // Tema claro
               ),
-              child: Text(
-                AppLocalizations.of(context)!.menuSettings,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.menuSettings,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
             ListTile(
@@ -417,7 +401,30 @@ class MainState extends State<Main> {
               onChanged: (bool value) {
                 context.read<ThemeProvider>().toggleTheme();
               },
-            )
+            ),
+            ListTile(
+                title: Text(AppLocalizations.of(context)!.logout),
+                trailing: IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () async {
+                    // CERRAR SESIÓN
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.remove('usuarioUUID');
+
+                    final userProvider = context.read<UserProvider>();
+                    userProvider.setUuid(null);
+
+                    await Supabase.instance.client.auth.signOut();
+                    if (context.mounted) {
+                      context.read<ProductoProvider>().setUserAndReload(null);
+                      context.read<CompraProvider>().setUserAndReload(null);
+                      context.read<FacturaProvider>().setUserAndReload(null);
+                      context.read<RecetaProvider>().setUserAndReload(null);
+                      Navigator.pushReplacementNamed(context, '/login');
+                    }
+                  },
+                ),
+            ),
           ],
         ),
       ),
