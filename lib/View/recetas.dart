@@ -537,10 +537,10 @@ class RecetasState extends State<Recetas> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            maxLines: 1,
+                                            maxLines: 2,
                                             receta.nombre,
                                             style: const TextStyle(
-                                              fontSize: 26,
+                                              fontSize: 22,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
