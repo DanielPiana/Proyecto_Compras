@@ -176,14 +176,10 @@ class ProductoState extends State<Producto> {
   /// Excepciones:
   /// - Puede lanzar errores relacionados con la carga de imágenes o la actualización en Supabase.
   void dialogoEdicion(BuildContext context, ProductoModel producto) async {
-    final TextEditingController nombreController =
-        TextEditingController(text: producto.nombre);
-    final TextEditingController descripcionController =
-        TextEditingController(text: producto.descripcion);
-    final TextEditingController precioController =
-        TextEditingController(text: producto.precio.toString());
-    final TextEditingController codigoBarrasController =
-        TextEditingController(text: producto.codBarras);
+    final TextEditingController nombreController = TextEditingController(text: producto.nombre);
+    final TextEditingController descripcionController = TextEditingController(text: producto.descripcion);
+    final TextEditingController precioController = TextEditingController(text: producto.precio.toString());
+    final TextEditingController codigoBarrasController = TextEditingController(text: producto.codBarras ?? "");
 
     final List<String> supermercados =
         await context.read<ProductoProvider>().obtenerSupermercados();
@@ -513,7 +509,9 @@ class ProductoState extends State<Producto> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final String codigoBarras = codigoBarrasController.text;
+                    final String? codigoBarras = codigoBarrasController.text.isEmpty
+                        ? null
+                        : codigoBarrasController.text;
                     final String nuevoNombre = nombreController.text.trim();
                     final String nuevaDescripcion =
                         descripcionController.text.trim();
@@ -521,6 +519,19 @@ class ProductoState extends State<Producto> {
                         precioController.text.trim().replaceAll(',', '.');
                     final double? nuevoPrecioParsed =
                         double.tryParse(precioInput);
+
+                    if (codigoBarras != null &&
+                        codigoBarras.isNotEmpty &&
+                        codigoBarras != producto.codBarras &&
+                        context.read<ProductoProvider>().existsWithBarCode(codigoBarras)) {
+                      showAwesomeSnackBar(
+                        dialogCtx,
+                        title: AppLocalizations.of(context)!.error,
+                        message: AppLocalizations.of(context)!.barcode_already_registered,
+                        contentType: asc.ContentType.failure,
+                      );
+                      return;
+                    }
 
                     if (!nombreValido ||
                         !precioValido ||
@@ -621,7 +632,7 @@ class ProductoState extends State<Producto> {
   void dialogoCreacion(BuildContext context) {
     final TextEditingController nombreController = TextEditingController();
     final TextEditingController descripcionController = TextEditingController();
-    final TextEditingController precioController = TextEditingController();
+    final TextEditingController precioController = TextEditingController(text: "0");
     final TextEditingController nuevoSupermercadoController =
         TextEditingController();
     final TextEditingController codigoBarrasController =
@@ -633,7 +644,7 @@ class ProductoState extends State<Producto> {
     bool creandoSupermercado = false;
 
     bool nombreValido = false;
-    bool precioValido = false;
+    bool precioValido = true;
     bool supermercadoValido = false;
 
     bool nombreTouched = false;
@@ -677,8 +688,7 @@ class ProductoState extends State<Producto> {
                             );
 
                             try {
-                              final product = await OpenFoodService
-                                  .obtenerProductoPorCodigo(result);
+                              final product = await OpenFoodService.obtenerProductoPorCodigo(result);
                               Navigator.pop(context);
 
                               if (product != null) {
@@ -694,6 +704,7 @@ class ProductoState extends State<Producto> {
                                       product.brands ?? '';
                                 });
                               } else {
+                                Navigator.pop(context);
                                 showAwesomeSnackBar(
                                   context,
                                   title: "No encontrado",
@@ -996,9 +1007,9 @@ class ProductoState extends State<Producto> {
                     final String supermercado = creandoSupermercado
                         ? capitalize(nuevoSupermercadoController.text.trim())
                         : capitalize(supermercadoSeleccionado ?? '');
-                    final String codigoBarras =
+                    final String? codigoBarras =
                         codigoBarrasController.text.isEmpty
-                            ? ''
+                            ? null
                             : codigoBarrasController.text;
 
                     setState(() {
@@ -1017,7 +1028,7 @@ class ProductoState extends State<Producto> {
                         precioParsed == null) {
                       return;
                     }
-                    if (provider.existsWithBarCode(codigoBarras)) {
+                    if (codigoBarras != null && codigoBarras.isNotEmpty && provider.existsWithBarCode(codigoBarras)) {
                       Navigator.pop(dialogCtx);
                       showAwesomeSnackBar(
                         dialogCtx,

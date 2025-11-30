@@ -7,7 +7,7 @@ String imageNameNormalizer(String input) {
     return word[0].toUpperCase() + word.substring(1).toLowerCase();
   }).join(' ');
 
-  // 2. Quitar acentos manualmente (100% compatible en Windows, Android, Linux, etc.)
+  // 2. Quitar acentos manualmente
   const accents = 'áàäâÁÀÄÂéèëêÉÈËÊíìïîÍÌÏÎóòöôÓÒÖÔúùüûÚÙÜÛñÑçÇ';
   const replacements = 'aaaaAAAAeeeeEEEEiiiiIIIIooooOOOOuuuuUUUUnNcC';
 

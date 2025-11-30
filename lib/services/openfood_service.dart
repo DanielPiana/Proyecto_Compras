@@ -2,7 +2,6 @@ import 'package:openfoodfacts/openfoodfacts.dart';
 
 class OpenFoodService {
   static Future<Product?> obtenerProductoPorCodigo(String codigo) async {
-    // Configuración del UserAgent
     OpenFoodAPIConfiguration.userAgent = UserAgent(
       name: 'ProyectoCompras',
       version: '1.0.0',
@@ -19,9 +18,12 @@ class OpenFoodService {
       version: ProductQueryVersion.v3,
     );
 
-    final ProductResultV3 response =
-    await OpenFoodAPIClient.getProductV3(config);
+    final ProductResultV3 response = await OpenFoodAPIClient.getProductV3(config);
 
-    return response.product;
+    if (response.status == ProductResultV3.statusSuccess && response.product != null) {
+      return response.product;
+    }
+
+    return null;
   }
 }
