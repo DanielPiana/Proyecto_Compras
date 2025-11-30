@@ -88,7 +88,7 @@ class CompraState extends State<Compra> {
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
-                      message: AppLocalizations.of(context)!.receipt_deleted_ok,
+                      message: AppLocalizations.of(context)!.product_deleted_ok,
                       contentType: asc.ContentType.success,
                     );
                   }
@@ -98,7 +98,7 @@ class CompraState extends State<Compra> {
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
-                      message: AppLocalizations.of(context)!.receipt_deleted_ok,
+                      message: AppLocalizations.of(context)!.product_deleted_ok,
                       contentType: asc.ContentType.success,
                     );
                   }
