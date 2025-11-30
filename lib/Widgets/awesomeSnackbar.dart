@@ -13,6 +13,7 @@ void showAwesomeSnackBar(
     elevation: 0,
     behavior: SnackBarBehavior.floating,
     backgroundColor: Colors.transparent,
+    margin: const EdgeInsets.only(bottom: 16, left: 8, right: 8),
     duration: duration ?? const Duration(milliseconds:1600),
     content: asc.AwesomeSnackbarContent(
       title: title,
