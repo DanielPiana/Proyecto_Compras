@@ -1,7 +1,7 @@
 
 class ProductoModel {
   final int? id;
-  String codBarras;
+  String? codBarras;
   String nombre;
   String descripcion;
   double precio;
