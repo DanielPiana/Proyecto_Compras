@@ -809,7 +809,7 @@ abstract class AppLocalizations {
   /// No description provided for @invalid_email.
   ///
   /// In es, this message translates to:
-  /// **'Debe ser un correo válido (gmail o hotmail) y terminar en .com'**
+  /// **'Debe ser un correo válido'**
   String get invalid_email;
 
   /// No description provided for @minumun_6_characteres.

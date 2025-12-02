@@ -11,6 +11,8 @@ import '../Widgets/awesomeSnackbar.dart';
 import '../l10n/app_localizations.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
+import '../utils/regex.dart';
+
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -36,10 +38,7 @@ class _LoginScreenState extends State<Login> {
   bool validPassword = false;
   bool validConfirmPassword = false;
 
-  final emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@(gmail\.com|hotmail\.com)$',
-    caseSensitive: false,
-  );
+
 
 
   @override

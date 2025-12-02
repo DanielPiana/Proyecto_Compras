@@ -373,8 +373,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Password must contain at least 6 characteres';
 
   @override
-  String get invalid_email =>
-      'Must be a valid email (hotmail or gmail) and end with .com';
+  String get invalid_email => 'Must be a valid email';
 
   @override
   String get minumun_6_characteres => 'Minimum 6 characteres';

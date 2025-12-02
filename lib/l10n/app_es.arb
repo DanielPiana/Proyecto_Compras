@@ -118,7 +118,7 @@
    "scan_barcode" : "Escanear código de barras",
    "barcode_error_message" : "El código de barras debe ser un número",
    "password_short_error" : "La contraseña debe tener al menos 6 caracteres",
-   "invalid_email" : "Debe ser un correo válido (gmail o hotmail) y terminar en .com",
+   "invalid_email" : "Debe ser un correo válido",
    "minumun_6_characteres" : "Mínimo 6 caracteres",
    "password_matching_error" : "Las contraseñas no coinciden",
    "fill_fields_correctly" : "Por favor, completa los campos correctamente",

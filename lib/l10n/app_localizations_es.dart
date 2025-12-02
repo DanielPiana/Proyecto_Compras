@@ -373,8 +373,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'La contraseña debe tener al menos 6 caracteres';
 
   @override
-  String get invalid_email =>
-      'Debe ser un correo válido (gmail o hotmail) y terminar en .com';
+  String get invalid_email => 'Debe ser un correo válido';
 
   @override
   String get minumun_6_characteres => 'Mínimo 6 caracteres';
