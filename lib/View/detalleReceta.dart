@@ -835,13 +835,11 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                 ),
               ],
             ),
-
-            // ✅ NUEVO: Botón flotante fijo
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 8,
               child: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.black54,
                   shape: BoxShape.circle,
                 ),

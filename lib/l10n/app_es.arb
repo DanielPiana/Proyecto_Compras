@@ -67,7 +67,7 @@
    "save_step": "Guardar paso",
    "step":"Paso",
    "title":"Título",
-   "add_step": "Añadir paso",
+   "add_step": "Nuevo paso",
    "delete_step": "Eliminar paso",
    "previous": "Anterior",
    "next": "Siguiente",
@@ -141,5 +141,6 @@
    "scan_barcode" : "Escanear código de barras",
    "open_camera" : "Cámara",
    "barcode_already_registered" : "Código de barras ya registrado",
-   "logout" : "Cerrar sesión"
+   "logout" : "Cerrar sesión",
+   "max_steps_warning" : "No se pueden añadir mas pasos"
 }

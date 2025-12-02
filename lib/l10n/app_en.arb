@@ -67,7 +67,7 @@
   "save_step": "Save step",
   "step":"Step",
   "title":"Title",
-  "add_step": "Add step",
+  "add_step": "New step",
   "delete_step": "Delete step",
   "previous": "Previous",
   "next": "Next",
@@ -141,5 +141,6 @@
   "scan_barcode" : "Scan barcode",
   "open_camera" : "Camera",
   "barcode_already_registered" : "Bar code already registered",
-  "logout" : "Logout"
+  "logout" : "Logout",
+  "max_steps_warning" : "You can't add more steps"
 }

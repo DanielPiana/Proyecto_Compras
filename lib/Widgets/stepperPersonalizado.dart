@@ -1,6 +1,8 @@
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
+import 'package:proyectocompras/Widgets/awesomeSnackbar.dart';
 import '../Providers/pasosRecetaProvider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/PasoReceta.dart';
@@ -202,17 +204,25 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                         ),
                         onPressed: () {
                           final pProv = context.read<PasosRecetaProvider>();
-                          pProv.crearPaso("", "");
-                          final nuevos = pProv.pasos;
-                          setState(() {
-                            pasoActual = nuevos.isEmpty ? 0 : nuevos.length - 1;
-                            _tituloController.text =
-                            nuevos.isNotEmpty ? nuevos.last.titulo : "";
-                            _descripcionController.text =
-                            nuevos.isNotEmpty ? nuevos.last.descripcion : "";
-                          });
-                          context.read<DetalleRecetaProvider>().setEdicion(
-                              true);
+                          if (pProv.pasos.length == 10) {
+                            showAwesomeSnackBar(context,
+                                title: AppLocalizations.of(context)!.warning,
+                                message: AppLocalizations.of(context)!.max_steps_warning,
+                                contentType: ContentType.warning);
+                          } else {
+
+                            pProv.crearPaso("", "");
+                            final nuevos = pProv.pasos;
+                            setState(() {
+                              pasoActual = nuevos.isEmpty ? 0 : nuevos.length - 1;
+                              _tituloController.text =
+                              nuevos.isNotEmpty ? nuevos.last.titulo : "";
+                              _descripcionController.text =
+                              nuevos.isNotEmpty ? nuevos.last.descripcion : "";
+                            });
+                            context.read<DetalleRecetaProvider>().setEdicion(
+                                true);
+                          }
                         },
                         child: Text(AppLocalizations.of(context)!.add_step),
                       ),

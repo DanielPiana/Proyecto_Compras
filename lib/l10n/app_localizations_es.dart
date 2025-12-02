@@ -217,7 +217,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get title => 'Título';
 
   @override
-  String get add_step => 'Añadir paso';
+  String get add_step => 'Nuevo paso';
 
   @override
   String get delete_step => 'Eliminar paso';
@@ -448,4 +448,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get logout => 'Cerrar sesión';
+
+  @override
+  String get max_steps_warning => 'No se pueden añadir mas pasos';
 }

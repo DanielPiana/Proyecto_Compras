@@ -503,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @add_step.
   ///
   /// In es, this message translates to:
-  /// **'Añadir paso'**
+  /// **'Nuevo paso'**
   String get add_step;
 
   /// No description provided for @delete_step.
@@ -943,6 +943,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Cerrar sesión'**
   String get logout;
+
+  /// No description provided for @max_steps_warning.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pueden añadir mas pasos'**
+  String get max_steps_warning;
 }
 
 class _AppLocalizationsDelegate
