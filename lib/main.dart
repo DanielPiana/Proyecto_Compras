@@ -5,7 +5,7 @@ import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
 import 'package:proyectocompras/Providers/facturaProvider.dart';
 import 'package:proyectocompras/Providers/recetaProvider.dart';
 import 'package:proyectocompras/Providers/userProvider.dart';
-import 'package:proyectocompras/View/gastos.dart';
+import 'package:proyectocompras/View/facturas.dart';
 import 'package:proyectocompras/View/compra.dart';
 import 'package:proyectocompras/View/login.dart';
 import 'package:proyectocompras/View/producto.dart';
@@ -17,11 +17,7 @@ import 'Providers/languageProvider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'Providers/productoProvider.dart';
 import 'Providers/themeProvider.dart';
-import 'Widgets/awesomeSnackbar.dart';
 import 'l10n/app_localizations.dart';
-import 'package:proyectocompras/services/mercadona_service.dart';
-import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
-
 
 /*---------------------------------------------------------------------------------------*/
 void main() async {

@@ -155,7 +155,7 @@ abstract class AppLocalizations {
   /// No description provided for @receipt.
   ///
   /// In es, this message translates to:
-  /// **'Gastos'**
+  /// **'Facturas'**
   String get receipt;
 
   /// No description provided for @recipes.

@@ -36,7 +36,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shoppingList => 'Compra';
 
   @override
-  String get receipt => 'Gastos';
+  String get receipt => 'Facturas';
 
   @override
   String get recipes => 'Recetas';
