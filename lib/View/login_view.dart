@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginView> {
 
         await Supabase.instance.client.from('usuario').insert({
           'usuariouuid': userUuid,
-          'nombreusuario': email.split('@').first,
+          'nombreusuario': '${email.split('@').first}_${DateTime.now().millisecondsSinceEpoch}',
           'correo': email,
           'fechacreacion': creationDate,
         });
