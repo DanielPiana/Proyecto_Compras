@@ -5,24 +5,24 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../Providers/compraProvider.dart';
-import '../Providers/facturaProvider.dart';
-import '../Providers/themeProvider.dart';
-import '../Providers/userProvider.dart';
-import '../Widgets/PlaceHolderCompra.dart';
-import '../Widgets/awesomeSnackbar.dart';
+import '../Providers/shopping_list_provider.dart';
+import '../Providers/receipts_provider.dart';
+import '../Providers/theme_provider.dart';
+import '../Providers/user_provider.dart';
+import '../Widgets/shopping_list_placeholder.dart';
+import '../Widgets/awesome_snackbar.dart';
 import '../l10n/app_localizations.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 import 'package:share_plus/share_plus.dart';
 
-class Compra extends StatefulWidget {
-  const Compra({super.key});
+class ShoppingListView extends StatefulWidget {
+  const ShoppingListView({super.key});
 
   @override
-  State<Compra> createState() => CompraState();
+  State<ShoppingListView> createState() => ShoppingListViewState();
 }
 
-class CompraState extends State<Compra> {
+class ShoppingListViewState extends State<ShoppingListView> {
   SupabaseClient database = Supabase.instance.client;
 
   @override
@@ -38,11 +38,11 @@ class CompraState extends State<Compra> {
   /// - Muestra un cuadro de diálogo pidiendo al usuario confirmar la eliminación.
   /// - Si el usuario cancela, se cierra el cuadro de diálogo sin cambios.
   /// - Si confirma, se cierra el cuadro de diálogo y se llama al método
-  ///   [deleteProducto] del [CompraProvider].
+  ///   [deleteProduct] del [ShoppingListProvider].
   /// - Se muestra un snackbar de éxito si la eliminación es correcta.
   /// - Si ocurre un error durante la operación, se captura la excepción y
   ///   se muestra un snackbar de error.
-  void dialogoEliminacion(BuildContext context, int idProducto) {
+  void showDeleteDialog(BuildContext context, int productId) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -71,10 +71,10 @@ class CompraState extends State<Compra> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final shoppingProvider = context.read<CompraProvider>();
+                final shoppingProvider = context.read<ShoppingListProvider>();
 
                 final allPurchases = List.of(
-                  shoppingProvider.comprasAgrupadas.values.expand(
+                  shoppingProvider.groupedShopping.values.expand(
                     (supermarketPurchases) => supermarketPurchases,
                   ),
                 );
@@ -92,7 +92,7 @@ class CompraState extends State<Compra> {
                       contentType: asc.ContentType.success,
                     );
                   }
-                  await shoppingProvider.deleteProducto(idProducto);
+                  await shoppingProvider.deleteProduct(productId);
 
                   if (!isLastItem && context.mounted) {
                     showAwesomeSnackBar(
@@ -128,13 +128,13 @@ class CompraState extends State<Compra> {
   /// Comparte la lista de la compra adaptándose a la plataforma (escritorio vs. móvil).
   ///
   /// Flujo principal:
-  /// - Si el [mensaje] está vacío, muestra un aviso y termina.
-  /// - En Windows/Linux/macOS: copia el [mensaje] al portapapeles y muestra un snackbar de éxito.
+  /// - Si el [message] está vacío, muestra un aviso y termina.
+  /// - En Windows/Linux/macOS: copia el [message] al portapapeles y muestra un snackbar de éxito.
   /// - En Android/iOS: intenta abrir WhatsApp con `https://wa.me/?text=...`.
   ///   - Si no se puede abrir, usa el diálogo de compartir genérico (`Share.share`).
   /// - Si ocurre cualquier excepción, muestra un snackbar de error.
-  Future<void> compartirLista(BuildContext context, String mensaje) async {
-    if (mensaje.trim().isEmpty) {
+  Future<void> shareList(BuildContext context, String message) async {
+    if (message.trim().isEmpty) {
       showAwesomeSnackBar(
         context,
         title: AppLocalizations.of(context)!.warning,
@@ -146,7 +146,7 @@ class CompraState extends State<Compra> {
 
     try {
       if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        await Clipboard.setData(ClipboardData(text: mensaje));
+        await Clipboard.setData(ClipboardData(text: message));
         showAwesomeSnackBar(
           context,
           title: AppLocalizations.of(context)!.success,
@@ -154,13 +154,13 @@ class CompraState extends State<Compra> {
           contentType: asc.ContentType.success,
         );
       } else if (Platform.isAndroid || Platform.isIOS) {
-        final encodedMessage = Uri.encodeComponent(mensaje);
+        final encodedMessage = Uri.encodeComponent(message);
         final whatsappUrl = Uri.parse('https://wa.me/?text=$encodedMessage');
 
         if (await canLaunchUrl(whatsappUrl)) {
           await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
         } else {
-          Share.share(mensaje);
+          Share.share(message);
         }
       }
     } catch (e) {
@@ -175,10 +175,10 @@ class CompraState extends State<Compra> {
 
   @override
   Widget build(BuildContext context) {
-    final compraProvider = context.watch<CompraProvider>();
-    final comprasAgrupadas = compraProvider.comprasAgrupadas;
+    final shoppingProvider = context.watch<ShoppingListProvider>();
+    final groupedShopping = shoppingProvider.groupedShopping;
 
-    double precioTotalCompra = context.read<CompraProvider>().precioTotalCompra;
+    double totalShoppingPrice = context.read<ShoppingListProvider>().totalShoppingPrice;
 
     return Scaffold(
       // ---------- APP BAR ----------
@@ -199,13 +199,13 @@ class CompraState extends State<Compra> {
             icon: const Icon(Icons.receipt),
             tooltip: AppLocalizations.of(context)!.generateReceipt,
             onPressed: () async {
-              final compraProvider = context.read<CompraProvider>();
-              final productosMarcados = compraProvider.comprasAgrupadas.values
-                  .expand((lista) => lista)
-                  .where((p) => p.marcado == 1)
+              final shoppingProvider = context.read<ShoppingListProvider>();
+              final markedProducts = shoppingProvider.groupedShopping.values
+                  .expand((list) => list)
+                  .where((p) => p.marked == 1)
                   .toList();
 
-              if (productosMarcados.isEmpty) {
+              if (markedProducts.isEmpty) {
                 showAwesomeSnackBar(
                   context,
                   title: AppLocalizations.of(context)!.error,
@@ -217,14 +217,12 @@ class CompraState extends State<Compra> {
               }
 
               try {
-                await context.read<FacturaProvider>().generarFactura(
-                      productosMarcados,
+                await context.read<ReceiptProvider>().generateReceipt(
+                      markedProducts,
                       context.read<UserProvider>().uuid!,
                     );
 
-                await context
-                    .read<CompraProvider>()
-                    .eliminarProductosMarcados();
+                await context.read<ShoppingListProvider>().deleteMarkedProducts();
 
                 showAwesomeSnackBar(
                   context,
@@ -235,7 +233,7 @@ class CompraState extends State<Compra> {
               } catch (e) {
                 showAwesomeSnackBar(
                   context,
-                  title: 'Error',
+                  title: AppLocalizations.of(context)!.error,
                   message: AppLocalizations.of(context)!.receipt_created_error,
                   contentType: asc.ContentType.failure,
                 );
@@ -246,42 +244,41 @@ class CompraState extends State<Compra> {
           // Compartir
           IconButton(
             icon: const Icon(Icons.share),
-            tooltip: 'Compartir lista',
             onPressed: () async {
-              final mensaje = context
-                  .read<CompraProvider>()
-                  .generarMensajeListaCompra(
+              final message = context
+                  .read<ShoppingListProvider>()
+                  .generateShoppingListMessage(
                       context, Localizations.localeOf(context));
-              await compartirLista(context, mensaje);
+              await shareList(context, message);
             },
           ),
         ],
       ),
 
       // ---------- BODY ----------
-      body: compraProvider.isLoading
+      body: shoppingProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : compraProvider.groupedComprasToShow.isEmpty
-              ? const PlaceholderCompra()
+          : shoppingProvider.groupedShoppingToShow.isEmpty
+              ? const ShoppingListPlaceholder()
               : Column(
                   children: [
                     Expanded(
                       child: ListView.builder(
                         itemCount: context
-                            .watch<CompraProvider>()
-                            .groupedComprasToShow
+                            .watch<ShoppingListProvider>()
+                            .groupedShoppingToShow
                             .entries
                             .length,
                         itemBuilder: (context, index) {
                           final entry = context
-                              .watch<CompraProvider>()
-                              .groupedComprasToShow
+                              .watch<ShoppingListProvider>()
+                              .groupedShoppingToShow
                               .entries
                               .toList()[index];
                           // OBTENEMOS EL SUPERMERCADO DE ESE ELEMENTO
-                          final supermercado = entry.key;
+                          final supermarket = entry.key;
                           // OBTENEMOS LA LISTA DE PRODUCTOS DE ESE SUPERMERCADO
-                          final productos = entry.value;
+                          final products = entry.value;
 
                           return Container(
                             margin: const EdgeInsets.symmetric(
@@ -304,14 +301,14 @@ class CompraState extends State<Compra> {
                                 padding: const EdgeInsets.all(8),
                                 child: Text(
                                   maxLines: 1,
-                                  supermercado,
+                                  supermarket,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                   ),
                                 ),
                               ),
-                              children: productos.map((producto) {
+                              children: products.map((product) {
                                 return Column(
                                   children: [
                                     SizedBox(
@@ -334,11 +331,11 @@ class CompraState extends State<Compra> {
                                               // ---------- CHECKBOX DE MARCADO ----------
                                               // SI producto['marcado'] ES 1, PONEMOS UN ESTILO Y SI NO, OTRO
                                               icon: Icon(
-                                                producto.marcado == 1
+                                                product.marked == 1
                                                     ? Icons.check_box
                                                     : Icons
                                                         .check_box_outline_blank,
-                                                color: producto.marcado == 1
+                                                color: product.marked == 1
                                                     ? Theme.of(context)
                                                         .colorScheme
                                                         .primary
@@ -346,21 +343,21 @@ class CompraState extends State<Compra> {
                                               ),
                                               onPressed: () async {
                                                 // ALTERNA EL ESTADO MARCADO DEL PRODUCTO
-                                                final nuevoEstado =
-                                                    producto.marcado == 1
+                                                final newState =
+                                                    product.marked == 1
                                                         ? 0
                                                         : 1;
                                                 // ACTUALIZAMOS EN LA BASE DE DATOS EL ATRIBUTO MARCADO DEL PRODUCTO
                                                 await database
                                                     .from('compra')
                                                     .update({
-                                                  'marcado': nuevoEstado
+                                                  'marcado': newState
                                                 }).eq('idproducto',
-                                                        producto.idProducto);
+                                                        product.productId);
                                                 // RECALCULAMOS EL TOTAL
                                                 context
-                                                    .read<CompraProvider>()
-                                                    .alternarMarcado(producto);
+                                                    .read<ShoppingListProvider>()
+                                                    .toggleMarked(product);
                                               },
                                             ),
 
@@ -373,9 +370,9 @@ class CompraState extends State<Compra> {
                                               children: [
                                                 Text(
                                                     maxLines: 2,
-                                                    producto.nombre),
+                                                    product.name),
                                                 Text(
-                                                    '\$${(producto.precio).toStringAsFixed(2)}',
+                                                    '\$${(product.price).toStringAsFixed(2)}',
                                                     style: TextStyle(
                                                         color: Theme.of(context)
                                                             .colorScheme
@@ -400,20 +397,20 @@ class CompraState extends State<Compra> {
                                                     iconSize: 25.0,
                                                     onPressed: () {
                                                       setState(() {
-                                                        if (producto.cantidad >
+                                                        if (product.quantity >
                                                             1) {
                                                           // SI EL PRODUCTO ESTA MARCADO Y ES MAYOR A 1
                                                           setState(() {
-                                                            precioTotalCompra -=
-                                                                producto
-                                                                    .precio; // ACTUALIZAMOS EL PRECIO TOTAL
+                                                            totalShoppingPrice -=
+                                                                product
+                                                                    .price; // ACTUALIZAMOS EL PRECIO TOTAL
                                                           });
                                                           context
                                                               .read<
-                                                                  CompraProvider>()
-                                                              .restar1Cantidad(
-                                                                  producto
-                                                                      .idProducto);
+                                                                  ShoppingListProvider>()
+                                                              .decrementQuantity(
+                                                                  product
+                                                                      .productId);
                                                         }
                                                       });
                                                     },
@@ -425,7 +422,7 @@ class CompraState extends State<Compra> {
 
                                                 // Cantidad del producto
                                                 Text(
-                                                    producto.cantidad
+                                                    product.quantity
                                                         .toString(),
                                                     style: const TextStyle(
                                                         fontSize: 16)),
@@ -443,15 +440,15 @@ class CompraState extends State<Compra> {
                                                       setState(() {
                                                         setState(() {
                                                           // SUMAR SI EL PRECIO ESTA MARCADO
-                                                          precioTotalCompra +=
-                                                              producto.precio;
+                                                          totalShoppingPrice +=
+                                                              product.price;
                                                         });
                                                         context
                                                             .read<
-                                                                CompraProvider>()
-                                                            .sumar1Cantidad(
-                                                                producto
-                                                                    .idProducto);
+                                                                ShoppingListProvider>()
+                                                            .incrementQuantity(
+                                                                product
+                                                                    .productId);
                                                       });
                                                     },
                                                     // QUITAMOS EL ESPACIO EXTRA (PARA QUE NO SALGA EN NARNIA)
@@ -460,7 +457,7 @@ class CompraState extends State<Compra> {
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Text(
-                                                  '\$${(producto.precio * producto.cantidad).toStringAsFixed(2)}',
+                                                  '\$${(product.price * product.quantity).toStringAsFixed(2)}',
                                                   style: TextStyle(
                                                       color: Theme.of(context)
                                                           .colorScheme
@@ -482,8 +479,8 @@ class CompraState extends State<Compra> {
                                                   iconSize: 22,
                                                   color: Colors.red.shade400,
                                                   onPressed: () async {
-                                                    dialogoEliminacion(context,
-                                                        producto.idProducto);
+                                                    showDeleteDialog(context,
+                                                        product.productId);
                                                   },
                                                 ),
                                               ],
@@ -525,7 +522,7 @@ class CompraState extends State<Compra> {
                           ),
                           Text(
                             // FORMATEAMOS EL PRECIO PARA VISUALIZARLO BIEN
-                            '\$${(precioTotalCompra).toStringAsFixed(2)}',
+                            '\$${(totalShoppingPrice).toStringAsFixed(2)}',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

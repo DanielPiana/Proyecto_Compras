@@ -5,61 +5,61 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
+import 'package:proyectocompras/Providers/recipe_detail_provider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Providers/compraProvider.dart';
-import '../Providers/pasosRecetaProvider.dart';
-import '../Providers/productoProvider.dart';
-import '../Providers/productosRecetaProvider.dart';
-import '../Providers/recetaProvider.dart';
-import '../Widgets/awesomeSnackbar.dart';
-import '../Widgets/stepperPersonalizado.dart';
+import '../Providers/shopping_list_provider.dart';
+import '../Providers/recipe_steps_provider.dart';
+import '../Providers/products_provider.dart';
+import '../Providers/products_recipe_provider.dart';
+import '../Providers/recipe_provider.dart';
+import '../Widgets/awesome_snackbar.dart';
+import '../Widgets/custom_stepper.dart';
 import '../l10n/app_localizations.dart';
-import '../models/PasoReceta.dart';
-import '../models/recetaModel.dart';
+import '../models/step_recipe_model.dart';
+import '../models/recipe_model.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
-class DetalleReceta extends StatefulWidget {
-  final RecetaModel receta;
+class RecipeDetailView extends StatefulWidget {
+  final RecipeModel recipe;
 
-  const DetalleReceta({super.key, required this.receta});
+  const RecipeDetailView({super.key, required this.recipe});
 
   @override
-  State<DetalleReceta> createState() => _DetalleRecetaState();
+  State<RecipeDetailView> createState() => _RecipeDetailViewState();
 }
 
-class _DetalleRecetaState extends State<DetalleReceta> {
-  File? nuevaFotoFile;
+class _RecipeDetailViewState extends State<RecipeDetailView> {
+  File? newPhotoFile;
 
-  late RecetaModel receta;
+  late RecipeModel recipe;
 
-  String nuevoNombre = "";
-  String nuevoTituloPaso = "";
-  String nuevaDescripcionPaso = "";
-  String nuevaFotoUrl = "";
-  int pasoActualizar = -1;
-  bool cambios = false;
+  String newName = "";
+  String newStepTitle = "";
+  String newStepDescription = "";
+  String newPhotoUrl = "";
+  int stepToUpdate = -1;
+  bool changes = false;
 
-  bool editandoNombre = false;
-  final nombreController = TextEditingController();
+  bool editingName = false;
+  final nameController = TextEditingController();
   final _focusNode = FocusNode();
 
-  final tituloController = TextEditingController();
-  final descripcionController = TextEditingController();
+  final titleController = TextEditingController();
+  final descriptionController = TextEditingController();
 
-  List<PasoReceta> pasos = [];
-  bool estaCargandoPasos = true;
+  List<RecipeStep> steps = [];
+  bool isLoadingSteps = true;
 
   @override
   void initState() {
     super.initState();
-    receta = widget.receta;
-    nombreController.text = receta.nombre;
+    recipe = widget.recipe;
+    nameController.text = recipe.name;
   }
 
   /// METODO PARA OBTENER UNA LISTA DE LOS PRODUCTOS
-  Future<List<Map<String, dynamic>>> obtenerProductos() async {
+  Future<List<Map<String, dynamic>>> getProducts() async {
     final res = await Supabase.instance.client.from('productos').select();
     return List<Map<String, dynamic>>.from(res);
   }
@@ -74,30 +74,29 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   ///   - [borrar]: los productos que ya no están seleccionados y hay que quitar.
   /// - Añade a la base de datos los productos nuevos.
   /// - Elimina los productos que ya no pertenecen a la receta.
-  Future<void> guardarProductosEnReceta(int recetaId,
-      Set<int> nuevosSeleccionados) async {
+  Future<void> saveRecipeProducts(int recipeId, Set<int> newSelected) async {
     final res = await Supabase.instance.client
         .from('receta_producto')
         .select('idproducto')
-        .eq('idreceta', recetaId);
+        .eq('idreceta', recipeId);
 
-    final actuales = Set<int>.from(res.map((r) => r['idproducto'] as int));
+    final current = Set<int>.from(res.map((r) => r['idproducto'] as int));
 
-    final insertar = nuevosSeleccionados.difference(actuales);
-    final borrar = actuales.difference(nuevosSeleccionados);
+    final add = newSelected.difference(current);
+    final delete = current.difference(newSelected);
 
-    for (final id in insertar) {
+    for (final id in add) {
       await Supabase.instance.client.from('receta_producto').insert({
-        'idreceta': recetaId,
+        'idreceta': recipeId,
         'idproducto': id,
       });
     }
 
-    for (final id in borrar) {
+    for (final id in delete) {
       await Supabase.instance.client
           .from('receta_producto')
           .delete()
-          .eq('idreceta', recetaId)
+          .eq('idreceta', recipeId)
           .eq('idproducto', id);
     }
   }
@@ -114,13 +113,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   ///   - Si todo va bien, muestra un mensaje de éxito.
   ///   - Si ocurre un error, muestra un mensaje de error.
   /// - Al pulsar Cancelar, simplemente cierra el diálogo sin guardar cambios.
-  void mostrarDialogoSeleccionProductos(BuildContext context) async {
-    final productoProvider = context.read<ProductoProvider>();
-    final recetaProvider = context.read<ProductosRecetaProvider>();
-    final productosDisponibles = productoProvider.productos;
+  void showProductsDialog(BuildContext context) async {
+    final productProvider = context.read<ProductProvider>();
+    final recipeProvider = context.read<ProductsRecipeProvider>();
+    final availableProducts = productProvider.products;
 
-    final Set<int> seleccionados =
-    recetaProvider.productos.map((p) => p.id!).toSet();
+    final Set<int> selected =
+    recipeProvider.products.map((p) => p.id!).toSet();
 
     showDialog(
       context: context,
@@ -133,18 +132,18 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                   width: double.maxFinite,
                   child: ListView.builder(
                     shrinkWrap: true,
-                    itemCount: productosDisponibles.length,
+                    itemCount: availableProducts.length,
                     itemBuilder: (_, index) {
-                      final producto = productosDisponibles[index];
+                      final product = availableProducts[index];
                       return CheckboxListTile(
-                        value: seleccionados.contains(producto.id),
-                        title: Text(producto.nombre),
+                        value: selected.contains(product.id),
+                        title: Text(product.name),
                         onChanged: (bool? checked) {
                           setStateDialog(() {
                             if (checked == true) {
-                              seleccionados.add(producto.id!);
+                              selected.add(product.id!);
                             } else {
-                              seleccionados.remove(producto.id!);
+                              selected.remove(product.id!);
                             }
                           });
                         },
@@ -168,8 +167,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                               child: Text(AppLocalizations.of(context)!.save),
                               onPressed: () async {
                                 try {
-                                  await recetaProvider.syncProductos(
-                                      context, seleccionados);
+                                  await recipeProvider.syncProducts(
+                                      context, selected);
 
                                   Navigator.pop(context);
                                   showAwesomeSnackBar(
@@ -184,7 +183,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                   Navigator.pop(context);
                                   showAwesomeSnackBar(
                                     context,
-                                    title: 'Error',
+                                    title: AppLocalizations.of(context)!.error,
                                     message:
                                     AppLocalizations.of(context)!
                                         .products_linked_error,
@@ -205,26 +204,26 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                           AppLocalizations.of(context)!
                               .add_ingredients_to_list),
                       onPressed: () async {
-                        final compraProvider = context.read<CompraProvider>();
-                        final productoProvider = context.read<
-                            ProductoProvider>();
+                        final shoppingListProvider = context.read<ShoppingListProvider>();
+                        final productsProvider = context.read<
+                            ProductProvider>();
 
-                        final productosMarcados = productoProvider.productos
-                            .where((p) => seleccionados.contains(p.id))
+                        final markedProducts = productsProvider.products
+                            .where((p) => selected.contains(p.id))
                             .toList();
 
                         int addedProducts = 0;
 
-                        for (var producto in productosMarcados) {
-                          final existe = compraProvider.compras
-                              .any((c) => c.idProducto == producto.id);
+                        for (var product in markedProducts) {
+                          final exists = shoppingListProvider.shoppingList
+                              .any((c) => c.productId == product.id);
 
-                          if (!existe) {
-                            await compraProvider.agregarACompra(
-                              producto.id!,
-                              producto.precio,
-                              producto.nombre,
-                              producto.supermercado,
+                          if (!exists) {
+                            await shoppingListProvider.addToShoppingList(
+                              product.id!,
+                              product.price,
+                              product.name,
+                              product.supermarket,
                             );
                             addedProducts++;
                           }
@@ -253,10 +252,10 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   }
 
   /// Muestra una ventana con los detalles de un producto.
-  void mostrarDetalleProducto(BuildContext context, Map<String, dynamic> producto) {
-    final String? foto = producto['foto'];
-    final String? descripcion = producto['descripcion'];
-    final bool tieneDescripcion = descripcion != null && descripcion.trim().isNotEmpty;
+  void showProductDetail(BuildContext context, Map<String, dynamic> product) {
+    final String? photo = product['foto'];
+    final String? description = product['descripcion'];
+    final bool hasDescription = description != null && description.trim().isNotEmpty;
 
     showDialog(
       context: context,
@@ -276,13 +275,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                     child: SizedBox(
                       height: 180,
                       width: double.infinity,
-                      child: (foto != null && foto.isNotEmpty)
+                      child: (photo != null && photo.isNotEmpty)
                           ? Image.network(
-                        foto,
+                        photo,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => _placeholderImage(),
+                        errorBuilder: (_, __, ___) => _imagePlaceholder(),
                       )
-                          : _placeholderImage(),
+                          : _imagePlaceholder(),
                     ),
                   ),
 
@@ -290,7 +289,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
 
                   // NOMBRE
                   Text(
-                    producto['nombre'] ?? '',
+                    product['nombre'] ?? '',
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -300,18 +299,18 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                   const SizedBox(height: 12),
 
                   // DESCRIPCIÓN SOLO SI EXISTE
-                  if (tieneDescripcion)
+                  if (hasDescription)
                     Text(
-                      descripcion!,
+                      description!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 16),
                     ),
 
-                  if (tieneDescripcion) const SizedBox(height: 12),
+                  if (hasDescription) const SizedBox(height: 12),
 
                   // SUPERMERCADO
                   Text(
-                    '${AppLocalizations.of(context)!.supermarket}: ${producto['supermercado'] ?? '-'}',
+                    '${AppLocalizations.of(context)!.supermarket}: ${product['supermercado'] ?? '-'}',
                     style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                   ),
 
@@ -332,7 +331,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   }
 
 // Imagen por defecto reutilizable
-  Widget _placeholderImage() {
+  Widget _imagePlaceholder() {
     return Container(
       color: Colors.grey[300],
       child: const Center(
@@ -348,19 +347,19 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   /// - Si el usuario no selecciona nada, no hace nada más.
   /// - Si selecciona una imagen, la guarda en nuevaFotoFile.
   /// - Marca en el DetalleRecetaProvider que la foto ha sido cambiada.
-  void dialogEditarFoto() async {
+  void showEditPhotoDialog() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile == null) return;
 
-    final imagenSeleccionada = File(pickedFile.path);
+    final selectedImage = File(pickedFile.path);
 
     setState(() {
-      nuevaFotoFile = imagenSeleccionada;
+      newPhotoFile = selectedImage;
     });
 
-    context.read<DetalleRecetaProvider>().setCambioFoto(true);
+    context.read<RecipeDetailProvider>().setPhotoChanged(true);
   }
 
   /// Actualiza en la base de datos el título y la descripción de un paso de la receta.
@@ -371,15 +370,15 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   /// - Si no se encuentra el paso, devuelve false.
   /// - Si la actualización se hace correctamente, devuelve true.
   /// - Si ocurre un error durante el proceso, lo muestra por consola y devuelve false.
-  Future<bool> actualizarPasoBBDD(recetaId, int numeroPaso, String nuevoTitulo, String nuevaDescripcion,) async {
+  Future<bool> updateStepInDB(recipeId, int stepNumber, String newTitle, String newDescription,) async {
     try {
       final response =
       await Supabase.instance.client.from('pasos_receta').update({
-        'titulo': nuevoTitulo,
-        'descripcion': nuevaDescripcion,
+        'titulo': newTitle,
+        'descripcion': newDescription,
       }).match({
-        'receta_id': recetaId,
-        'numero_paso': numeroPaso,
+        'receta_id': recipeId,
+        'numero_paso': stepNumber,
       }).select();
 
       if (response.isEmpty) {
@@ -398,16 +397,16 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   }
 
   /// METODO PARA MOSTRAR UN TEXTO AZUL PARA INTRODUCIR EL PRIMER PASO DE UNA RECETA SI NO TIENE PASOS.
-  Widget textoAzulClickeable() {
+  Widget clickableBlueText() {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Center(
         child: GestureDetector(
           onTap: () async {
-            final pasosProvider = context.read<PasosRecetaProvider>();
+            final recipeStepsProvider = context.read<RecipeStepsProvider>();
 
-            await pasosProvider.crearPaso("", "");
-            context.read<DetalleRecetaProvider>().setEdicion(true);
+            await recipeStepsProvider.createStep("", "");
+            context.read<RecipeDetailProvider>().setEditing(true);
           },
           child: Text(
             AppLocalizations.of(context)!.first_time_step,
@@ -433,18 +432,18 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   ///   - Guardar y salir: guarda los cambios y luego cierra la pantalla.
   /// - Devuelve true si se puede salir, o false si debe mantenerse en la vista.
   Future<bool> _onWillPop() async {
-    final detalleProvider = context.read<DetalleRecetaProvider>();
+    final recipeDetailProvider = context.read<RecipeDetailProvider>();
 
-    final hayCambios = detalleProvider.cambioNombre ||
-        detalleProvider.cambioFoto ||
-        detalleProvider.cambioPaso;
+    final hasChanges = recipeDetailProvider.nameChanged ||
+        recipeDetailProvider.photoChanged ||
+        recipeDetailProvider.stepChanged;
 
-    if (!hayCambios) {
-      context.read<DetalleRecetaProvider>().setEdicion(false);
+    if (!hasChanges) {
+      context.read<RecipeDetailProvider>().setEditing(false);
       return true;
     }
 
-    final opcion = await showDialog<String>(
+    final option = await showDialog<String>(
       context: context,
       builder: (context) =>
           AlertDialog(
@@ -467,21 +466,21 @@ class _DetalleRecetaState extends State<DetalleReceta> {
           ),
     );
 
-    if (opcion == 'cancelar') return false;
+    if (option == 'cancelar') return false;
 
-    if (opcion == 'salir') {
+    if (option == 'salir') {
       showAwesomeSnackBar(
         context,
         title: AppLocalizations.of(context)!.warning,
         message: AppLocalizations.of(context)!.data_not_saved,
         contentType: asc.ContentType.warning,
       );
-      detalleProvider.resetCambios();
+      recipeDetailProvider.resetChanges();
       return true;
     }
 
-    if (opcion == 'guardar') {
-      await guardarCambios(cerrarPantalla: true);
+    if (option == 'guardar') {
+      await saveChanges(closeScreen: true);
       return false;
     }
 
@@ -498,39 +497,39 @@ class _DetalleRecetaState extends State<DetalleReceta> {
   /// - Marca que ya no hay cambios pendientes y muestra un mensaje de éxito.
   /// - Si ocurre un error, muestra un mensaje de error.
   /// - Si cerrarPantalla es true, cierra la vista al terminar.
-  Future<void> guardarCambios({bool cerrarPantalla = false}) async {
-    final detalleProvider = context.read<DetalleRecetaProvider>();
-    final recetaProvider = context.read<RecetaProvider>();
-    final pasosProvider = context.read<PasosRecetaProvider>();
+  Future<void> saveChanges({bool closeScreen = false}) async {
+    final recipeDetailProvider = context.read<RecipeDetailProvider>();
+    final recipeProvider = context.read<RecipeProvider>();
+    final recipeStepsProvider = context.read<RecipeStepsProvider>();
 
     try {
-      if (detalleProvider.cambioNombre) {
-        final recetaLocal = receta.copyWith(
-          nombre: capitalize(nombreController.text.trim()),
-          descripcion: capitalize(descripcionController.text.trim()),
-          foto: receta.foto,
+      if (recipeDetailProvider.nameChanged) {
+        final localRecipe = recipe.copyWith(
+          name: capitalize(nameController.text.trim()),
+          description: capitalize(descriptionController.text.trim()),
+          photo: recipe.photo,
         );
 
-        await recetaProvider.actualizarReceta(recetaLocal);
+        await recipeProvider.updateRecipe(localRecipe);
 
         if (mounted) {
           setState(() {
-            receta = recetaLocal;
-            nombreController.text = recetaLocal.nombre;
+            recipe = localRecipe;
+            nameController.text = localRecipe.name;
           });
         }
 
-        detalleProvider.setCambioNombre(false);
+        recipeDetailProvider.setNameChanged(false);
       }
 
-      if (detalleProvider.cambioFoto && nuevaFotoFile != null) {
-        final bytes = await nuevaFotoFile!.readAsBytes();
-        final nombreArchivo =
-            '${widget.receta.nombre}_${Random()
+      if (recipeDetailProvider.photoChanged && newPhotoFile != null) {
+        final bytes = await newPhotoFile!.readAsBytes();
+        final fileName =
+            '${widget.recipe.name}_${Random()
             .nextInt(9999)
             .toString()
             .padLeft(4, '0')}';
-        final path = 'recetas/${widget.receta.usuarioUuid}/$nombreArchivo.jpg';
+        final path = 'recetas/${widget.recipe.userUuid}/$fileName.jpg';
 
         await Supabase.instance.client.storage.from('fotos').uploadBinary(
           path,
@@ -538,23 +537,23 @@ class _DetalleRecetaState extends State<DetalleReceta> {
           fileOptions: const FileOptions(contentType: 'image/jpeg'),
         );
 
-        final nuevaFotoUrlFinal =
+        final newPhotoUrl =
         Supabase.instance.client.storage.from('fotos').getPublicUrl(path);
 
-        final recetaFinal = widget.receta.copyWith(foto: nuevaFotoUrlFinal);
-        await recetaProvider.actualizarReceta(recetaFinal);
+        final finalRecipe = widget.recipe.copyWith(photo: newPhotoUrl);
+        await recipeProvider.updateRecipe(finalRecipe);
 
-        detalleProvider.setCambioFoto(false);
+        recipeDetailProvider.setPhotoChanged(false);
       }
 
-      if (detalleProvider.cambioPaso) {
-        for (final paso in pasosProvider.pasos) {
-          await pasosProvider.actualizarPaso(paso);
+      if (recipeDetailProvider.stepChanged) {
+        for (final step in recipeStepsProvider.steps) {
+          await recipeStepsProvider.updateStep(step);
         }
-        detalleProvider.setCambioPaso(false);
+        recipeDetailProvider.setStepChanged(false);
       }
 
-      detalleProvider.setEdicion(false);
+      recipeDetailProvider.setEditing(false);
 
       showAwesomeSnackBar(
         context,
@@ -566,13 +565,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
       debugPrint("Error en guardarCambios: $e");
       showAwesomeSnackBar(
         context,
-        title: "Error",
+        title: AppLocalizations.of(context)!.error,
         message: AppLocalizations.of(context)!.recipe_updated_error,
         contentType: asc.ContentType.failure,
       );
     }
 
-    if (cerrarPantalla && mounted) {
+    if (closeScreen && mounted) {
       Navigator.pop(context, true);
     }
   }
@@ -606,11 +605,11 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                       color: Theme.of(context).scaffoldBackgroundColor,
                       child: AnimatedCrossFade(
                         duration: const Duration(milliseconds: 200),
-                        crossFadeState: editandoNombre
+                        crossFadeState: editingName
                             ? CrossFadeState.showSecond
                             : CrossFadeState.showFirst,
                         firstChild: Text(
-                          receta.nombre,
+                          recipe.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
@@ -625,7 +624,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: TextField(
-                            controller: nombreController,
+                            controller: nameController,
                             focusNode: _focusNode,
                             style: const TextStyle(
                               fontSize: 20,
@@ -637,14 +636,12 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                             ),
                             onChanged: (value) {
                               setState(() {
-                                nuevoNombre = value.trim();
+                                newName = value.trim();
                               });
-                              final nombreOriginal = widget.receta.nombre.trim();
-                              final nuevoValor = capitalize(value.trim());
+                              final originalName = widget.recipe.name.trim();
+                              final newValue = capitalize(value.trim());
 
-                              context
-                                  .read<DetalleRecetaProvider>()
-                                  .setCambioNombre(nuevoValor != nombreOriginal);
+                              context.read<RecipeDetailProvider>().setNameChanged(newValue != originalName);
                             },
                           ),
                         ),
@@ -680,12 +677,12 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                             borderRadius: BorderRadius.circular(12),
                             child: AspectRatio(
                               aspectRatio: 16 / 9,
-                              child: nuevaFotoFile != null
-                                  ? Image.file(nuevaFotoFile!, width: double.infinity, fit: BoxFit.cover)
-                                  : (receta.foto.isNotEmpty
-                                  ? (receta.foto.startsWith("http")
-                                  ? Image.network(receta.foto, width: double.infinity, fit: BoxFit.cover)
-                                  : Image.file(File(receta.foto), width: double.infinity, fit: BoxFit.cover))
+                              child: newPhotoFile != null
+                                  ? Image.file(newPhotoFile!, width: double.infinity, fit: BoxFit.cover)
+                                  : (recipe.photo.isNotEmpty
+                                  ? (recipe.photo.startsWith("http")
+                                  ? Image.network(recipe.photo, width: double.infinity, fit: BoxFit.cover)
+                                  : Image.file(File(recipe.photo), width: double.infinity, fit: BoxFit.cover))
                                   : Container(
                                 width: double.infinity,
                                 color: Colors.grey[300],
@@ -706,11 +703,10 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                     // ---------- STEPPER PERSONALIZADO ----------
                     delegate: SliverChildListDelegate([
                       Builder(builder: (context) {
-                        final pasosProvider = context.watch<PasosRecetaProvider>();
-                        final detalleProvider =
-                        context.watch<DetalleRecetaProvider>();
+                        final recipeStepsProvider = context.watch<RecipeStepsProvider>();
+                        final recipeDetailProvider = context.watch<RecipeDetailProvider>();
 
-                        if (pasosProvider.estaCargando) {
+                        if (recipeStepsProvider.isLoading) {
                           return const Center(
                             child: Padding(
                               padding: EdgeInsets.all(8),
@@ -719,20 +715,16 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                           );
                         }
 
-                        if (pasosProvider.pasos.isEmpty) {
-                          if (detalleProvider.estaEditando) {
+                        if (recipeStepsProvider.steps.isEmpty) {
+                          if (recipeDetailProvider.isEditing) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              context
-                                  .read<DetalleRecetaProvider>()
-                                  .setEdicion(false);
+                              context.read<RecipeDetailProvider>().setEditing(false);
                             });
                           }
-
-                          return textoAzulClickeable();
+                          return clickableBlueText();
                         }
-
-                        return StepperPersonalizado(
-                            pasosReceta: pasosProvider.pasos);
+                        return CustomStepper(
+                            recipeSteps: recipeStepsProvider.steps);
                       }),
                       const SizedBox(height: 24),
                       Row(
@@ -742,7 +734,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                   fontSize: 24, fontWeight: FontWeight.bold)),
                           InkWell(
                             onTap: () {
-                              mostrarDialogoSeleccionProductos(context);
+                              showProductsDialog(context);
                             },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -767,14 +759,14 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                       const SizedBox(height: 8),
 
                       // ---------- LISTA DE PRODUCTOS ASOCIADOS A LA RECETA ----------
-                      Consumer<ProductosRecetaProvider>(
+                      Consumer<ProductsRecipeProvider>(
                         builder: (context, prov, _) {
-                          if (prov.productos.isEmpty) {
+                          if (prov.products.isEmpty) {
                             return Text(
                                 AppLocalizations.of(context)!.no_linked_products);
                           }
                           return Column(
-                            children: prov.productos.map((producto) {
+                            children: prov.products.map((product) {
                               return Container(
                                 margin: const EdgeInsets.symmetric(
                                     vertical: 6, horizontal: 4),
@@ -798,7 +790,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                           child: AspectRatio(
                                             aspectRatio: 1.4,
                                             child: Image.network(
-                                              producto.foto,
+                                              product.photo,
                                               fit: BoxFit.contain,
                                               errorBuilder: (_, __, ___) =>
                                               const Icon(Icons.image_not_supported,
@@ -808,7 +800,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                         ),
                                         title: Text(
                                           maxLines: 2,
-                                          producto.nombre,
+                                          product.name,
                                           style: const TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
@@ -819,8 +811,8 @@ class _DetalleRecetaState extends State<DetalleReceta> {
                                             size: 20,
                                             color: Colors.grey),
                                         onTap: () =>
-                                            mostrarDetalleProducto(
-                                                context, producto.toMap()),
+                                            showProductDetail(
+                                                context, product.toMap()),
                                       ),
                                     ),
                                   ),
@@ -851,10 +843,10 @@ class _DetalleRecetaState extends State<DetalleReceta> {
             ),
           ],
         ),
-        floatingActionButton: (!editandoNombre &&
+        floatingActionButton: (!editingName &&
             !context
-                .watch<DetalleRecetaProvider>()
-                .estaEditando)
+                .watch<RecipeDetailProvider>()
+                .isEditing)
             ? SpeedDial(
           heroTag: 'fab-menu',
           animatedIcon: AnimatedIcons.menu_close,
@@ -867,13 +859,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
               child: const Icon(Icons.description),
               label: AppLocalizations.of(context)!.edit_step,
               onTap: () async {
-                final pasosProvider = context.read<PasosRecetaProvider>();
+                final recipeStepsProvider = context.read<RecipeStepsProvider>();
 
-                if (pasosProvider.pasos.isEmpty) {
-                  await pasosProvider.crearPaso("", "");
+                if (recipeStepsProvider.steps.isEmpty) {
+                  await recipeStepsProvider.createStep("", "");
                 }
 
-                context.read<DetalleRecetaProvider>().setEdicion(true);
+                context.read<RecipeDetailProvider>().setEditing(true);
               },
             ),
 
@@ -882,7 +874,7 @@ class _DetalleRecetaState extends State<DetalleReceta> {
               child: const Icon(Icons.image),
               label: AppLocalizations.of(context)!.change_photo,
               onTap: () {
-                dialogEditarFoto();
+                showEditPhotoDialog();
               },
             ),
 
@@ -892,13 +884,13 @@ class _DetalleRecetaState extends State<DetalleReceta> {
               label: AppLocalizations.of(context)!.edit_name,
               onTap: () {
                 setState(() {
-                  editandoNombre = true;
+                  editingName = true;
                 });
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _focusNode.requestFocus();
                   Future.delayed(const Duration(milliseconds: 1), () {
-                    nombreController.selection = TextSelection.collapsed(
-                      offset: nombreController.text.length,
+                    nameController.selection = TextSelection.collapsed(
+                      offset: nameController.text.length,
                     );
                   });
                 });
@@ -914,10 +906,10 @@ class _DetalleRecetaState extends State<DetalleReceta> {
             FloatingActionButton(
               heroTag: 'fab-save',
               onPressed: () async {
-                await guardarCambios();
-                context.read<DetalleRecetaProvider>().setEdicion(false);
+                await saveChanges();
+                context.read<RecipeDetailProvider>().setEditing(false);
                 setState(() {
-                  editandoNombre = false;
+                  editingName = false;
                 });
               },
               backgroundColor: Colors.green,
@@ -927,11 +919,11 @@ class _DetalleRecetaState extends State<DetalleReceta> {
             FloatingActionButton(
               heroTag: 'fab-cancel',
               onPressed: () {
-                context.read<DetalleRecetaProvider>().setEdicion(false);
-                editandoNombre = false;
+                context.read<RecipeDetailProvider>().setEditing(false);
+                editingName = false;
                 context
-                    .read<DetalleRecetaProvider>()
-                    .setCambioNombre(false);
+                    .read<RecipeDetailProvider>()
+                    .setNameChanged(false);
               },
               backgroundColor: Colors.red,
               child: const Icon(Icons.cancel, color: Colors.white),

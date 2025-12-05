@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Providers/facturaProvider.dart';
-import '../Providers/userProvider.dart';
-import '../Widgets/PlaceHolderFacturas.dart';
-import '../Widgets/awesomeSnackbar.dart';
+import '../Providers/receipts_provider.dart';
+import '../Providers/user_provider.dart';
+import '../Widgets/receipts_placeholder.dart';
+import '../Widgets/awesome_snackbar.dart';
 import '../l10n/app_localizations.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
-class Gastos extends StatefulWidget {
-  const Gastos({super.key});
+class ReceiptsView extends StatefulWidget {
+  const ReceiptsView({super.key});
 
   @override
-  State<Gastos> createState() => GastosState();
+  State<ReceiptsView> createState() => ReceiptsViewState();
 }
 
-class GastosState extends State<Gastos> {
+class ReceiptsViewState extends State<ReceiptsView> {
   SupabaseClient database = Supabase.instance.client;
 
   @override
@@ -30,7 +30,7 @@ class GastosState extends State<Gastos> {
   /// - Pregunta al usuario si desea eliminar la factura.
   /// - Si confirma, lo elimina localmente y luego intenta eliminarlo en el servidor.
   /// - Si ocurre un error en el servidor, restaura la factura en local y muestra un mensaje de error.
-  void dialogoEliminacion(BuildContext context, int invoiceId) {
+  void showDeleteDialog(BuildContext context, int receiptId) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -53,15 +53,15 @@ class GastosState extends State<Gastos> {
             // Delete
             ElevatedButton(
               onPressed: () async {
-                final invoiceProvider = context.read<FacturaProvider>();
+                final receiptProvider = context.read<ReceiptProvider>();
                 final userUuid = context.read<UserProvider>().uuid!;
-                final allReceipts = List.of(invoiceProvider.facturas);
-                final isLastInvoice = allReceipts.length == 1;
+                final allReceipts = List.of(receiptProvider.receipts);
+                final isLastReceipt = allReceipts.length == 1;
 
                 Navigator.of(dialogContext).pop();
 
                 try {
-                  if (isLastInvoice) {
+                  if (isLastReceipt) {
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
@@ -71,9 +71,9 @@ class GastosState extends State<Gastos> {
                     );
                   }
 
-                  await invoiceProvider.borrarFactura(invoiceId, userUuid);
+                  await receiptProvider.deleteReceipt(receiptId, userUuid);
 
-                  if (!isLastInvoice && context.mounted) {
+                  if (!isLastReceipt && context.mounted) {
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
@@ -107,8 +107,8 @@ class GastosState extends State<Gastos> {
 
   @override
   Widget build(BuildContext context) {
-    final facturas = context.watch<FacturaProvider>().facturas;
-    final providerFactura = context.watch<FacturaProvider>();
+    final receipts = context.watch<ReceiptProvider>().receipts;
+    final receiptProvider = context.watch<ReceiptProvider>();
     return Scaffold(
       // ---------- APP BAR ----------
       appBar: AppBar(
@@ -127,17 +127,17 @@ class GastosState extends State<Gastos> {
       body: Builder(
           builder: (context) {
             final isLight = Theme.of(context).brightness == Brightness.light;
-            return providerFactura.isLoading
+            return receiptProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : providerFactura.facturasToShow.isEmpty
-                ? const PlaceholderFacturas()
+                : receiptProvider.receiptsToShow.isEmpty
+                ? const ReceiptsPlaceholder()
                 : ListView.builder(
-              itemCount: providerFactura.facturasToShow.length,
+              itemCount: receiptProvider.receiptsToShow.length,
               itemBuilder: (context, index) {
-                final factura = providerFactura.facturasToShow[index];
-                  final double precioTotal = factura.productos.fold(
+                final receipt = receiptProvider.receiptsToShow[index];
+                  final double totalPrice = receipt.products.fold(
                     0.0,
-                        (sum, p) => sum + (p.precioUnidad * p.cantidad),
+                        (sum, p) => sum + (p.unitPrice * p.quantity),
                   );
                   return Container(
                     margin: const EdgeInsets.symmetric(
@@ -161,7 +161,7 @@ class GastosState extends State<Gastos> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              factura.fecha,
+                              receipt.date,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
@@ -174,7 +174,7 @@ class GastosState extends State<Gastos> {
                                 minHeight: 35,
                               ),
                               onPressed: () {
-                                dialogoEliminacion(context, factura.id!);
+                                showDeleteDialog(context, receipt.id!);
                               },
                               icon: const Icon(Icons.delete),
                               iconSize: 22,
@@ -186,7 +186,7 @@ class GastosState extends State<Gastos> {
 
                       // ---------- LISTA DE FACTURAS ----------
                       children: [
-                        ...factura.productos.map((producto) {
+                        ...receipt.products.map((product) {
                           return Column(
                             children: [
                               SizedBox(
@@ -197,20 +197,20 @@ class GastosState extends State<Gastos> {
                                   ),
                                   child: Center(
                                     child: ListTile(
-                                      title: Text(producto.nombre,
+                                      title: Text(product.name,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       subtitle: Text(
                                         '${AppLocalizations.of(context)!
-                                            .quantity}${producto.cantidad}',
+                                            .quantity}${product.quantity}',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       trailing: Text(
-                                        '\$${producto.precioUnidad
+                                        '\$${product.unitPrice
                                             .toStringAsFixed(2)}',
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold,
@@ -242,7 +242,7 @@ class GastosState extends State<Gastos> {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           trailing: Text(
-                            '\$${precioTotal.toStringAsFixed(2)}',
+                            '\$${totalPrice.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Theme

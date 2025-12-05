@@ -2,28 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Providers/compraProvider.dart';
-import '../Providers/facturaProvider.dart';
-import '../Providers/productoProvider.dart';
-import '../Providers/recetaProvider.dart';
-import '../Providers/userProvider.dart';
-import '../Widgets/awesomeSnackbar.dart';
+import '../Providers/shopping_list_provider.dart';
+import '../Providers/receipts_provider.dart';
+import '../Providers/products_provider.dart';
+import '../Providers/recipe_provider.dart';
+import '../Providers/user_provider.dart';
+import '../Widgets/awesome_snackbar.dart';
 import '../l10n/app_localizations.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
 import '../utils/regex.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+class LoginView extends StatefulWidget {
+  const LoginView({super.key});
 
   @override
-  State<Login> createState() => _LoginScreenState();
+  State<LoginView> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<Login> {
+class _LoginScreenState extends State<LoginView> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
 
   bool isLoading = false;
   String error = '';
@@ -37,9 +38,6 @@ class _LoginScreenState extends State<Login> {
   bool validEmail = false;
   bool validPassword = false;
   bool validConfirmPassword = false;
-
-
-
 
   @override
   void dispose() {
@@ -93,7 +91,7 @@ class _LoginScreenState extends State<Login> {
         showAwesomeSnackBar(
           context,
           title: AppLocalizations.of(context)!.error,
-          message: 'Por favor, confirma tu correo electrónico',
+          message: AppLocalizations.of(context)!.confirm_email,
           contentType: asc.ContentType.warning,
         );
       } else {
@@ -119,7 +117,7 @@ class _LoginScreenState extends State<Login> {
   }
 
   // ---------- REGISTRO ----------
-  Future<void> registro() async {
+  Future<void> register() async {
     setState(() {
       isLoading = true;
       error = '';
@@ -135,17 +133,17 @@ class _LoginScreenState extends State<Login> {
       );
 
       if (signUp.user != null) {
-        final usuarioUUID = signUp.user!.id;
-        final fechaCreacion = DateTime.now().toIso8601String();
+        final userUuid = signUp.user!.id;
+        final creationDate = DateTime.now().toIso8601String();
 
         await Supabase.instance.client.from('usuario').insert({
-          'usuariouuid': usuarioUUID,
+          'usuariouuid': userUuid,
           'nombreusuario': email.split('@').first,
           'correo': email,
-          'fechacreacion': fechaCreacion,
+          'fechacreacion': creationDate,
         });
 
-        await _setupUserSession(usuarioUUID);
+        await _setupUserSession(userUuid);
         if (!mounted) return;
 
         showAwesomeSnackBar(
@@ -197,17 +195,17 @@ class _LoginScreenState extends State<Login> {
   }
 
   Future<void> _setupUserSession(String uuid) async {
-    await guardarUUID(uuid);
+    await saveUuid(uuid);
     if (!mounted) return;
 
     context.read<UserProvider>().setUuid(uuid);
-    await context.read<ProductoProvider>().setUserAndReload(uuid);
-    await context.read<CompraProvider>().setUserAndReload(uuid);
-    await context.read<FacturaProvider>().setUserAndReload(uuid);
-    await context.read<RecetaProvider>().setUserAndReload(uuid);
+    await context.read<ProductProvider>().setUserAndReload(uuid);
+    await context.read<ShoppingListProvider>().setUserAndReload(uuid);
+    await context.read<ReceiptProvider>().setUserAndReload(uuid);
+    await context.read<RecipeProvider>().setUserAndReload(uuid);
   }
 
-  Future<void> guardarUUID(String uuid) async {
+  Future<void> saveUuid(String uuid) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('usuarioUUID', uuid);
   }
@@ -243,8 +241,8 @@ class _LoginScreenState extends State<Login> {
                   prefixIcon: const Icon(Icons.email),
                   suffixIcon: emailTouched
                       ? (validEmail
-                      ? const Icon(Icons.check_circle, color: Colors.green)
-                      : const Icon(Icons.cancel, color: Colors.red))
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : const Icon(Icons.cancel, color: Colors.red))
                       : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -271,8 +269,8 @@ class _LoginScreenState extends State<Login> {
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: passwordTouched
                       ? (validPassword
-                      ? const Icon(Icons.check_circle, color: Colors.green)
-                      : const Icon(Icons.cancel, color: Colors.red))
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : const Icon(Icons.cancel, color: Colors.red))
                       : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -300,12 +298,13 @@ class _LoginScreenState extends State<Login> {
                   controller: confirmPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Confirmar contraseña',
+                    labelText: AppLocalizations.of(context)!.confirm_password,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: confirmPasswordTouched
                         ? (validConfirmPassword
-                        ? const Icon(Icons.check_circle, color: Colors.green)
-                        : const Icon(Icons.cancel, color: Colors.red))
+                            ? const Icon(Icons.check_circle,
+                                color: Colors.green)
+                            : const Icon(Icons.cancel, color: Colors.red))
                         : null,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -338,11 +337,11 @@ class _LoginScreenState extends State<Login> {
                   child: isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                    isRegistering
-                        ? AppLocalizations.of(context)!.register
-                        : AppLocalizations.of(context)!.login,
-                    style: const TextStyle(fontSize: 16),
-                  ),
+                          isRegistering
+                              ? AppLocalizations.of(context)!.register
+                              : AppLocalizations.of(context)!.login,
+                          style: const TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -360,8 +359,8 @@ class _LoginScreenState extends State<Login> {
                         isRegistering = !isRegistering;
                         error = '';
                         confirmPasswordController.clear();
-                        emailTouched = passwordTouched =
-                            confirmPasswordTouched = false;
+                        emailTouched =
+                            passwordTouched = confirmPasswordTouched = false;
                       });
                     },
                     child: Text(
@@ -401,7 +400,7 @@ class _LoginScreenState extends State<Login> {
         });
         return;
       }
-      await registro();
+      await register();
     } else {
       await login();
     }

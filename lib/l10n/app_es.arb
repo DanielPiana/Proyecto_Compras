@@ -142,5 +142,12 @@
    "open_camera" : "Cámara",
    "barcode_already_registered" : "Código de barras ya registrado",
    "logout" : "Cerrar sesión",
-   "max_steps_warning" : "No se pueden añadir mas pasos"
+   "max_steps_warning" : "No se pueden añadir mas pasos",
+   "confirm_email" : "Por favor, confirma tu correo electrónico",
+   "confirm_password" : "Confirmar contraseña",
+   "product_not_found" : "Información del producto no encontrado",
+   "unexpected_error_finding_product" : "Error inesperado buscando producto",
+   "barcode" : "Código de barras",
+   "paste_image_from_clipboard" : "Pegar imagen desde el portapapeles",
+   "scan_barcode" : "Escanear código"
 }

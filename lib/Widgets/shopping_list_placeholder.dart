@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 
-class PlaceholderCompra extends StatelessWidget {
-  const PlaceholderCompra({super.key});
+class ShoppingListPlaceholder extends StatelessWidget {
+  const ShoppingListPlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {

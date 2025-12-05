@@ -142,5 +142,12 @@
   "open_camera" : "Camera",
   "barcode_already_registered" : "Bar code already registered",
   "logout" : "Logout",
-  "max_steps_warning" : "You can't add more steps"
+  "max_steps_warning" : "You can't add more steps",
+  "confirm_email" : "Please, confirm your email",
+  "confirm_password" : "Confirm your password",
+  "product_not_found" : "Information about that product not found",
+  "unexpected_error_finding_product" : "Unexpected error finding product",
+  "barcode" : "Barcode",
+  "paste_image_from_clipboard" : "Paste imagen from clipboard",
+  "scan_barcode" : "Scan barcode"
 }

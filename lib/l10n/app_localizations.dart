@@ -791,7 +791,7 @@ abstract class AppLocalizations {
   /// No description provided for @scan_barcode.
   ///
   /// In es, this message translates to:
-  /// **'Escanear código de barras'**
+  /// **'Escanear código'**
   String get scan_barcode;
 
   /// No description provided for @barcode_error_message.
@@ -949,6 +949,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pueden añadir mas pasos'**
   String get max_steps_warning;
+
+  /// No description provided for @confirm_email.
+  ///
+  /// In es, this message translates to:
+  /// **'Por favor, confirma tu correo electrónico'**
+  String get confirm_email;
+
+  /// No description provided for @confirm_password.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar contraseña'**
+  String get confirm_password;
+
+  /// No description provided for @product_not_found.
+  ///
+  /// In es, this message translates to:
+  /// **'Información del producto no encontrado'**
+  String get product_not_found;
+
+  /// No description provided for @unexpected_error_finding_product.
+  ///
+  /// In es, this message translates to:
+  /// **'Error inesperado buscando producto'**
+  String get unexpected_error_finding_product;
+
+  /// No description provided for @barcode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de barras'**
+  String get barcode;
+
+  /// No description provided for @paste_image_from_clipboard.
+  ///
+  /// In es, this message translates to:
+  /// **'Pegar imagen desde el portapapeles'**
+  String get paste_image_from_clipboard;
 }
 
 class _AppLocalizationsDelegate

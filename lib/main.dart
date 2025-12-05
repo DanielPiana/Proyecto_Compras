@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
-import 'package:proyectocompras/Providers/facturaProvider.dart';
-import 'package:proyectocompras/Providers/recetaProvider.dart';
-import 'package:proyectocompras/Providers/userProvider.dart';
-import 'package:proyectocompras/View/facturas.dart';
-import 'package:proyectocompras/View/compra.dart';
-import 'package:proyectocompras/View/login.dart';
-import 'package:proyectocompras/View/producto.dart';
-import 'package:proyectocompras/View/recetas.dart';
+import 'package:proyectocompras/Providers/recipe_detail_provider.dart';
+import 'package:proyectocompras/Providers/receipts_provider.dart';
+import 'package:proyectocompras/Providers/recipe_provider.dart';
+import 'package:proyectocompras/Providers/user_provider.dart';
+import 'package:proyectocompras/View/receipts_view.dart';
+import 'package:proyectocompras/View/shopping_list_view.dart';
+import 'package:proyectocompras/View/login_view.dart';
+import 'package:proyectocompras/View/product_view.dart';
+import 'package:proyectocompras/View/recipes_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'Providers/compraProvider.dart';
-import 'Providers/languageProvider.dart';
+import 'Providers/shopping_list_provider.dart';
+import 'Providers/language_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'Providers/productoProvider.dart';
-import 'Providers/themeProvider.dart';
+import 'Providers/products_provider.dart';
+import 'Providers/theme_provider.dart';
 import 'l10n/app_localizations.dart';
 
 /*---------------------------------------------------------------------------------------*/
@@ -46,27 +46,27 @@ void main() async {
           ChangeNotifierProvider(create: (_) => LanguageProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
           ChangeNotifierProvider<UserProvider>.value(value: userProvider),
-          ChangeNotifierProvider(create: (_) => DetalleRecetaProvider()),
+          ChangeNotifierProvider(create: (_) => RecipeDetailProvider()),
           ChangeNotifierProvider(
-            create: (_) => ProductoProvider(
+            create: (_) => ProductProvider(
               Supabase.instance.client,
               uuid,
-            )..cargarProductos(),
+            )..loadProducts(),
           ),
           ChangeNotifierProvider(
-              create: (_) => CompraProvider(
+              create: (_) => ShoppingListProvider(
                 Supabase.instance.client,
                 uuid,
               )..setUserAndReload(uuid)
           ),
           ChangeNotifierProvider(
-              create: (_) => FacturaProvider(
+              create: (_) => ReceiptProvider(
                 Supabase.instance.client,
                 uuid,
               )..setUserAndReload(uuid)
           ),
           ChangeNotifierProvider(
-              create: (_) => RecetaProvider(
+              create: (_) => RecipeProvider(
                 Supabase.instance.client,
                 uuid,
               )..setUserAndReload(uuid)
@@ -258,7 +258,7 @@ class MainApp extends StatelessWidget {
       initialRoute: isLoggedIn ? '/home' : '/login',
       routes: {
         '/home': (_) => const Main(),
-        '/login': (_) => const Login(),
+        '/login': (_) => const LoginView(),
       },
     );
   }
@@ -284,10 +284,10 @@ class MainState extends State<Main> {
     // INICIALIZAMOS LAS PAGINAS AQUI, PARA QUE NO DE ERROR EL WIDGET.DATABASE
     pages = [
       // DEBEMOS PASAR A TODAS COMO PARAMETRO LA BASE DE DATOS
-      const Producto(),
-      const Compra(),
-      const Gastos(),
-      const Recetas(),
+      const ProductsView(),
+      const ShoppingListView(),
+      const ReceiptsView(),
+      const RecipesView(),
     ];
   }
 
@@ -412,10 +412,10 @@ class MainState extends State<Main> {
 
                     await Supabase.instance.client.auth.signOut();
                     if (context.mounted) {
-                      context.read<ProductoProvider>().setUserAndReload(null);
-                      context.read<CompraProvider>().setUserAndReload(null);
-                      context.read<FacturaProvider>().setUserAndReload(null);
-                      context.read<RecetaProvider>().setUserAndReload(null);
+                      context.read<ProductProvider>().setUserAndReload(null);
+                      context.read<ShoppingListProvider>().setUserAndReload(null);
+                      context.read<ReceiptProvider>().setUserAndReload(null);
+                      context.read<RecipeProvider>().setUserAndReload(null);
                       Navigator.pushReplacementNamed(context, '/login');
                     }
                   },
@@ -471,19 +471,19 @@ class MainState extends State<Main> {
   void _onSearchChanged(String query) {
     switch (selectedIndex) {
       case 0:
-        context.read<ProductoProvider>().setSearchText(query);
+        context.read<ProductProvider>().setSearchText(query);
         break;
 
       case 1:
-        context.read<CompraProvider>().setSearchText(query);
+        context.read<ShoppingListProvider>().setSearchText(query);
         break;
 
       case 2:
-        context.read<FacturaProvider>().setSearchText(query);
+        context.read<ReceiptProvider>().setSearchText(query);
         break;
 
       case 3:
-        context.read<RecetaProvider>().setSearchText(query);
+        context.read<RecipeProvider>().setSearchText(query);
         break;
     }
   }

@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-class EscanearCodigoScreen extends StatefulWidget {
-  const EscanearCodigoScreen({super.key});
+import '../l10n/app_localizations.dart';
+
+class ScanBarcodeScreen extends StatefulWidget {
+  const ScanBarcodeScreen({super.key});
 
   @override
-  State<EscanearCodigoScreen> createState() => _EscanearCodigoScreenState();
+  State<ScanBarcodeScreen> createState() => _ScanBarcodeScreenState();
 }
 
-class _EscanearCodigoScreenState extends State<EscanearCodigoScreen> {
+class _ScanBarcodeScreenState extends State<ScanBarcodeScreen> {
   late final MobileScannerController controller;
-  bool _yaDetectado = false;
+  bool _alreadyDetected = false;
 
   @override
   void initState() {
@@ -30,15 +32,15 @@ class _EscanearCodigoScreenState extends State<EscanearCodigoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Escanear código")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.scan_barcode)),
       body: MobileScanner(
         controller: controller,
         onDetect: (capture) async {
-          if (_yaDetectado) return;
+          if (_alreadyDetected) return;
 
           final barcode = capture.barcodes.first.rawValue;
           if (barcode != null && mounted) {
-            _yaDetectado = true;
+            _alreadyDetected = true;
 
             await controller.stop();
             await Future.delayed(const Duration(milliseconds: 200));

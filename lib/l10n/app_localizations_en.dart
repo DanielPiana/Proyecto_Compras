@@ -449,4 +449,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get max_steps_warning => 'You can\'t add more steps';
+
+  @override
+  String get confirm_email => 'Please, confirm your email';
+
+  @override
+  String get confirm_password => 'Confirm your password';
+
+  @override
+  String get product_not_found => 'Information about that product not found';
+
+  @override
+  String get unexpected_error_finding_product =>
+      'Unexpected error finding product';
+
+  @override
+  String get barcode => 'Barcode';
+
+  @override
+  String get paste_image_from_clipboard => 'Paste imagen from clipboard';
 }

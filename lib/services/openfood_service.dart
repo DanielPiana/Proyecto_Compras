@@ -1,7 +1,15 @@
 import 'package:openfoodfacts/openfoodfacts.dart';
 
+/// Servicio para consultar productos en la base de datos de Open Food Facts
 class OpenFoodService {
-  static Future<Product?> obtenerProductoPorCodigo(String codigo) async {
+
+  /// Obtiene la información de un producto a partir de su código de barras
+  ///
+  /// Flujo principal:
+  /// - Configura el cliente de la API con el UserAgent
+  /// - Consulta la API de Open Food Facts con el código proporcionado
+  /// - Retorna el producto si se encuentra, o null si no existe
+  static Future<Product?> getProductByBarcode(String code) async {
     OpenFoodAPIConfiguration.userAgent = UserAgent(
       name: 'ProyectoCompras',
       version: '1.0.0',
@@ -9,7 +17,7 @@ class OpenFoodService {
     );
 
     final config = ProductQueryConfiguration(
-      codigo,
+      code,
       language: OpenFoodFactsLanguage.SPANISH,
       fields: [
         ProductField.ALL,

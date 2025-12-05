@@ -1,6 +1,13 @@
 import 'dart:math';
 
-String imageNameNormalizer(String input) {
+/// Normaliza un nombre de imagen para usarlo como nombre de archivo
+///
+/// Flujo principal:
+/// - Capitaliza la primera letra de cada palabra
+/// - Elimina acentos y caracteres especiales
+/// - Reemplaza espacios por guiones bajos
+/// - Añade un número aleatorio de 4 dígitos al final
+String normalizeImageName(String input) {
   // 1. Trim y capitalize por palabra
   String formatted = input.trim().split(RegExp(r'\s+')).map((word) {
     if (word.isEmpty) return '';

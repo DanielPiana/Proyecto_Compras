@@ -4,50 +4,50 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:proyectocompras/Providers/productosRecetaProvider.dart';
+import 'package:proyectocompras/Providers/products_recipe_provider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Providers/pasosRecetaProvider.dart';
-import '../Providers/recetaProvider.dart';
-import '../Providers/userProvider.dart';
+import '../Providers/recipe_steps_provider.dart';
+import '../Providers/recipe_provider.dart';
+import '../Providers/user_provider.dart';
 import 'package:flutter/foundation.dart';
-import '../Widgets/PlaceHolderRecetas.dart';
-import '../Widgets/awesomeSnackbar.dart';
+import '../Widgets/recipe_placeholder.dart';
+import '../Widgets/awesome_snackbar.dart';
 import '../l10n/app_localizations.dart';
-import '../models/recetaModel.dart';
-import 'detalleReceta.dart';
+import '../models/recipe_model.dart';
+import 'recipe_detail_view.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
-class Recetas extends StatefulWidget {
-  const Recetas({super.key});
+class RecipesView extends StatefulWidget {
+  const RecipesView({super.key});
 
   @override
-  State<Recetas> createState() => RecetasState();
+  State<RecipesView> createState() => RecipesViewState();
 }
 
-class RecetasState extends State<Recetas> {
-  int indiceRecetaActual = 0;
+class RecipesViewState extends State<RecipesView> {
+  int currentRecipeIndex = 0;
 
   @override
   void initState() {
     super.initState();
   }
 
-  Future<void> mostrarDialogoCrearReceta(BuildContext context, int indiceRecetaActual) async {
-    final TextEditingController nombreController = TextEditingController();
-    final TextEditingController descripcionController = TextEditingController();
-    File? imagenSeleccionada;
-    String? tiempoSeleccionado;
+  Future<void> showCreateRecipeDialog(BuildContext context, int currentRecipeIndex) async {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    File? selectedImage;
+    String? selectedTime;
 
-    bool nombreValido = false;
-    bool descripcionValida = false;
-    bool tiempoValido = false;
+    bool nameValid = false;
+    bool descriptionValid = false;
+    bool timeValid = false;
 
-    bool nombreTouched = false;
-    bool descripcionTouched = false;
-    bool tiempoTouched = false;
+    bool nameTouched = false;
+    bool descriptionTouched = false;
+    bool timeTouched = false;
 
-    List<String> tiempos(BuildContext context) => [
+    List<String> times(BuildContext context) => [
           AppLocalizations.of(context)!.lessThan15,
           AppLocalizations.of(context)!.lessThan30,
           AppLocalizations.of(context)!.lessThan45,
@@ -69,11 +69,11 @@ class RecetasState extends State<Recetas> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
-                    controller: nombreController,
+                    controller: nameController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.name,
-                      suffixIcon: nombreTouched
-                          ? (nombreValido
+                      suffixIcon: nameTouched
+                          ? (nameValid
                               ? const Icon(Icons.check_circle,
                                   color: Colors.green)
                               : const Icon(Icons.cancel, color: Colors.red))
@@ -81,23 +81,23 @@ class RecetasState extends State<Recetas> {
                     ),
                     onChanged: (value) {
                       setState(() {
-                        nombreTouched = true;
-                        nombreValido = value.trim().isNotEmpty;
+                        nameTouched = true;
+                        nameValid = value.trim().isNotEmpty;
                       });
                     },
                   ),
-                  if (nombreTouched && !nombreValido)
+                  if (nameTouched && !nameValid)
                     Text(
                       AppLocalizations.of(context)!.name_error_message,
                       style: const TextStyle(color: Colors.red),
                     ),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: descripcionController,
+                    controller: descriptionController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.description,
-                      suffixIcon: descripcionTouched
-                          ? (descripcionValida
+                      suffixIcon: descriptionTouched
+                          ? (descriptionValid
                               ? const Icon(Icons.check_circle,
                                   color: Colors.green)
                               : const Icon(Icons.cancel, color: Colors.red))
@@ -106,12 +106,12 @@ class RecetasState extends State<Recetas> {
                     maxLines: 3,
                     onChanged: (value) {
                       setState(() {
-                        descripcionTouched = true;
-                        descripcionValida = value.trim().isNotEmpty;
+                        descriptionTouched = true;
+                        descriptionValid = value.trim().isNotEmpty;
                       });
                     },
                   ),
-                  if (descripcionTouched && !descripcionValida)
+                  if (descriptionTouched && !descriptionValid)
                     Text(
                       AppLocalizations.of(context)!.description_error_message,
                       style: const TextStyle(color: Colors.red),
@@ -119,19 +119,19 @@ class RecetasState extends State<Recetas> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
-                    value: tiempoSeleccionado,
+                    value: selectedTime,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.estimated_time,
-                      suffixIcon: tiempoTouched
-                          ? (tiempoValido
+                      suffixIcon: timeTouched
+                          ? (timeValid
                               ? const Icon(Icons.check_circle,
                                   color: Colors.green)
                               : const Icon(Icons.cancel, color: Colors.red))
                           : null,
                     ),
-                    items: tiempos(context).map((tiempo) {
+                    items: times(context).map((time) {
                       return DropdownMenuItem(
-                        value: tiempo,
+                        value: time,
                         child: SizedBox(
                           width: double.infinity,
                           child: Container(
@@ -142,29 +142,29 @@ class RecetasState extends State<Recetas> {
                                   color: Colors.grey.shade400, width: 0.8),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Text(tiempo,
+                            child: Text(time,
                                 style: const TextStyle(fontSize: 16)),
                           ),
                         ),
                       );
                     }).toList(),
                     selectedItemBuilder: (context) {
-                      return tiempos(context).map((s) {
+                      return times(context).map((s) {
                         return Align(
                           alignment: Alignment.centerLeft,
                           child: Text(s, style: const TextStyle(fontSize: 16)),
                         );
                       }).toList();
                     },
-                    onChanged: (valor) {
+                    onChanged: (value) {
                       setState(() {
-                        tiempoTouched = true;
-                        tiempoSeleccionado = valor;
-                        tiempoValido = valor != null && valor.trim().isNotEmpty;
+                        timeTouched = true;
+                        selectedTime = value;
+                        timeValid = value != null && value.trim().isNotEmpty;
                       });
                     },
                   ),
-                  if (tiempoTouched && !tiempoValido)
+                  if (timeTouched && !timeValid)
                     Text(
                       AppLocalizations.of(context)!.time_error_message,
                       style: const TextStyle(color: Colors.red),
@@ -175,38 +175,40 @@ class RecetasState extends State<Recetas> {
                       icon: const Icon(Icons.image),
                       label: Text(AppLocalizations.of(context)!.select_photo),
                       onPressed: () async {
-                        File? imagen;
+                        File? image;
 
                         if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
                           final picker = ImagePicker();
                           final pickedFile = await picker.pickImage(
                               source: ImageSource.gallery);
                           if (pickedFile != null) {
-                            imagen = File(pickedFile.path);
+                            image = File(pickedFile.path);
                           }
                         } else {
                           final result = await FilePicker.platform
                               .pickFiles(type: FileType.image);
                           if (result != null &&
                               result.files.single.path != null) {
-                            imagen = File(result.files.single.path!);
+                            image = File(result.files.single.path!);
                           }
                         }
 
-                        if (imagen != null) {
+                        if (image != null) {
                           setState(() {
-                            imagenSeleccionada = imagen;
+                            selectedImage = image;
                           });
                         }
                       },
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (imagenSeleccionada != null)
-                    Image.file(
-                      imagenSeleccionada!,
-                      height: 100,
-                      fit: BoxFit.cover,
+                  if (selectedImage != null)
+                    Center(
+                      child: Image.file(
+                        selectedImage!,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                 ],
               ),
@@ -220,36 +222,36 @@ class RecetasState extends State<Recetas> {
                 child: Text(AppLocalizations.of(context)!.save),
                 onPressed: () async {
                   setState(() {
-                    nombreTouched = true;
-                    descripcionTouched = true;
-                    tiempoTouched = true;
+                    nameTouched = true;
+                    descriptionTouched = true;
+                    timeTouched = true;
 
-                    nombreValido = nombreController.text.trim().isNotEmpty;
-                    descripcionValida =
-                        descripcionController.text.trim().isNotEmpty;
-                    tiempoValido = tiempoSeleccionado != null &&
-                        tiempoSeleccionado!.trim().isNotEmpty;
+                    nameValid = nameController.text.trim().isNotEmpty;
+                    descriptionValid =
+                        descriptionController.text.trim().isNotEmpty;
+                    timeValid = selectedTime != null &&
+                        selectedTime!.trim().isNotEmpty;
                   });
 
-                  if (!nombreValido || !descripcionValida || !tiempoValido) {
+                  if (!nameValid || !descriptionValid || !timeValid) {
                     return;
                   }
 
-                  final nombre = capitalize(nombreController.text.trim());
-                  final descripcion =
-                      capitalize(descripcionController.text.trim());
-                  final uuidUsuario = context.read<UserProvider>().uuid;
+                  final name = capitalize(nameController.text.trim());
+                  final description =
+                      capitalize(descriptionController.text.trim());
+                  final userUuid = context.read<UserProvider>().uuid;
 
-                  if (nombre.isEmpty || uuidUsuario == null) return;
+                  if (name.isEmpty || userUuid == null) return;
 
                   try {
-                    String? urlImagen;
+                    String? imageUrl;
 
-                    if (imagenSeleccionada != null) {
-                      final bytes = await imagenSeleccionada!.readAsBytes();
-                      final nombreArchivo =
-                          '${nombre}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
-                      final path = 'recetas/$uuidUsuario/$nombreArchivo.jpg';
+                    if (selectedImage != null) {
+                      final bytes = await selectedImage!.readAsBytes();
+                      final fileName =
+                          '${name}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+                      final path = 'recetas/$userUuid/$fileName.jpg';
 
                       await Supabase.instance.client.storage
                           .from('fotos')
@@ -257,22 +259,22 @@ class RecetasState extends State<Recetas> {
                               fileOptions:
                                   const FileOptions(contentType: 'image/jpeg'));
 
-                      urlImagen = Supabase.instance.client.storage
+                      imageUrl = Supabase.instance.client.storage
                           .from('fotos')
                           .getPublicUrl(path);
                     }
 
-                    final nuevaReceta = RecetaModel(
-                      nombre: nombre,
-                      descripcion: descripcion,
-                      usuarioUuid: uuidUsuario,
-                      foto: urlImagen ?? '',
-                      tiempo: tiempoSeleccionado ?? '',
+                    final newRecipe = RecipeModel(
+                      name: name,
+                      description: description,
+                      userUuid: userUuid,
+                      photo: imageUrl ?? '',
+                      time: selectedTime ?? '',
                     );
 
                     await context
-                        .read<RecetaProvider>()
-                        .crearReceta(nuevaReceta);
+                        .read<RecipeProvider>()
+                        .createRecipe(newRecipe);
 
                     Navigator.pop(dialogContext);
                     showAwesomeSnackBar(
@@ -284,7 +286,7 @@ class RecetasState extends State<Recetas> {
                   } catch (e) {
                     showAwesomeSnackBar(
                       context,
-                      title: 'Error',
+                      title: AppLocalizations.of(context)!.error,
                       message:
                           AppLocalizations.of(context)!.recipe_created_error,
                       contentType: asc.ContentType.failure,
@@ -301,7 +303,7 @@ class RecetasState extends State<Recetas> {
 
   @override
   Widget build(BuildContext context) {
-    final providerReceta = context.watch<RecetaProvider>();
+    final recipeProvider = context.watch<RecipeProvider>();
 
     return Scaffold(
         // ---------- APP BAR ----------
@@ -316,10 +318,10 @@ class RecetasState extends State<Recetas> {
             centerTitle: true),
 
         // ---------- BODY ----------
-      body: providerReceta.isLoading
+      body: recipeProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : providerReceta.recetasToShow.isEmpty
-          ? const PlaceholderRecetas()
+          : recipeProvider.recipesToShow.isEmpty
+          ? const RecipePlaceholder()
           : LayoutBuilder(builder: (context, constraints) {
                     final width = constraints.maxWidth;
                     int crossAxisCount = 1;
@@ -339,7 +341,7 @@ class RecetasState extends State<Recetas> {
                             Theme.of(context).brightness == Brightness.light;
 
                         return GridView.builder(
-                          itemCount: providerReceta.recetasToShow.length,
+                          itemCount: recipeProvider.recipesToShow.length,
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount,
                             mainAxisExtent: 280,
@@ -347,7 +349,7 @@ class RecetasState extends State<Recetas> {
                             mainAxisSpacing: 12,
                           ),
                           itemBuilder: (context, index) {
-                            final receta = providerReceta.recetasToShow[index];
+                            final recipe = recipeProvider.recipesToShow[index];
                             return Card(
                               color: Theme.of(context).colorScheme.surface,
                               shape: RoundedRectangleBorder(
@@ -363,31 +365,31 @@ class RecetasState extends State<Recetas> {
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(10),
                                 onTap: () async {
-                                  final resultado = await Navigator.push(
+                                  final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => MultiProvider(
                                         providers: [
                                           ChangeNotifierProvider(
-                                            create: (_) => PasosRecetaProvider(
+                                            create: (_) => RecipeStepsProvider(
                                               Supabase.instance.client,
-                                              receta.id!,
-                                            )..cargarPasos(),
+                                              recipe.id!,
+                                            )..loadSteps(),
                                           ),
                                           ChangeNotifierProvider(
                                             create: (_) =>
-                                                ProductosRecetaProvider(
+                                                ProductsRecipeProvider(
                                               Supabase.instance.client,
-                                              receta.id!,
-                                            )..cargarProductos(),
+                                              recipe.id!,
+                                            )..loadProducts(),
                                           ),
                                         ],
-                                        child: DetalleReceta(receta: receta),
+                                        child: RecipeDetailView(recipe: recipe),
                                       ),
                                     ),
                                   );
-                                  if (resultado == true) {
-                                    providerReceta.cargarRecetas();
+                                  if (result == true) {
+                                    recipeProvider.loadRecipes();
                                   }
                                 },
                                 child: Column(
@@ -405,9 +407,9 @@ class RecetasState extends State<Recetas> {
                                         borderRadius: BorderRadius.circular(10),
                                         child: Stack(
                                           children: [
-                                            receta.foto.isNotEmpty
+                                            recipe.photo.isNotEmpty
                                                 ? Image.network(
-                                                    receta.foto,
+                                                    recipe.photo,
                                                     width: double.infinity,
                                                     height: 150,
                                                     fit: BoxFit.cover,
@@ -441,10 +443,10 @@ class RecetasState extends State<Recetas> {
                                                       // Eliminar
                                                       final recipeProvider =
                                                           context.read<
-                                                              RecetaProvider>();
+                                                              RecipeProvider>();
                                                       final allRecipes =
                                                           List.of(recipeProvider
-                                                              .recetas);
+                                                              .recipes);
                                                       final isLastRecipe =
                                                           allRecipes.length ==
                                                               1;
@@ -465,8 +467,8 @@ class RecetasState extends State<Recetas> {
                                                           );
                                                         }
                                                         await recipeProvider
-                                                            .eliminarReceta(
-                                                                receta.id!);
+                                                            .deleteRecipe(
+                                                                recipe.id!);
 
                                                         if (!isLastRecipe &&
                                                             context.mounted) {
@@ -538,7 +540,7 @@ class RecetasState extends State<Recetas> {
                                         children: [
                                           Text(
                                             maxLines: 2,
-                                            receta.nombre,
+                                            recipe.name,
                                             style: const TextStyle(
                                               fontSize: 22,
                                               fontWeight: FontWeight.bold,
@@ -546,7 +548,7 @@ class RecetasState extends State<Recetas> {
                                           ),
                                           const SizedBox(height: 6),
                                           Text(
-                                            '${AppLocalizations.of(context)!.time}: ${receta.tiempo}',
+                                            '${AppLocalizations.of(context)!.time}: ${recipe.time}',
                                             style:
                                                 const TextStyle(fontSize: 18),
                                           ),
@@ -566,7 +568,7 @@ class RecetasState extends State<Recetas> {
         floatingActionButton:
         FloatingActionButton(
           onPressed: () {
-            mostrarDialogoCrearReceta(context, indiceRecetaActual);
+            showCreateRecipeDialog(context, currentRecipeIndex);
           },
           child: const Icon(Icons.add),
         ),

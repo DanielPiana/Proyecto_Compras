@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 
-class PlaceholderRecetas extends StatelessWidget {
-  const PlaceholderRecetas({super.key});
+class RecipePlaceholder extends StatelessWidget {
+  const RecipePlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {

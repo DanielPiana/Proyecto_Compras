@@ -1,47 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/recetaModel.dart';
-import '../utils/textNormalizer.dart';
+import '../models/recipe_model.dart';
+import '../utils/text_normalizer.dart';
 
-class RecetaProvider with ChangeNotifier {
+class RecipeProvider with ChangeNotifier {
   final SupabaseClient database;
   String? userId;
 
-  RecetaProvider(this.database, this.userId);
+  RecipeProvider(this.database, this.userId);
 
-  List<RecetaModel> _recetas = [];
-  List<RecetaModel> get recetas => _recetas;
+  List<RecipeModel> _recipes = [];
+  List<RecipeModel> get recipes => _recipes;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  List<RecetaModel> filteredRecetas = [];
+  List<RecipeModel> filteredRecipes = [];
   String lastQuery = '';
 
   // GETTER PARA MOSTRAR RECETAS (FILTRADAS O TODAS)
-  List<RecetaModel> get recetasToShow {
-    if (filteredRecetas.isEmpty && lastQuery.trim().isEmpty) {
-      return _recetas;
+  List<RecipeModel> get recipesToShow {
+    if (filteredRecipes.isEmpty && lastQuery.trim().isEmpty) {
+      return _recipes;
     }
-    return filteredRecetas;
+    return filteredRecipes;
   }
 
   void setSearchText(String value) {
     lastQuery = value;
 
     if (value.trim().isEmpty) {
-      filteredRecetas = [];
+      filteredRecipes = [];
       notifyListeners();
       return;
     }
 
     final query = normalizeText(value);
 
-    filteredRecetas = _recetas.where((receta) {
-      final nombre = normalizeText(receta.nombre);
-      final tiempo = receta.tiempo.toString() ?? "";
+    filteredRecipes = _recipes.where((recipe) {
+      final name = normalizeText(recipe.name);
+      final time = recipe.time.toString() ?? "";
 
-      return nombre.contains(query) || tiempo.contains(query);
+      return name.contains(query) || time.contains(query);
     }).toList();
 
     notifyListeners();
@@ -51,21 +51,21 @@ class RecetaProvider with ChangeNotifier {
   Future<void> setUserAndReload(String? uuid) async {
     userId = uuid;
     if (uuid == null) {
-      _recetas = [];
+      _recipes = [];
       notifyListeners();
       return;
     }
-    await cargarRecetas();
+    await loadRecipes();
   }
 
   /// Carga las recetas del usuario desde la base de datos
   ///
   /// Flujo principal:
   /// - Consulta la tabla 'recetas' en la base de datos filtrando por [userId]
-  /// - Convierte las recetas en una lista [RecetaModel]
+  /// - Convierte las recetas en una lista [RecipeModel]
   /// - Llama al metodo ordenarRecetas para ordenarlas alfabéticamente
   /// - Notifica a los listeners para actualizar la UI
-  Future<void> cargarRecetas() async {
+  Future<void> loadRecipes() async {
     _isLoading = true;
     notifyListeners();
 
@@ -76,8 +76,8 @@ class RecetaProvider with ChangeNotifier {
           .eq('usuariouuid', userId!)
           .order('id', ascending: false);
 
-      _recetas = data.map<RecetaModel>((r) => RecetaModel.fromMap(r)).toList();
-      ordenarRecetas(_recetas);
+      _recipes = data.map<RecipeModel>((r) => RecipeModel.fromMap(r)).toList();
+      sortRecipes(_recipes);
     } catch (e) {
       debugPrint("Error al cargar recetas: $e");
     } finally {
@@ -87,9 +87,9 @@ class RecetaProvider with ChangeNotifier {
   }
 
   /// METODO PARA ORDENAR RECETAS ALFABETICAMENTE
-  List<RecetaModel> ordenarRecetas(List<RecetaModel> recetas) {
-    recetas.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
-    return recetas;
+  List<RecipeModel> sortRecipes(List<RecipeModel> recipes) {
+    recipes.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return recipes;
   }
 
   /// Crea una receta en la base de datos y lo añade a la lista local
@@ -97,34 +97,34 @@ class RecetaProvider with ChangeNotifier {
   /// Flujo principal:
   /// - Inserta la receta creada en la lista local
   /// - Notifica a los listeners para recargar la UI
-  /// - Intenta insertar en la base de datos la [nuevaReceta] y la guarda en [response]
+  /// - Intenta insertar en la base de datos la [newRecipe] y la guarda en [response]
   /// - Si da error y [response] está vacío salta un error y borramos la receta
   /// de la lista local
-  Future<void> crearReceta(RecetaModel nuevaReceta) async {
-    _recetas.insert(0, nuevaReceta);
+  Future<void> createRecipe(RecipeModel newRecipe) async {
+    _recipes.insert(0, newRecipe);
     notifyListeners();
 
     try {
       final response = await database.from('recetas').insert({
-        'nombre': nuevaReceta.nombre,
-        'descripcion': nuevaReceta.descripcion,
-        'usuariouuid': nuevaReceta.usuarioUuid,
-        'foto': nuevaReceta.foto,
-        'tiempo': nuevaReceta.tiempo,
+        'nombre': newRecipe.name,
+        'descripcion': newRecipe.description,
+        'usuariouuid': newRecipe.userUuid,
+        'foto': newRecipe.photo,
+        'tiempo': newRecipe.time,
       }).select();
 
 
       if (response.isNotEmpty) {
-        final index = _recetas.indexOf(nuevaReceta);
+        final index = _recipes.indexOf(newRecipe);
         if (index != -1) {
-          _recetas[index] = RecetaModel.fromMap(response[0]);
-          ordenarRecetas(_recetas);
+          _recipes[index] = RecipeModel.fromMap(response[0]);
+          sortRecipes(_recipes);
           notifyListeners();
         }
       }
     } catch (e) {
       debugPrint("Error al crear receta en Supabase: $e");
-      _recetas.remove(nuevaReceta);
+      _recipes.remove(newRecipe);
       notifyListeners();
     }
   }
@@ -137,21 +137,21 @@ class RecetaProvider with ChangeNotifier {
   /// - Intenta actualizar la receta en la base de datos
   /// - Si el proceso falla se restaura la copia de seguridad y noticamos a los
   /// listeners para actualizar la UI
-  Future<void> actualizarReceta(RecetaModel recetaActualizada) async {
-    final backup = List<RecetaModel>.from(_recetas);
+  Future<void> updateRecipe(RecipeModel updatedRecipe) async {
+    final backup = List<RecipeModel>.from(_recipes);
 
-    final index = _recetas.indexWhere((r) => r.id == recetaActualizada.id);
+    final index = _recipes.indexWhere((r) => r.id == updatedRecipe.id);
 
     if (index != -1) {
-      _recetas[index] = recetaActualizada;
-      ordenarRecetas(_recetas);
+      _recipes[index] = updatedRecipe;
+      sortRecipes(_recipes);
       notifyListeners();
     }
     try {
-      await database.from('recetas').update(recetaActualizada.toMap()).eq('id', recetaActualizada.id!);
+      await database.from('recetas').update(updatedRecipe.toMap()).eq('id', updatedRecipe.id!);
     } catch (e) {
       debugPrint("Error al actualizar receta: $e");
-      _recetas = backup;
+      _recipes = backup;
       notifyListeners();
     }
   }
@@ -164,39 +164,39 @@ class RecetaProvider with ChangeNotifier {
   /// - Notifica a los listeners para recargar la UI
   /// - Intenta eliminar la receta de la tabla 'recetas' de la base de datos
   /// - Si da error, se restaura la copia de seguridad y notifica a los listeners
-  Future<void> eliminarReceta(int id) async {
-    final backup = List<RecetaModel>.from(_recetas);
+  Future<void> deleteRecipe(int id) async {
+    final backup = List<RecipeModel>.from(_recipes);
 
-    _recetas.removeWhere((r) => r.id == id);
+    _recipes.removeWhere((r) => r.id == id);
     notifyListeners();
 
     try {
       await database.from('recetas').delete().eq('id', id);
     } catch (e) {
       debugPrint("Error al eliminar receta: $e");
-      _recetas = backup;
+      _recipes = backup;
       notifyListeners();
     }
   }
 
   /// METODO PARA AÑADIR UNA RECETA A LA LISTA LOCAL
-  void addRecetaLocal(RecetaModel receta) {
-    _recetas.add(receta);
+  void addLocalRecipe(RecipeModel recipe) {
+    _recipes.add(recipe);
     notifyListeners();
   }
 
   /// METODO PARA ELIMINAR UNA RECETA A LA LISTA LOCAL
-  void removeRecetaLocal(int id) {
-    _recetas.removeWhere((r) => r.id == id);
+  void removeLocalRecipe(int id) {
+    _recipes.removeWhere((r) => r.id == id);
     notifyListeners();
   }
 
   /// METODO PARA ACTUALIZAR UNA RECETA EXISTENTE EN LA LISTA LOCAL
-  void updateRecetaLocal(RecetaModel recetaActualizada) {
-    final index = _recetas.indexWhere((r) => r.id == recetaActualizada.id);
+  void updateLocalRecipe(RecipeModel updatedRecipe) {
+    final index = _recipes.indexWhere((r) => r.id == updatedRecipe.id);
     if (index != -1) {
-      _recetas[index] = recetaActualizada;
-      ordenarRecetas(_recetas);
+      _recipes[index] = updatedRecipe;
+      sortRecipes(_recipes);
       notifyListeners();
     }
   }

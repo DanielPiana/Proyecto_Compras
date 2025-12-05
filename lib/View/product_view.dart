@@ -4,47 +4,46 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyectocompras/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Providers/compraProvider.dart';
-import '../Providers/productoProvider.dart';
-import '../Providers/userProvider.dart';
-import '../Widgets/EscanearCodigoBarras.dart';
-import '../Widgets/PlaceHolderProductos.dart';
-import '../Widgets/awesomeSnackbar.dart';
+import '../Providers/shopping_list_provider.dart';
+import '../Providers/products_provider.dart';
+import '../Providers/user_provider.dart';
+import '../Widgets/scan_barcode_screen.dart';
+import '../Widgets/products_placeholder.dart';
+import '../Widgets/awesome_snackbar.dart';
 import '../l10n/app_localizations.dart';
-import '../models/productoModel.dart';
+import '../models/product_model.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 import 'package:flutter/services.dart';
 
 import '../services/openfood_service.dart';
-import '../utils/imageNameNormalizer.dart';
-import '../utils/imagePicker.dart';
+import '../utils/image_name_normalizer.dart';
+import '../utils/image_picker.dart';
 
-class Producto extends StatefulWidget {
-  const Producto({super.key});
+class ProductsView extends StatefulWidget {
+  const ProductsView({super.key});
 
   @override
-  State<Producto> createState() => ProductoState();
+  State<ProductsView> createState() => ProductsViewState();
 }
 
-class ProductoState extends State<Producto> {
+class ProductsViewState extends State<ProductsView> {
   late String userId;
 
   SupabaseClient database = Supabase.instance.client;
 
   final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
-  final isDesktop =
-      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+  final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
   /*TODO-----------------INITIALIZE-----------------*/
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final uid = context.read<UserProvider>().uuid;
+      final userUuid = context.read<UserProvider>().uuid;
       // SI NO HAY USUARIO, LE MANDAMOS A LA PESTAÑA DE LOGIN
-      if (uid != null) {
+      if (userUuid != null) {
         setState(() {
-          userId = uid;
+          userId = userUuid;
         });
       } else {
         Navigator.pushReplacementNamed(context, '/login');
@@ -67,7 +66,7 @@ class ProductoState extends State<Producto> {
   ///
   /// Retorna:
   /// - `void` (no retorna nada).
-  void dialogoEliminacion(BuildContext context, int productId) {
+  void showDeleteDialog(BuildContext context, int productId) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -97,14 +96,14 @@ class ProductoState extends State<Producto> {
             // Eliminar
             TextButton(
               onPressed: () async {
-                final productProvider = context.read<ProductoProvider>();
-                final allProducts = List.of(productProvider.productos);
+                final productProvider = context.read<ProductProvider>();
+                final allProducts = List.of(productProvider.products);
                 final isLastProduct = allProducts.length == 1;
 
-                final backupProduct = productProvider.productos
+                final backupProduct = productProvider.products
                     .firstWhere((p) => p.id == productId);
 
-                productProvider.removeProductoLocal(productId);
+                productProvider.removeLocalProduct(productId);
 
                 Navigator.of(dialogContext).pop();
 
@@ -118,7 +117,7 @@ class ProductoState extends State<Producto> {
                     );
                   }
 
-                  await productProvider.eliminarProducto(context, productId);
+                  await productProvider.deleteProduct(context, productId);
 
                   if (!isLastProduct && context.mounted) {
                     showAwesomeSnackBar(
@@ -129,7 +128,7 @@ class ProductoState extends State<Producto> {
                     );
                   }
                 } catch (error) {
-                  productProvider.addProductoLocal(backupProduct);
+                  productProvider.addLocalProduct(backupProduct);
 
                   if (context.mounted) {
                     showAwesomeSnackBar(
@@ -162,39 +161,39 @@ class ProductoState extends State<Producto> {
   /// - Permite modificar nombre, descripción, precio, supermercado e imagen.
   /// - Valida los campos en tiempo real mostrando iconos de estado y mensajes de error.
   /// - Si se selecciona una nueva imagen, se sube a Supabase y se obtiene la URL pública.
-  /// - Al confirmar, se construye un nuevo objeto [ProductoModel] actualizado.
-  /// - Se actualiza el producto en la base de datos mediante el [ProductoProvider].
+  /// - Al confirmar, se construye un nuevo objeto [ProductModel] actualizado.
+  /// - Se actualiza el producto en la base de datos mediante el [ProductProvider].
   /// - Si la operación es exitosa, se muestra un snackbar de éxito; si falla, se muestra un snackbar de error.
   ///
   /// Parámetros:
   /// - [context]: Contexto de la aplicación.
-  /// - [producto]: Instancia de [ProductoModel] que se desea editar.
+  /// - [producto]: Instancia de [ProductModel] que se desea editar.
   ///
   /// Retorna:
   /// - `void` (no retorna nada).
   ///
   /// Excepciones:
   /// - Puede lanzar errores relacionados con la carga de imágenes o la actualización en Supabase.
-  void dialogoEdicion(BuildContext context, ProductoModel producto) async {
-    final TextEditingController nombreController = TextEditingController(text: producto.nombre);
-    final TextEditingController descripcionController = TextEditingController(text: producto.descripcion);
-    final TextEditingController precioController = TextEditingController(text: producto.precio.toString());
-    final TextEditingController codigoBarrasController = TextEditingController(text: producto.codBarras ?? "");
+  void showEditDialog(BuildContext context, ProductModel producto) async {
+    final TextEditingController nameController = TextEditingController(text: producto.name);
+    final TextEditingController descriptionController = TextEditingController(text: producto.description);
+    final TextEditingController priceController = TextEditingController(text: producto.price.toString());
+    final TextEditingController barcodeController = TextEditingController(text: producto.barCode ?? "");
 
-    final List<String> supermercados =
-        await context.read<ProductoProvider>().obtenerSupermercados();
-    String supermercadoSeleccionado = producto.supermercado;
+    final List<String> supermarkets =
+        await context.read<ProductProvider>().getSupermarkets();
+    String selectedSupermarket = producto.supermarket;
 
-    String? imageScanned = producto.foto.isNotEmpty ? producto.foto : null;
+    String? imageScanned = producto.photo.isNotEmpty ? producto.photo : null;
     File? imageFilePicker; // Imagen seleccionada del usuario
 
-    bool nombreValido = producto.nombre.trim().isNotEmpty;
-    bool precioValido = true;
-    bool supermercadoValido = producto.supermercado.trim().isNotEmpty;
+    bool nameValid = producto.name.trim().isNotEmpty;
+    bool priceValid = true;
+    bool supermarketValid = producto.supermarket.trim().isNotEmpty;
 
-    bool nombreTouched = false;
-    bool precioTouched = false;
-    bool supermercadoTouched = false;
+    bool nameTouched = false;
+    bool priceTouched = false;
+    bool supermarketTouched = false;
 
     showDialog(
       context: context,
@@ -219,7 +218,7 @@ class ProductoState extends State<Producto> {
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const EscanearCodigoScreen()),
+                                builder: (_) => const ScanBarcodeScreen()),
                           );
 
                           if (result != null && result is String) {
@@ -232,7 +231,7 @@ class ProductoState extends State<Producto> {
 
                             try {
                               final product = await OpenFoodService
-                                  .obtenerProductoPorCodigo(result);
+                                  .getProductByBarcode(result);
                               Navigator.pop(context);
 
                               if (product != null) {
@@ -240,19 +239,18 @@ class ProductoState extends State<Producto> {
                                   imageScanned = product.imageFrontUrl;
                                   imageFilePicker = null;
 
-                                  codigoBarrasController.text = result;
-                                  nombreController.text = product.productName ??
+                                  barcodeController.text = result;
+                                  nameController.text = product.productName ??
                                       product.genericName ??
                                       '';
-                                  descripcionController.text =
+                                  descriptionController.text =
                                       product.brands ?? '';
                                 });
                               } else {
                                 showAwesomeSnackBar(
                                   context,
-                                  title: "No encontrado",
-                                  message:
-                                      "No se encontró información del producto",
+                                  title: AppLocalizations.of(context)!.warning,
+                                  message: AppLocalizations.of(context)!.product_not_found,
                                   contentType: asc.ContentType.warning,
                                 );
                               }
@@ -260,8 +258,8 @@ class ProductoState extends State<Producto> {
                               Navigator.pop(context);
                               showAwesomeSnackBar(
                                 context,
-                                title: "Error",
-                                message: "Error al obtener datos",
+                                title: AppLocalizations.of(context)!.error,
+                                message: AppLocalizations.of(context)!.unexpected_error_finding_product,
                                 contentType: asc.ContentType.failure,
                               );
                             }
@@ -271,20 +269,20 @@ class ProductoState extends State<Producto> {
                     const SizedBox(height: 10),
 
                     // ---------- CAMPO DE CÓDIGO DE BARRAS ----------
-                    if (codigoBarrasController.text.isNotEmpty)
+                    if (barcodeController.text.isNotEmpty)
                       TextField(
-                          decoration: const InputDecoration(
-                              labelText: "Código de barras"),
-                          controller: codigoBarrasController,
+                          decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context)!.barcode),
+                          controller: barcodeController,
                           readOnly: true),
                     const SizedBox(height: 10),
                     // ---------- CAMPO NOMBRE ----------
                     TextField(
-                      controller: nombreController,
+                      controller: nameController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.name,
-                        suffixIcon: nombreTouched
-                            ? (nombreValido
+                        suffixIcon: nameTouched
+                            ? (nameValid
                                 ? const Icon(Icons.check_circle,
                                     color: Colors.green)
                                 : const Icon(Icons.cancel, color: Colors.red))
@@ -292,19 +290,19 @@ class ProductoState extends State<Producto> {
                       ),
                       onChanged: (value) {
                         setState(() {
-                          nombreTouched = true;
-                          nombreValido = value.trim().isNotEmpty;
+                          nameTouched = true;
+                          nameValid = value.trim().isNotEmpty;
                         });
                       },
                     ),
-                    if (nombreTouched && !nombreValido)
+                    if (nameTouched && !nameValid)
                       Text(AppLocalizations.of(context)!.name_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
 
                     // ---------- CAMPO DESCRIPCIÓN ----------
                     TextField(
-                      controller: descripcionController,
+                      controller: descriptionController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.description,
                         suffixIcon:
@@ -316,11 +314,11 @@ class ProductoState extends State<Producto> {
 
                     // ---------- CAMPO DE PRECIO ----------
                     TextField(
-                      controller: precioController,
+                      controller: priceController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.price,
-                        suffixIcon: precioTouched
-                            ? (precioValido
+                        suffixIcon: priceTouched
+                            ? (priceValid
                                 ? const Icon(Icons.check_circle,
                                     color: Colors.green)
                                 : const Icon(Icons.cancel, color: Colors.red))
@@ -330,31 +328,31 @@ class ProductoState extends State<Producto> {
                       onChanged: (value) {
                         final input = value.trim().replaceAll(',', '.');
                         setState(() {
-                          precioTouched = true;
-                          precioValido = double.tryParse(input) != null;
+                          priceTouched = true;
+                          priceValid = double.tryParse(input) != null;
                         });
                       },
                     ),
-                    if (precioTouched && !precioValido)
+                    if (priceTouched && !priceValid)
                       Text(AppLocalizations.of(context)!.price_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
 
                     // ---------- SELECCIÓN SUPERMERCADO ----------
                     DropdownButtonFormField<String>(
-                      value: supermercadoSeleccionado,
+                      value: selectedSupermarket,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.supermarket,
-                        suffixIcon: supermercadoTouched
-                            ? (supermercadoValido
+                        suffixIcon: supermarketTouched
+                            ? (supermarketValid
                                 ? const Icon(Icons.check_circle,
                                     color: Colors.green)
                                 : const Icon(Icons.cancel, color: Colors.red))
                             : null,
                       ),
-                      items: supermercados.map((s) {
+                      items: supermarkets.map((supermarket) {
                         return DropdownMenuItem<String>(
-                          value: s,
+                          value: supermarket,
                           child: SizedBox(
                             width: double.infinity,
                             child: Container(
@@ -366,31 +364,31 @@ class ProductoState extends State<Producto> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child:
-                                  Text(s, style: const TextStyle(fontSize: 16)),
+                                  Text(supermarket, style: const TextStyle(fontSize: 16)),
                             ),
                           ),
                         );
                       }).toList(),
                       selectedItemBuilder: (context) {
-                        return supermercados.map((s) {
+                        return supermarkets.map((supermarket) {
                           return Align(
                             alignment: Alignment.centerLeft,
                             child:
-                                Text(s, style: const TextStyle(fontSize: 16)),
+                            Text(supermarket, style: const TextStyle(fontSize: 16)),
                           );
                         }).toList();
                       },
-                      onChanged: (nuevoSuper) {
-                        if (nuevoSuper != null) {
+                      onChanged: (newSupermarket) {
+                        if (newSupermarket != null) {
                           setState(() {
-                            supermercadoTouched = true;
-                            supermercadoSeleccionado = nuevoSuper;
-                            supermercadoValido = nuevoSuper.trim().isNotEmpty;
+                            supermarketTouched = true;
+                            selectedSupermarket = newSupermarket;
+                            supermarketValid = newSupermarket.trim().isNotEmpty;
                           });
                         }
                       },
                     ),
-                    if (supermercadoTouched && !supermercadoValido)
+                    if (supermarketTouched && !supermarketValid)
                       Text(
                           AppLocalizations.of(context)!
                               .supermarket_error_message,
@@ -449,7 +447,7 @@ class ProductoState extends State<Producto> {
                                     tooltip: isMobile
                                         ? AppLocalizations.of(context)!
                                             .open_camera
-                                        : "Pegar imagen desde el portapapeles",
+                                        : AppLocalizations.of(context)!.paste_image_from_clipboard,
                                     onPressed: () async {
                                       final file = await ImagePickerHelper
                                           .imageFromClipboard();
@@ -509,21 +507,21 @@ class ProductoState extends State<Producto> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final String? codigoBarras = codigoBarrasController.text.isEmpty
+                    final String? barcode = barcodeController.text.isEmpty
                         ? null
-                        : codigoBarrasController.text;
-                    final String nuevoNombre = nombreController.text.trim();
-                    final String nuevaDescripcion =
-                        descripcionController.text.trim();
-                    final String precioInput =
-                        precioController.text.trim().replaceAll(',', '.');
-                    final double? nuevoPrecioParsed =
-                        double.tryParse(precioInput);
+                        : barcodeController.text;
+                    final String newName = nameController.text.trim();
+                    final String newDescription =
+                        descriptionController.text.trim();
+                    final String inputPrice =
+                        priceController.text.trim().replaceAll(',', '.');
+                    final double? newParsedPrice =
+                        double.tryParse(inputPrice);
 
-                    if (codigoBarras != null &&
-                        codigoBarras.isNotEmpty &&
-                        codigoBarras != producto.codBarras &&
-                        context.read<ProductoProvider>().existsWithBarCode(codigoBarras)) {
+                    if (barcode != null &&
+                        barcode.isNotEmpty &&
+                        barcode != producto.barCode &&
+                        context.read<ProductProvider>().existsWithBarCode(barcode)) {
                       showAwesomeSnackBar(
                         dialogCtx,
                         title: AppLocalizations.of(context)!.error,
@@ -533,21 +531,21 @@ class ProductoState extends State<Producto> {
                       return;
                     }
 
-                    if (!nombreValido ||
-                        !precioValido ||
-                        !supermercadoValido ||
-                        nuevoPrecioParsed == null) {
+                    if (!nameValid ||
+                        !priceValid ||
+                        !supermarketValid ||
+                        newParsedPrice == null) {
                       return;
                     }
 
-                    final double nuevoPrecio = nuevoPrecioParsed;
-                    String urlImagen = producto.foto;
+                    final double newPrice = newParsedPrice;
+                    String imageUrl = producto.photo;
 
                     if (imageFilePicker != null) {
                       final bytes = await imageFilePicker!.readAsBytes();
-                      final nombreArchivo = imageNameNormalizer(nuevoNombre);
+                      final fileName = normalizeImageName(newName);
                       final path =
-                          'productos/${producto.usuarioUuid}/$nombreArchivo.jpg';
+                          'productos/${producto.userUuid}/$fileName.jpg';
 
                       await Supabase.instance.client.storage
                           .from('fotos')
@@ -555,30 +553,30 @@ class ProductoState extends State<Producto> {
                               fileOptions:
                                   const FileOptions(contentType: 'image/jpeg'));
 
-                      urlImagen = Supabase.instance.client.storage
+                      imageUrl = Supabase.instance.client.storage
                           .from('fotos')
                           .getPublicUrl(path);
                     } else if (imageScanned != null) {
-                      urlImagen = imageScanned!;
+                      imageUrl = imageScanned!;
                     }
 
-                    final productoActualizado = ProductoModel(
+                    final updatedProduct = ProductModel(
                       id: producto.id,
-                      codBarras: codigoBarras,
-                      nombre: nuevoNombre,
-                      descripcion: nuevaDescripcion,
-                      precio: nuevoPrecio,
-                      supermercado: supermercadoSeleccionado,
-                      usuarioUuid: producto.usuarioUuid,
-                      foto: urlImagen,
+                      barCode: barcode,
+                      name: newName,
+                      description: newDescription,
+                      price: newPrice,
+                      supermarket: selectedSupermarket,
+                      userUuid: producto.userUuid,
+                      photo: imageUrl,
                     );
 
                     Navigator.of(dialogContext).pop();
 
                     try {
-                      await context.read<ProductoProvider>().actualizarProducto(
-                            productoActualizado,
-                            context.read<CompraProvider>(),
+                      await context.read<ProductProvider>().updateProduct(
+                            updatedProduct,
+                            context.read<ShoppingListProvider>(),
                           );
 
                       showAwesomeSnackBar(
@@ -591,7 +589,7 @@ class ProductoState extends State<Producto> {
                     } catch (e) {
                       showAwesomeSnackBar(
                         context,
-                        title: 'Error',
+                        title: AppLocalizations.of(context)!.error,
                         message:
                             AppLocalizations.of(context)!.product_updated_error,
                         contentType: asc.ContentType.failure,
@@ -617,7 +615,7 @@ class ProductoState extends State<Producto> {
   /// - Permite seleccionar un supermercado existente o crear uno nuevo.
   /// - Valida los campos en tiempo real, mostrando iconos de estado y mensajes de error.
   /// - Da la opción de subir una imagen y almacenarla en Supabase.
-  /// - Construye un nuevo [ProductoModel] con los datos ingresados.
+  /// - Construye un nuevo [ProductModel] con los datos ingresados.
   /// - Se guarda localmente y luego se intenta guardar en la base de datos.
   /// - Se notifica al usuario con un snackbar de éxito o de error según el resultado.
   ///
@@ -629,30 +627,28 @@ class ProductoState extends State<Producto> {
   ///
   /// Excepciones:
   /// - Puede lanzar errores relacionados con la carga de imágenes o la creación en Supabase.
-  void dialogoCreacion(BuildContext context) {
-    final TextEditingController nombreController = TextEditingController();
-    final TextEditingController descripcionController = TextEditingController();
-    final TextEditingController precioController = TextEditingController(text: "0");
-    final TextEditingController nuevoSupermercadoController =
-        TextEditingController();
-    final TextEditingController codigoBarrasController =
-        TextEditingController();
+  void showCreateDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    final TextEditingController priceController = TextEditingController(text: "0");
+    final TextEditingController newSupermarketController = TextEditingController();
+    final TextEditingController barcodeController = TextEditingController();
 
     String? imageScanned; // Imagen de escaneo
     File? imageFilePicker; // Imagen seleccionada del usuario
-    String? supermercadoSeleccionado;
-    bool creandoSupermercado = false;
+    String? selectedSupermarket;
+    bool creatingSupermarket = false;
 
-    bool nombreValido = false;
-    bool precioValido = true;
-    bool supermercadoValido = false;
+    bool nameValid = false;
+    bool priceValid = true;
+    bool supermarketValid = false;
 
-    bool nombreTouched = false;
-    bool precioTouched = false;
-    bool supermercadoTouched = false;
+    bool nameTouched = false;
+    bool priceTouched = false;
+    bool supermarketTouched = false;
 
-    final provider = context.read<ProductoProvider>();
-    final supermercados = provider.productosPorSupermercado.keys.toList()
+    final productProvider = context.read<ProductProvider>();
+    final supermarketsList = productProvider.productsBySupermarket.keys.toList()
       ..add(AppLocalizations.of(context)!.selectSupermarketNameDDB);
 
     showDialog(
@@ -676,7 +672,7 @@ class ProductoState extends State<Producto> {
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const EscanearCodigoScreen()),
+                                builder: (_) => const ScanBarcodeScreen()),
                           );
 
                           if (result != null && result is String) {
@@ -688,7 +684,7 @@ class ProductoState extends State<Producto> {
                             );
 
                             try {
-                              final product = await OpenFoodService.obtenerProductoPorCodigo(result);
+                              final product = await OpenFoodService.getProductByBarcode(result);
                               Navigator.pop(context);
 
                               if (product != null) {
@@ -696,20 +692,16 @@ class ProductoState extends State<Producto> {
                                   imageScanned = product.imageFrontUrl;
                                   imageFilePicker = null;
 
-                                  codigoBarrasController.text = result;
-                                  nombreController.text = product.productName ??
-                                      product.genericName ??
-                                      '';
-                                  descripcionController.text =
-                                      product.brands ?? '';
+                                  barcodeController.text = result;
+                                  nameController.text = product.productName ?? product.genericName ?? '';
+                                  descriptionController.text = product.brands ?? '';
                                 });
                               } else {
                                 Navigator.pop(context);
                                 showAwesomeSnackBar(
                                   context,
-                                  title: "No encontrado",
-                                  message:
-                                      "No se encontró información del producto",
+                                  title: AppLocalizations.of(context)!.warning,
+                                  message: AppLocalizations.of(context)!.product_not_found,
                                   contentType: asc.ContentType.warning,
                                 );
                               }
@@ -717,8 +709,8 @@ class ProductoState extends State<Producto> {
                               Navigator.pop(context);
                               showAwesomeSnackBar(
                                 context,
-                                title: "Error",
-                                message: "Error al obtener datos",
+                                title: AppLocalizations.of(context)!.error,
+                                message: AppLocalizations.of(context)!.unexpected_error_finding_product,
                                 contentType: asc.ContentType.failure,
                               );
                             }
@@ -728,17 +720,17 @@ class ProductoState extends State<Producto> {
                     const SizedBox(height: 10),
 
                     // ---------- CAMPO DE CÓDIGO DE BARRAS ----------
-                    if (codigoBarrasController.text.isNotEmpty)
+                    if (barcodeController.text.isNotEmpty)
                       TextField(
-                          controller: codigoBarrasController, readOnly: true),
+                          controller: barcodeController, readOnly: true),
                     const SizedBox(height: 10),
                     // ---------- NOMBRE ----------
                     TextField(
-                      controller: nombreController,
+                      controller: nameController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.name,
-                        suffixIcon: nombreTouched
-                            ? (nombreValido
+                        suffixIcon: nameTouched
+                            ? (nameValid
                                 ? const Icon(Icons.check_circle,
                                     color: Colors.green)
                                 : const Icon(Icons.cancel, color: Colors.red))
@@ -746,19 +738,19 @@ class ProductoState extends State<Producto> {
                       ),
                       onChanged: (value) {
                         setState(() {
-                          nombreTouched = true;
-                          nombreValido = value.trim().isNotEmpty;
+                          nameTouched = true;
+                          nameValid = value.trim().isNotEmpty;
                         });
                       },
                     ),
 
-                    if (nombreTouched && !nombreValido)
+                    if (nameTouched && !nameValid)
                       Text(AppLocalizations.of(context)!.name_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
                     // ---------- DESCRIPCION ----------
                     TextField(
-                      controller: descripcionController,
+                      controller: descriptionController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.description,
                         suffixIcon:
@@ -769,11 +761,11 @@ class ProductoState extends State<Producto> {
                     const SizedBox(height: 10),
                     // ---------- PRECIO ----------
                     TextField(
-                      controller: precioController,
+                      controller: priceController,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.price,
-                        suffixIcon: precioTouched
-                            ? (precioValido
+                        suffixIcon: priceTouched
+                            ? (priceValid
                                 ? const Icon(Icons.check_circle,
                                     color: Colors.green)
                                 : const Icon(Icons.cancel, color: Colors.red))
@@ -783,23 +775,23 @@ class ProductoState extends State<Producto> {
                       onChanged: (value) {
                         final input = value.trim().replaceAll(',', '.');
                         setState(() {
-                          precioTouched = true;
-                          precioValido = double.tryParse(input) != null;
+                          priceTouched = true;
+                          priceValid = double.tryParse(input) != null;
                         });
                       },
                     ),
-                    if (precioTouched && !precioValido)
+                    if (priceTouched && !priceValid)
                       Text(AppLocalizations.of(context)!.price_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
                     // ---------- SUPERMERCADO ----------
                     DropdownButtonFormField<String>(
-                      value: supermercadoSeleccionado,
+                      value: selectedSupermarket,
                       isExpanded: true,
                       decoration: InputDecoration(
                         labelText: AppLocalizations.of(context)!.supermarket,
-                        suffixIcon: supermercadoTouched
-                            ? (supermercadoValido
+                        suffixIcon: supermarketTouched
+                            ? (supermarketValid
                                 ? const Icon(Icons.check_circle,
                                     color: Colors.green)
                                 : const Icon(Icons.cancel, color: Colors.red))
@@ -807,7 +799,7 @@ class ProductoState extends State<Producto> {
                       ),
                       hint:
                           Text(AppLocalizations.of(context)!.selectSupermarket),
-                      items: supermercados.map((s) {
+                      items: supermarketsList.map((s) {
                         return DropdownMenuItem<String>(
                           value: s,
                           child: SizedBox(
@@ -827,7 +819,7 @@ class ProductoState extends State<Producto> {
                         );
                       }).toList(),
                       selectedItemBuilder: (context) {
-                        return supermercados.map((s) {
+                        return supermarketsList.map((s) {
                           return Align(
                             alignment: Alignment.centerLeft,
                             child:
@@ -837,38 +829,38 @@ class ProductoState extends State<Producto> {
                       },
                       onChanged: (String? value) {
                         setState(() {
-                          supermercadoTouched = true;
-                          supermercadoSeleccionado = value;
-                          creandoSupermercado =
+                          supermarketTouched = true;
+                          selectedSupermarket = value;
+                          creatingSupermarket =
                               (value == "Nuevo supermercado" ||
                                   value == "New supermarket");
-                          supermercadoValido =
+                          supermarketValid =
                               value != null && value.trim().isNotEmpty;
                         });
                       },
                     ),
-                    if (supermercadoTouched && !supermercadoValido)
+                    if (supermarketTouched && !supermarketValid)
                       Text(
                           AppLocalizations.of(context)!
                               .supermarket_error_message,
                           style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 10),
 
-                    if (creandoSupermercado)
+                    if (creatingSupermarket)
                       TextField(
-                        controller: nuevoSupermercadoController,
+                        controller: newSupermarketController,
                         decoration: InputDecoration(
                           labelText: AppLocalizations.of(context)!
                               .selectSupermarketName,
                           suffixIcon:
-                              nuevoSupermercadoController.text.isNotEmpty
+                              newSupermarketController.text.isNotEmpty
                                   ? const Icon(Icons.check_circle,
                                       color: Colors.green)
                                   : const Icon(Icons.cancel, color: Colors.red),
                         ),
                         onChanged: (value) {
                           setState(() {
-                            supermercadoValido = value.trim().isNotEmpty;
+                            supermarketValid = value.trim().isNotEmpty;
                           });
                         },
                       ),
@@ -923,10 +915,9 @@ class ProductoState extends State<Producto> {
                                     tooltip: isMobile
                                         ? AppLocalizations.of(context)!
                                             .open_camera
-                                        : "Pegar imagen desde el portapapeles",
+                                        : AppLocalizations.of(context)!.paste_image_from_clipboard,
                                     onPressed: () async {
-                                      final file = await ImagePickerHelper
-                                          .imageFromClipboard();
+                                      final file = await ImagePickerHelper.imageFromClipboard();
                                       if (file != null) {
                                         setState(() {
                                           imageFilePicker = file;
@@ -997,38 +988,38 @@ class ProductoState extends State<Producto> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final String nombre =
-                        capitalize(nombreController.text.trim());
-                    final String descripcion =
-                        capitalize(descripcionController.text.trim());
-                    final String precioInput =
-                        precioController.text.trim().replaceAll(',', '.');
-                    final double? precioParsed = double.tryParse(precioInput);
-                    final String supermercado = creandoSupermercado
-                        ? capitalize(nuevoSupermercadoController.text.trim())
-                        : capitalize(supermercadoSeleccionado ?? '');
-                    final String? codigoBarras =
-                        codigoBarrasController.text.isEmpty
+                    final String name =
+                        capitalize(nameController.text.trim());
+                    final String description =
+                        capitalize(descriptionController.text.trim());
+                    final String priceInput =
+                        priceController.text.trim().replaceAll(',', '.');
+                    final double? parsedPrice = double.tryParse(priceInput);
+                    final String supermarket = creatingSupermarket
+                        ? capitalize(newSupermarketController.text.trim())
+                        : capitalize(selectedSupermarket ?? '');
+                    final String? barcode =
+                        barcodeController.text.isEmpty
                             ? null
-                            : codigoBarrasController.text;
+                            : barcodeController.text;
 
                     setState(() {
-                      nombreTouched = true;
-                      precioTouched = true;
-                      supermercadoTouched = true;
+                      nameTouched = true;
+                      priceTouched = true;
+                      supermarketTouched = true;
 
-                      nombreValido = nombre.isNotEmpty;
-                      precioValido = precioParsed != null;
-                      supermercadoValido = supermercado.isNotEmpty;
+                      nameValid = name.isNotEmpty;
+                      priceValid = parsedPrice != null;
+                      supermarketValid = supermarket.isNotEmpty;
                     });
 
-                    if (!nombreValido ||
-                        !precioValido ||
-                        !supermercadoValido ||
-                        precioParsed == null) {
+                    if (!nameValid ||
+                        !priceValid ||
+                        !supermarketValid ||
+                        parsedPrice == null) {
                       return;
                     }
-                    if (codigoBarras != null && codigoBarras.isNotEmpty && provider.existsWithBarCode(codigoBarras)) {
+                    if (barcode != null && barcode.isNotEmpty && productProvider.existsWithBarCode(barcode)) {
                       Navigator.pop(dialogCtx);
                       showAwesomeSnackBar(
                         dialogCtx,
@@ -1040,14 +1031,14 @@ class ProductoState extends State<Producto> {
                       return;
                     }
 
-                    final double precio = precioParsed;
-                    final uuidUsuario = context.read<UserProvider>().uuid!;
-                    String urlImagen = '';
+                    final double price = parsedPrice;
+                    final userUuid = context.read<UserProvider>().uuid!;
+                    String imageUrl = '';
 
                     if (imageFilePicker != null) {
                       final bytes = await imageFilePicker!.readAsBytes();
-                      final nombreArchivo = imageNameNormalizer(nombre);
-                      final path = 'productos/$uuidUsuario/$nombreArchivo.jpg';
+                      final fileName = normalizeImageName(name);
+                      final path = 'productos/$userUuid/$fileName.jpg';
 
                       await Supabase.instance.client.storage
                           .from('fotos')
@@ -1055,29 +1046,29 @@ class ProductoState extends State<Producto> {
                               fileOptions:
                                   const FileOptions(contentType: 'image/jpeg'));
 
-                      urlImagen = Supabase.instance.client.storage
+                      imageUrl = Supabase.instance.client.storage
                           .from('fotos')
                           .getPublicUrl(path);
                     } else if (imageScanned != null) {
-                      urlImagen = imageScanned!;
+                      imageUrl = imageScanned!;
                     }
 
-                    final nuevoProducto = ProductoModel(
+                    final newProduct = ProductModel(
                       id: null,
-                      nombre: nombre,
-                      descripcion: descripcion,
-                      precio: precio,
-                      supermercado: supermercado,
-                      usuarioUuid: uuidUsuario,
-                      codBarras: codigoBarras,
-                      foto: urlImagen,
+                      name: name,
+                      description: description,
+                      price: price,
+                      supermarket: supermarket,
+                      userUuid: userUuid,
+                      barCode: barcode,
+                      photo: imageUrl,
                     );
 
-                    provider.addProductoLocal(nuevoProducto);
+                    productProvider.addLocalProduct(newProduct);
                     Navigator.of(dialogContext).pop();
 
                     try {
-                      await provider.crearProducto(nuevoProducto);
+                      await productProvider.createProduct(newProduct);
                       showAwesomeSnackBar(
                         context,
                         title: AppLocalizations.of(context)!.success,
@@ -1088,7 +1079,7 @@ class ProductoState extends State<Producto> {
                     } catch (e) {
                       showAwesomeSnackBar(
                         context,
-                        title: "Error",
+                        title: AppLocalizations.of(context)!.error,
                         message:
                             AppLocalizations.of(context)!.product_created_error,
                         contentType: asc.ContentType.failure,
@@ -1107,8 +1098,8 @@ class ProductoState extends State<Producto> {
 
   @override
   Widget build(BuildContext context) {
-    final providerProducto = context.watch<ProductoProvider>();
-    final productosPorSupermercado = providerProducto.groupedProducts;
+    final productProvider = context.watch<ProductProvider>();
+    final productsBySupermarket  = productProvider.groupedProducts;
     return Scaffold(
       // ---------- APP BAR ----------
       appBar: AppBar(
@@ -1123,14 +1114,14 @@ class ProductoState extends State<Producto> {
       ),
 
       // ---------- BODY ----------
-      body: providerProducto.isLoading
+      body: productProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : providerProducto.groupedProducts.isEmpty
-          ? const PlaceholderProductos()
+          : productProvider.groupedProducts.isEmpty
+          ? const ProductsPlaceholder()
           : ListView(
-        children: providerProducto.groupedProducts.entries.map((entry) {
-          final supermercado = entry.key;
-          final productos = entry.value;
+        children: productProvider.groupedProducts.entries.map((entry) {
+          final supermarket = entry.key;
+          final products = entry.value;
 
                     return Container(
                       margin: const EdgeInsets.symmetric(
@@ -1154,7 +1145,7 @@ class ProductoState extends State<Producto> {
                           padding: const EdgeInsets.all(8),
                           child: Text(
                             maxLines: 1,
-                            supermercado,
+                            supermarket,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -1164,7 +1155,7 @@ class ProductoState extends State<Producto> {
                         ),
 
                         // ---------- LISTA DE PRODUCTOS ----------
-                        children: productos.map((producto) {
+                        children: products.map((product) {
                           return Column(
                             children: [
                               SizedBox(
@@ -1179,9 +1170,9 @@ class ProductoState extends State<Producto> {
                                       borderRadius: BorderRadius.circular(8),
                                       child: AspectRatio(
                                         aspectRatio: 1.4,
-                                        child: (producto.foto.isNotEmpty)
+                                        child: (product.photo.isNotEmpty)
                                             ? Image.network(
-                                          producto.foto,
+                                          product.photo,
                                           fit: BoxFit.contain,
                                           errorBuilder: (_, __, ___) => const Icon(
                                             Icons.image_not_supported,
@@ -1199,7 +1190,7 @@ class ProductoState extends State<Producto> {
                                     // Nombre del producto
                                     title: Text(
                                       maxLines: 2,
-                                      producto.nombre,
+                                      product.name,
                                       style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold),
@@ -1220,12 +1211,12 @@ class ProductoState extends State<Producto> {
                                           onPressed: () async {
                                             try {
                                               await context
-                                                  .read<CompraProvider>()
-                                                  .agregarACompra(
-                                                      producto.id!,
-                                                      producto.precio,
-                                                      producto.nombre,
-                                                      producto.supermercado);
+                                                  .read<ShoppingListProvider>()
+                                                  .addToShoppingList(
+                                                      product.id!,
+                                                      product.price,
+                                                      product.name,
+                                                      product.supermarket);
                                               showAwesomeSnackBar(
                                                 context,
                                                 title: AppLocalizations.of(
@@ -1263,7 +1254,7 @@ class ProductoState extends State<Producto> {
                                           ),
                                           iconSize: 22,
                                           onPressed: () {
-                                            dialogoEdicion(context, producto);
+                                            showEditDialog(context, product);
                                           },
                                           padding: EdgeInsets.zero,
                                         ),
@@ -1278,8 +1269,8 @@ class ProductoState extends State<Producto> {
                                           iconSize: 22,
                                           color: Colors.red.shade400,
                                           onPressed: () {
-                                            dialogoEliminacion(
-                                                context, producto.id!);
+                                            showDeleteDialog(
+                                                context, product.id!);
                                           },
                                           padding: EdgeInsets.zero,
                                         ),
@@ -1308,7 +1299,7 @@ class ProductoState extends State<Producto> {
       floatingActionButton: FloatingActionButton(
         heroTag: "addProducts",
         onPressed: () {
-          dialogoCreacion(context);
+          showCreateDialog(context);
         },
         child: const Icon(Icons.add),
       ),

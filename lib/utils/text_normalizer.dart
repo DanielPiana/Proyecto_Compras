@@ -1,3 +1,7 @@
+/// Normaliza un texto eliminando acentos y convirtiendo a minúsculas
+///
+/// Útil para realizar búsquedas sin distinguir acentos
+/// Por ejemplo: "José" → "jose"
 String normalizeText(String text) {
   final map = {
     'á':'a', 'é':'e', 'í':'i', 'ó':'o', 'ú':'u',

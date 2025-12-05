@@ -363,7 +363,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get manually_create_product => 'Crear producto manualmente';
 
   @override
-  String get scan_barcode => 'Escanear código de barras';
+  String get scan_barcode => 'Escanear código';
 
   @override
   String get barcode_error_message => 'El código de barras debe ser un número';
@@ -450,4 +450,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get max_steps_warning => 'No se pueden añadir mas pasos';
+
+  @override
+  String get confirm_email => 'Por favor, confirma tu correo electrónico';
+
+  @override
+  String get confirm_password => 'Confirmar contraseña';
+
+  @override
+  String get product_not_found => 'Información del producto no encontrado';
+
+  @override
+  String get unexpected_error_finding_product =>
+      'Error inesperado buscando producto';
+
+  @override
+  String get barcode => 'Código de barras';
+
+  @override
+  String get paste_image_from_clipboard => 'Pegar imagen desde el portapapeles';
 }

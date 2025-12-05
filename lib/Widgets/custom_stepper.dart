@@ -1,77 +1,74 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:proyectocompras/Providers/detalleRecetaProvider.dart';
-import 'package:proyectocompras/Widgets/awesomeSnackbar.dart';
-import '../Providers/pasosRecetaProvider.dart';
+import 'package:proyectocompras/Providers/recipe_detail_provider.dart';
+import 'package:proyectocompras/Widgets/awesome_snackbar.dart';
+import '../Providers/recipe_steps_provider.dart';
 import '../l10n/app_localizations.dart';
-import '../models/PasoReceta.dart';
+import '../models/step_recipe_model.dart';
 
-class StepperPersonalizado extends StatefulWidget {
-  final List<PasoReceta> pasosReceta;
+class CustomStepper extends StatefulWidget {
+  final List<RecipeStep> recipeSteps;
 
-  const StepperPersonalizado({
+  const CustomStepper({
     super.key,
-    required this.pasosReceta,
+    required this.recipeSteps,
   });
 
   @override
-  State<StepperPersonalizado> createState() => _StepperPersonalizadoState();
+  State<CustomStepper> createState() => _CustomStepperState();
 }
 
-class _StepperPersonalizadoState extends State<StepperPersonalizado> {
-  int pasoActual = 0;
+class _CustomStepperState extends State<CustomStepper> {
+  int currentStep = 0;
 
-  String tituloOriginal = "";
-  String descripcionOriginal = "";
-
-  final _tituloController = TextEditingController();
-  final _descripcionController = TextEditingController();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final _focusNode = FocusNode();
 
-  bool _ultimoEstadoEdicion = false;
+  bool _lastEditingState = false;
 
   @override
   void initState() {
     super.initState();
-    _tituloController.text = widget.pasosReceta.first.titulo;
-    _descripcionController.text = widget.pasosReceta.first.descripcion;
+    _titleController.text = widget.recipeSteps.first.title;
+    _descriptionController.text = widget.recipeSteps.first.description;
 
-    final provider = context.read<DetalleRecetaProvider>();
+    final provider = context.read<RecipeDetailProvider>();
 
     provider.addListener(() {
-      if (!_ultimoEstadoEdicion && provider.estaEditando) {
+      if (!_lastEditingState && provider.isEditing) {
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted) {
             _focusNode.requestFocus();
           }
         });
       }
-      _ultimoEstadoEdicion = provider.estaEditando;
+      _lastEditingState = provider.isEditing;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final providerDetalle = context.read<DetalleRecetaProvider>();
+    final detailRecipeProvider = context.read<RecipeDetailProvider>();
     // CARGAMOS PASOS DESDE EL PROVIDER
-    final pasos = context
-        .watch<PasosRecetaProvider>()
-        .pasos;
+    final steps = context
+        .watch<RecipeStepsProvider>()
+        .steps;
 
-    if (pasos.isEmpty) {
-      if (pasoActual != 0) {
+    if (steps.isEmpty) {
+      if (currentStep != 0) {
         setState(() {
-          pasoActual = 0;
-          _tituloController.text = '';
-          _descripcionController.text = '';
+          currentStep = 0;
+          _titleController.text = '';
+          _descriptionController.text = '';
         });
       }
-    } else if (pasoActual >= pasos.length) {
+    } else if (currentStep >= steps.length) {
       setState(() {
-        pasoActual = pasos.length - 1;
-        _tituloController.text = pasos[pasoActual].titulo;
-        _descripcionController.text = pasos[pasoActual].descripcion;
+        currentStep = steps.length - 1;
+        _titleController.text = steps[currentStep].title;
+        _descriptionController.text = steps[currentStep].description;
       });
     }
 
@@ -102,9 +99,9 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                     border: Border.all(color: Colors.blue.withOpacity(0.3)),
                   ),
                   child: Text(
-                    '${AppLocalizations.of(context)!.step}: ${pasos.isEmpty
+                    '${AppLocalizations.of(context)!.step}: ${steps.isEmpty
                         ? 0
-                        : pasoActual + 1} de ${pasos.length}',
+                        : currentStep + 1} de ${steps.length}',
                     style: const TextStyle(
                       color: Colors.blue,
                       fontSize: 12,
@@ -116,17 +113,17 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                 AnimatedCrossFade(
                   duration: const Duration(milliseconds: 400),
                   crossFadeState: context
-                      .watch<DetalleRecetaProvider>()
-                      .estaEditando
+                      .watch<RecipeDetailProvider>()
+                      .isEditing
                       ? CrossFadeState.showSecond
                       : CrossFadeState.showFirst,
-                  firstChild: (pasos.isEmpty)
+                  firstChild: (steps.isEmpty)
                       ? const SizedBox.shrink()
                       : Column(
                     children: [
                       Center(
                         child: Text(
-                          pasos[pasoActual].titulo,
+                          steps[currentStep].title,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold
@@ -135,7 +132,7 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        pasos[pasoActual].descripcion,
+                        steps[currentStep].description,
                         style: const TextStyle(
                           fontSize: 15,
                           height: 1.5,
@@ -148,40 +145,40 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                     child: Column(
                       children: [
                         TextField(
-                          controller: _tituloController,
+                          controller: _titleController,
                           focusNode: _focusNode,
                           autofocus: true,
                           decoration: InputDecoration(
                             labelText: AppLocalizations.of(context)!.title,
                           ),
                           onChanged: (value) {
-                            if (pasos.isEmpty) return;
-                            final actualizado =
-                            pasos[pasoActual].copyWith(titulo: value);
+                            if (steps.isEmpty) return;
+                            final updated =
+                            steps[currentStep].copyWith(title: value);
                             context
-                                .read<PasosRecetaProvider>()
-                                .actualizarPasoLocal(
-                                actualizado.numeroPaso, actualizado);
-                            providerDetalle.setCambioPaso(true);
+                                .read<RecipeStepsProvider>()
+                                .updateLocalStep(
+                                updated.stepNumber, updated);
+                            detailRecipeProvider.setStepChanged(true);
                           },
                         ),
                         const SizedBox(height: 12),
                         TextField(
-                          controller: _descripcionController,
+                          controller: _descriptionController,
                           maxLines: null,
                           decoration: InputDecoration(
                             labelText: AppLocalizations.of(context)!
                                 .description,
                           ),
                           onChanged: (value) {
-                            if (pasos.isEmpty) return;
+                            if (steps.isEmpty) return;
                             final actualizado =
-                            pasos[pasoActual].copyWith(descripcion: value);
+                            steps[currentStep].copyWith(description: value);
                             context
-                                .read<PasosRecetaProvider>()
-                                .actualizarPasoLocal(
-                                actualizado.numeroPaso, actualizado);
-                            providerDetalle.setCambioPaso(true);
+                                .read<RecipeStepsProvider>()
+                                .updateLocalStep(
+                                actualizado.stepNumber, actualizado);
+                            detailRecipeProvider.setStepChanged(true);
                           },
                         ),
                       ],
@@ -191,7 +188,7 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
 
                 const SizedBox(height: 16),
 
-                if (providerDetalle.estaEditando)
+                if (detailRecipeProvider.isEditing)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -203,24 +200,24 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                           ),
                         ),
                         onPressed: () {
-                          final pProv = context.read<PasosRecetaProvider>();
-                          if (pProv.pasos.length == 10) {
+                          final pProv = context.read<RecipeStepsProvider>();
+                          if (pProv.steps.length == 10) {
                             showAwesomeSnackBar(context,
                                 title: AppLocalizations.of(context)!.warning,
                                 message: AppLocalizations.of(context)!.max_steps_warning,
                                 contentType: ContentType.warning);
                           } else {
 
-                            pProv.crearPaso("", "");
-                            final nuevos = pProv.pasos;
+                            pProv.createStep("", "");
+                            final newSteps = pProv.steps;
                             setState(() {
-                              pasoActual = nuevos.isEmpty ? 0 : nuevos.length - 1;
-                              _tituloController.text =
-                              nuevos.isNotEmpty ? nuevos.last.titulo : "";
-                              _descripcionController.text =
-                              nuevos.isNotEmpty ? nuevos.last.descripcion : "";
+                              currentStep = newSteps.isEmpty ? 0 : newSteps.length - 1;
+                              _titleController.text =
+                              newSteps.isNotEmpty ? newSteps.last.title : "";
+                              _descriptionController.text =
+                              newSteps.isNotEmpty ? newSteps.last.description : "";
                             });
-                            context.read<DetalleRecetaProvider>().setEdicion(
+                            context.read<RecipeDetailProvider>().setEditing(
                                 true);
                           }
                         },
@@ -237,9 +234,9 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                           ),
                         ),
                         onPressed: () async {
-                          final pProv = context.read<PasosRecetaProvider>();
-                          if (pProv.pasos.isEmpty) return;
-                          final paso = pProv.pasos[pasoActual];
+                          final pProv = context.read<RecipeStepsProvider>();
+                          if (pProv.steps.isEmpty) return;
+                          final paso = pProv.steps[currentStep];
 
                           final confirmacion = await showDialog<bool>(
                             context: context,
@@ -276,22 +273,22 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                           );
 
                           if (confirmacion != true) return;
-                          await pProv.eliminarPaso(paso.numeroPaso);
+                          await pProv.deleteStep(paso.stepNumber);
 
                           if (!mounted) return;
-                          final len = pProv.pasos.length;
+                          final len = pProv.steps.length;
                           if (len > 0) {
                             setState(() {
-                              if (pasoActual >= len) pasoActual = len - 1;
-                              _tituloController.text =
-                                  pProv.pasos[pasoActual].titulo;
-                              _descripcionController.text =
-                                  pProv.pasos[pasoActual].descripcion;
+                              if (currentStep >= len) currentStep = len - 1;
+                              _titleController.text =
+                                  pProv.steps[currentStep].title;
+                              _descriptionController.text =
+                                  pProv.steps[currentStep].description;
                             });
                           } else {
                             setState(() {
-                              _tituloController.clear();
-                              _descripcionController.clear();
+                              _titleController.clear();
+                              _descriptionController.clear();
                             });
                           }
                         },
@@ -309,18 +306,18 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            pasos.length,
+            steps.length,
                 (index) =>
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: index == pasoActual ? 24 : 8,
+                  width: index == currentStep ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
-                    color: index == pasoActual
+                    color: index == currentStep
                         ? Colors.blue
-                        : index < pasoActual
+                        : index < currentStep
                         ? Colors.green.withOpacity(0.6)
                         : Colors.grey.withOpacity(0.4),
                   ),
@@ -342,51 +339,51 @@ class _StepperPersonalizadoState extends State<StepperPersonalizado> {
                   padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 ),
-                onPressed: pasoActual > 0
+                onPressed: currentStep > 0
                     ? () {
                   setState(() {
-                    pasoActual--;
-                    _tituloController.text = pasos[pasoActual].titulo;
-                    _descripcionController.text =
-                        pasos[pasoActual].descripcion;
+                    currentStep--;
+                    _titleController.text = steps[currentStep].title;
+                    _descriptionController.text =
+                        steps[currentStep].description;
                   });
                 }
                     : null,
               ),
               ElevatedButton.icon(
                 icon: Icon(
-                  (pasos.isNotEmpty && pasoActual == pasos.length - 1)
+                  (steps.isNotEmpty && currentStep == steps.length - 1)
                       ? Icons.check
-                      : (pasos.isNotEmpty && pasoActual == pasos.length - 2)
+                      : (steps.isNotEmpty && currentStep == steps.length - 2)
                       ? Icons.flag
                       : Icons.arrow_forward,
                   size: 16,
                 ),
                 label: Text(
-                  (pasos.isEmpty)
+                  (steps.isEmpty)
                       ? AppLocalizations.of(context)!.next
-                      : (pasoActual == pasos.length - 1)
+                      : (currentStep == steps.length - 1)
                       ? AppLocalizations.of(context)!.finish
-                      : (pasoActual == pasos.length - 2)
+                      : (currentStep == steps.length - 2)
                       ? AppLocalizations.of(context)!.finish
                       : AppLocalizations.of(context)!.next,
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: (pasos.isNotEmpty &&
-                      pasoActual == pasos.length - 1)
+                  backgroundColor: (steps.isNotEmpty &&
+                      currentStep == steps.length - 1)
                       ? Colors.green
                       : Colors.blue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 6),
                 ),
-                onPressed: (pasos.isNotEmpty && pasoActual < pasos.length - 1)
+                onPressed: (steps.isNotEmpty && currentStep < steps.length - 1)
                     ? () {
                   setState(() {
-                    pasoActual++;
-                    _tituloController.text = pasos[pasoActual].titulo;
-                    _descripcionController.text =
-                        pasos[pasoActual].descripcion;
+                    currentStep++;
+                    _titleController.text = steps[currentStep].title;
+                    _descriptionController.text =
+                        steps[currentStep].description;
                   });
                 }
                     : null,

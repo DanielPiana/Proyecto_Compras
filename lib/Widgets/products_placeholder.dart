@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-class PlaceholderProductos extends StatelessWidget {
-  const PlaceholderProductos({super.key});
+class ProductsPlaceholder extends StatelessWidget {
+  const ProductsPlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {
