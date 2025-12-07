@@ -18,6 +18,7 @@ import '../Widgets/recipe_placeholder.dart';
 import '../Widgets/awesome_snackbar.dart';
 import '../l10n/app_localizations.dart';
 import '../models/recipe_model.dart';
+import '../utils/image_picker.dart';
 import 'recipe_detail_view.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
 
@@ -582,6 +583,9 @@ class RecipesViewState extends State<RecipesView> {
   }
 
   Future<void> showCreateRecipeDialog(BuildContext context, int currentRecipeIndex) async {
+    final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+
     final TextEditingController nameController = TextEditingController();
     final TextEditingController descriptionController = TextEditingController();
     File? selectedImage;
@@ -718,46 +722,95 @@ class RecipesViewState extends State<RecipesView> {
                       style: const TextStyle(color: Colors.red),
                     ),
                   const SizedBox(height: 16),
+                  // Cambiar esta sección en el diálogo:
+
+                  const SizedBox(height: 16),
+
                   Center(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.image),
-                      label: Text(AppLocalizations.of(context)!.select_photo),
-                      onPressed: () async {
-                        File? image;
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // BOTÓN GALERÍA
+                            Material(
+                              elevation: 2,
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.grey[700]!, width: 0.8),
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.photo_library, color: Colors.green, size: 28),
+                                  tooltip: AppLocalizations.of(context)!.select_photo,
+                                  onPressed: () async {
+                                    final file = await ImagePickerHelper.imageFromGallery();
+                                    if (file != null) {
+                                      setState(() {
+                                        selectedImage = file;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // BOTÓN CÁMARA/CLIPBOARD
+                            Material(
+                              elevation: 2,
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.grey[700]!, width: 0.8),
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.camera_alt, color: Colors.green, size: 28),
+                                  tooltip: isMobile
+                                      ? AppLocalizations.of(context)!.open_camera
+                                      : AppLocalizations.of(context)!.paste_image_from_clipboard,
+                                  onPressed: () async {
+                                    final file = await ImagePickerHelper.imageFromClipboard();
+                                    if (file != null) {
+                                      setState(() {
+                                        selectedImage = file;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
 
-                        if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
-                          final picker = ImagePicker();
-                          final pickedFile = await picker.pickImage(
-                              source: ImageSource.gallery);
-                          if (pickedFile != null) {
-                            image = File(pickedFile.path);
-                          }
-                        } else {
-                          final result = await FilePicker.platform
-                              .pickFiles(type: FileType.image);
-                          if (result != null &&
-                              result.files.single.path != null) {
-                            image = File(result.files.single.path!);
-                          }
-                        }
-
-                        if (image != null) {
-                          setState(() {
-                            selectedImage = image;
-                          });
-                        }
-                      },
+                        // ========== PREVIEW DE IMAGEN ==========
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: SizedBox(
+                            height: 180,
+                            width: double.infinity,
+                            child: selectedImage != null
+                                ? Image.file(
+                              selectedImage!,
+                              fit: BoxFit.contain,
+                            )
+                                : Container(
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 60,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  if (selectedImage != null)
-                    Center(
-                      child: Image.file(
-                        selectedImage!,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
                 ],
               ),
             ),
