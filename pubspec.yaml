@@ -24,7 +24,6 @@ dependencies:
   openfoodfacts: ^3.2.0
   flutter:
     sdk: flutter
-  sqflite: ^2.2.7
   url_launcher: ^6.3.2
 
 dependency_overrides:

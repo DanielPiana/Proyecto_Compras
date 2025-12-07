@@ -65,6 +65,36 @@ class RecipePlaceholder extends StatelessWidget {
             ),
           ),
         ),
+        Positioned(
+          right: -10,
+          child: IgnorePointer(
+            ignoring: true,
+            child: FloatingActionButton.extended(
+              onPressed: null,
+              backgroundColor: Colors.grey.withValues(alpha: 0),
+              elevation: 0,
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.recipe_placeholder_top,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_upward,
+                    color: Colors.grey,
+                    size: 38,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

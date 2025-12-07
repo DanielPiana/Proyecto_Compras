@@ -179,5 +179,6 @@
   "error_sharing_code" : "Error sharing the code",
   "take_new_photo" : "Take photo",
   "photo_updated_ok": "Photo updated successfully",
-  "photo_updated_error": "Error updating photo"
+  "photo_updated_error": "Error updating photo",
+  "recipe_placeholder_top": "Import your first recipe"
 }
