@@ -188,14 +188,7 @@ class RecipesViewState extends State<RecipesView> {
   }
 
   /// Muestra un diálogo con previsualización de la receta a importar
-  Future<void> _showRecipePreviewDialog(
-    BuildContext context,
-    RecipeModel recipe,
-    List<Map<String, dynamic>> products,
-    List<Map<String, dynamic>> steps,
-    String userUuid,
-    String importCode,
-  ) async {
+  Future<void> _showRecipePreviewDialog(BuildContext context, RecipeModel recipe, List<Map<String, dynamic>> products, List<Map<String, dynamic>> steps, String userUuid, String importCode,) async {
     // Contar productos existentes vs nuevos
     int existingCount = 0;
 
@@ -484,14 +477,7 @@ class RecipesViewState extends State<RecipesView> {
   }
 
   /// Confirma e importa la receta con los productos
-  Future<void> _confirmImport(
-    BuildContext context,
-    RecipeModel originalRecipe,
-    List<Map<String, dynamic>> allProducts,
-    List<Map<String, dynamic>> steps,
-    String userUuid,
-    String importCode,
-  ) async {
+  Future<void> _confirmImport(BuildContext context, RecipeModel originalRecipe, List<Map<String, dynamic>> allProducts, List<Map<String, dynamic>> steps, String userUuid, String importCode,) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -595,8 +581,7 @@ class RecipesViewState extends State<RecipesView> {
     }
   }
 
-  Future<void> showCreateRecipeDialog(
-      BuildContext context, int currentRecipeIndex) async {
+  Future<void> showCreateRecipeDialog(BuildContext context, int currentRecipeIndex) async {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController descriptionController = TextEditingController();
     File? selectedImage;
@@ -807,6 +792,12 @@ class RecipesViewState extends State<RecipesView> {
 
                   if (name.isEmpty || userUuid == null) return;
 
+                  showDialog(
+                    context: dialogContext,
+                    barrierDismissible: false,
+                    builder: (_) => const Center(child: CircularProgressIndicator()),
+                  );
+
                   try {
                     String? imageUrl;
 
@@ -836,11 +827,12 @@ class RecipesViewState extends State<RecipesView> {
                       shareCode: _generateShareCode(),
                     );
 
-                    await context
-                        .read<RecipeProvider>()
-                        .createRecipe(newRecipe);
+                    await context.read<RecipeProvider>().createRecipe(newRecipe);
 
                     Navigator.pop(dialogContext);
+
+                    Navigator.pop(dialogContext);
+
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.success,
@@ -848,6 +840,10 @@ class RecipesViewState extends State<RecipesView> {
                       contentType: asc.ContentType.success,
                     );
                   } catch (e) {
+                    Navigator.pop(dialogContext);
+
+                    Navigator.pop(dialogContext);
+
                     showAwesomeSnackBar(
                       context,
                       title: AppLocalizations.of(context)!.error,
