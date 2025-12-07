@@ -86,7 +86,7 @@ class ProductsViewState extends State<ProductsView> {
           // ---------- ACCIONES (Cancelar / Eliminar) ----------
           actions: [
             // Cancelar
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
                 AppLocalizations.of(context)!.cancel,
@@ -94,7 +94,7 @@ class ProductsViewState extends State<ProductsView> {
             ),
 
             // Eliminar
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 final productProvider = context.read<ProductProvider>();
                 final allProducts = List.of(productProvider.products);

@@ -1147,6 +1147,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Error al compartir el código'**
   String get error_sharing_code;
+
+  /// No description provided for @take_new_photo.
+  ///
+  /// In es, this message translates to:
+  /// **'Sacar foto'**
+  String get take_new_photo;
+
+  /// No description provided for @photo_updated_ok.
+  ///
+  /// In es, this message translates to:
+  /// **'Foto actualizada correctamente'**
+  String get photo_updated_ok;
+
+  /// No description provided for @photo_updated_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al actualizar la foto'**
+  String get photo_updated_error;
 }
 
 class _AppLocalizationsDelegate

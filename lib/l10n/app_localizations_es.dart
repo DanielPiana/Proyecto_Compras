@@ -558,4 +558,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get error_sharing_code => 'Error al compartir el código';
+
+  @override
+  String get take_new_photo => 'Sacar foto';
+
+  @override
+  String get photo_updated_ok => 'Foto actualizada correctamente';
+
+  @override
+  String get photo_updated_error => 'Error al actualizar la foto';
 }

@@ -176,5 +176,8 @@
    "products_organized_in": "Los productos se organizarán en \"{recipeName}\"",
    "share_recipe_message": "Te comparto mi receta: ",
    "use_code" : "Usa el código: ",
-   "error_sharing_code" : "Error al compartir el código"
+   "error_sharing_code" : "Error al compartir el código",
+   "take_new_photo" : "Sacar foto",
+   "photo_updated_ok": "Foto actualizada correctamente",
+   "photo_updated_error": "Error al actualizar la foto"
 }

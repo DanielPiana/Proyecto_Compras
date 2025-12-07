@@ -13,12 +13,15 @@ import '../Providers/recipe_steps_provider.dart';
 import '../Providers/products_provider.dart';
 import '../Providers/products_recipe_provider.dart';
 import '../Providers/recipe_provider.dart';
+import '../Providers/user_provider.dart';
 import '../Widgets/awesome_snackbar.dart';
 import '../Widgets/custom_stepper.dart';
 import '../l10n/app_localizations.dart';
 import '../models/step_recipe_model.dart';
 import '../models/recipe_model.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
+
+import '../utils/image_picker.dart';
 
 class RecipeDetailView extends StatefulWidget {
   final RecipeModel recipe;
@@ -366,23 +369,180 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
   /// Abre la galería para seleccionar una nueva foto y la guarda temporalmente.
   ///
   /// Flujo principal:
-  /// - Abre la galería del dispositivo para elegir una imagen.
+  /// - Te da a elegir entre abrir la galería de fotos del dispositivo o usar la camara en movil o copiar desde el portapapeles en pc
   /// - Si el usuario no selecciona nada, no hace nada más.
   /// - Si selecciona una imagen, la guarda en nuevaFotoFile.
   /// - Marca en el DetalleRecetaProvider que la foto ha sido cambiada.
-  void showEditPhotoDialog() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> showEditPhotoDialog(BuildContext context, RecipeModel recipe) async {
+    final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
-    if (pickedFile == null) return;
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Center(child: Text(AppLocalizations.of(context)!.change_photo)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // BOTÓN GALERÍA
+            InkWell(
+              onTap: () async {
+                Navigator.pop(dialogContext);
 
-    final selectedImage = File(pickedFile.path);
+                final file = await ImagePickerHelper.imageFromGallery();
+                if (file != null) {
+                  await _uploadAndUpdatePhoto(context, recipe, file);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color:Theme.of(context).colorScheme.primary, width: 2),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.photo_library, size: 40, color:Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.select_photo,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
-    setState(() {
-      newPhotoFile = selectedImage;
-    });
+            const SizedBox(height: 12),
 
-    context.read<RecipeDetailProvider>().setPhotoChanged(true);
+            // BOTÓN CÁMARA/PORTAPAPELES
+            InkWell(
+              onTap: () async {
+                Navigator.pop(dialogContext);
+
+                final file = await ImagePickerHelper.imageFromClipboard();
+                if (file != null) {
+                  await _uploadAndUpdatePhoto(context, recipe, file);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isMobile
+                                ? AppLocalizations.of(context)!.open_camera
+                                : AppLocalizations.of(context)!.paste_image_from_clipboard,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _uploadAndUpdatePhoto(BuildContext context, RecipeModel recipe, File imageFile,) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final userUuid = context.read<UserProvider>().uuid!;
+
+      final bytes = await imageFile.readAsBytes();
+      final fileName = '${recipe.name}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+      final path = 'recetas/$userUuid/$fileName.jpg';
+
+      await Supabase.instance.client.storage
+          .from('fotos')
+          .uploadBinary(
+        path,
+        bytes,
+        fileOptions: const FileOptions(contentType: 'image/jpeg'),
+      );
+
+      final imageUrl = Supabase.instance.client.storage
+          .from('fotos')
+          .getPublicUrl(path);
+
+      final updatedRecipe = RecipeModel(
+        id: recipe.id,
+        name: recipe.name,
+        description: recipe.description,
+        time: recipe.time,
+        photo: imageUrl,
+        userUuid: recipe.userUuid,
+        shareCode: recipe.shareCode,
+        importedCode: recipe.importedCode,
+      );
+
+      await context.read<RecipeProvider>().updateRecipe(updatedRecipe);
+
+      // ACTUALIZAR LA VARIABLE LOCAL DEL STATE
+      setState(() {
+        this.recipe = updatedRecipe;
+      });
+
+      Navigator.pop(context);
+
+      showAwesomeSnackBar(
+        context,
+        title: AppLocalizations.of(context)!.success,
+        message: AppLocalizations.of(context)!.photo_updated_ok,
+        contentType: asc.ContentType.success,
+      );
+
+    } catch (e) {
+      Navigator.pop(context);
+
+      showAwesomeSnackBar(
+        context,
+        title: AppLocalizations.of(context)!.error,
+        message: AppLocalizations.of(context)!.photo_updated_error,
+        contentType: asc.ContentType.failure,
+      );
+    }
   }
 
   /// Actualiza en la base de datos el título y la descripción de un paso de la receta.
@@ -393,12 +553,7 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
   /// - Si no se encuentra el paso, devuelve false.
   /// - Si la actualización se hace correctamente, devuelve true.
   /// - Si ocurre un error durante el proceso, lo muestra por consola y devuelve false.
-  Future<bool> updateStepInDB(
-    recipeId,
-    int stepNumber,
-    String newTitle,
-    String newDescription,
-  ) async {
+  Future<bool> updateStepInDB(recipeId, int stepNumber, String newTitle, String newDescription,) async {
     try {
       final response =
           await Supabase.instance.client.from('pasos_receta').update({
@@ -898,8 +1053,7 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                     child: const Icon(Icons.description),
                     label: AppLocalizations.of(context)!.edit_step,
                     onTap: () async {
-                      final recipeStepsProvider =
-                          context.read<RecipeStepsProvider>();
+                      final recipeStepsProvider = context.read<RecipeStepsProvider>();
 
                       if (recipeStepsProvider.steps.isEmpty) {
                         await recipeStepsProvider.createStep("", "");
@@ -914,7 +1068,7 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                     child: const Icon(Icons.image),
                     label: AppLocalizations.of(context)!.change_photo,
                     onTap: () {
-                      showEditPhotoDialog();
+                      showEditPhotoDialog(context, recipe);
                     },
                   ),
 
