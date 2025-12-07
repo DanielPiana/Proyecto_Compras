@@ -205,24 +205,32 @@ class ShoppingListViewState extends State<ShoppingListView> {
                   .where((p) => p.marked == 1)
                   .toList();
 
+              // VALIDACIÓN
               if (markedProducts.isEmpty) {
                 showAwesomeSnackBar(
                   context,
                   title: AppLocalizations.of(context)!.error,
-                  message: AppLocalizations.of(context)!
-                      .snackBarReceiptQuantityError,
+                  message: AppLocalizations.of(context)!.snackBarReceiptQuantityError,
                   contentType: asc.ContentType.failure,
                 );
                 return;
               }
 
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(child: CircularProgressIndicator()),
+              );
+
               try {
                 await context.read<ReceiptProvider>().generateReceipt(
-                      markedProducts,
-                      context.read<UserProvider>().uuid!,
-                    );
+                  markedProducts,
+                  context.read<UserProvider>().uuid!,
+                );
 
                 await context.read<ShoppingListProvider>().deleteMarkedProducts();
+
+                Navigator.pop(context);
 
                 showAwesomeSnackBar(
                   context,
@@ -230,7 +238,10 @@ class ShoppingListViewState extends State<ShoppingListView> {
                   message: AppLocalizations.of(context)!.receipt_created_ok,
                   contentType: asc.ContentType.success,
                 );
+
               } catch (e) {
+                Navigator.pop(context);
+
                 showAwesomeSnackBar(
                   context,
                   title: AppLocalizations.of(context)!.error,
