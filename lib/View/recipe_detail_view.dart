@@ -118,134 +118,152 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
     final recipeProvider = context.read<ProductsRecipeProvider>();
     final availableProducts = productProvider.products;
 
-    final Set<int> selected =
-    recipeProvider.products.map((p) => p.id!).toSet();
+    final Set<int> selected = recipeProvider.products.map((p) => p.id!).toSet();
 
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setStateDialog) =>
-              AlertDialog(
-                title: Text(AppLocalizations.of(context)!.select_products),
-                content: SizedBox(
-                  width: double.maxFinite,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: availableProducts.length,
-                    itemBuilder: (_, index) {
-                      final product = availableProducts[index];
-                      return CheckboxListTile(
-                        value: selected.contains(product.id),
-                        title: Text(product.name),
-                        onChanged: (bool? checked) {
-                          setStateDialog(() {
-                            if (checked == true) {
-                              selected.add(product.id!);
-                            } else {
-                              selected.remove(product.id!);
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(AppLocalizations.of(context)!.cancel),
-                            ),
-                            ElevatedButton(
-                              child: Text(AppLocalizations.of(context)!.save),
-                              onPressed: () async {
-                                try {
-                                  await recipeProvider.syncProducts(
-                                      context, selected);
-
-                                  Navigator.pop(context);
-                                  showAwesomeSnackBar(
-                                    context,
-                                    title: AppLocalizations.of(context)!
-                                        .success,
-                                    message: AppLocalizations.of(context)!
-                                        .products_linked_ok,
-                                    contentType: asc.ContentType.success,
-                                  );
-                                } catch (e) {
-                                  Navigator.pop(context);
-                                  showAwesomeSnackBar(
-                                    context,
-                                    title: AppLocalizations.of(context)!.error,
-                                    message:
-                                    AppLocalizations.of(context)!
-                                        .products_linked_error,
-                                    contentType: asc.ContentType.failure,
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: ElevatedButton.icon(
-                      label: Text(
-                          AppLocalizations.of(context)!
-                              .add_ingredients_to_list),
-                      onPressed: () async {
-                        final shoppingListProvider = context.read<ShoppingListProvider>();
-                        final productsProvider = context.read<
-                            ProductProvider>();
-
-                        final markedProducts = productsProvider.products
-                            .where((p) => selected.contains(p.id))
-                            .toList();
-
-                        int addedProducts = 0;
-
-                        for (var product in markedProducts) {
-                          final exists = shoppingListProvider.shoppingList
-                              .any((c) => c.productId == product.id);
-
-                          if (!exists) {
-                            await shoppingListProvider.addToShoppingList(
-                              product.id!,
-                              product.price,
-                              product.name,
-                              product.supermarket,
-                            );
-                            addedProducts++;
-                          }
+          builder: (context, setStateDialog) => AlertDialog(
+            title: Text(AppLocalizations.of(context)!.select_products),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: availableProducts.length,
+                itemBuilder: (_, index) {
+                  final product = availableProducts[index];
+                  return CheckboxListTile(
+                    value: selected.contains(product.id),
+                    title: Text(product.name),
+                    onChanged: (bool? checked) {
+                      setStateDialog(() {
+                        if (checked == true) {
+                          selected.add(product.id!);
+                        } else {
+                          selected.remove(product.id!);
                         }
-
-                        Navigator.pop(context);
-
-                        showAwesomeSnackBar(
-                          context,
-                          title: AppLocalizations.of(context)!.success,
-                          message: addedProducts > 0
-                              ? AppLocalizations.of(context)!
-                              .products_added_to_list
-                              : AppLocalizations.of(context)!
-                              .products_already_in_list,
-                          contentType: asc.ContentType.success,
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                      });
+                    },
+                  );
+                },
               ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(AppLocalizations.of(context)!.cancel),
+                        ),
+                        ElevatedButton(
+                          child: Text(AppLocalizations.of(context)!.save),
+                          onPressed: () async {
+                            try {
+                              await recipeProvider.syncProducts(
+                                  context, selected);
+
+                              Navigator.pop(context);
+                              showAwesomeSnackBar(
+                                context,
+                                title: AppLocalizations.of(context)!.success,
+                                message: AppLocalizations.of(context)!
+                                    .products_linked_ok,
+                                contentType: asc.ContentType.success,
+                              );
+                            } catch (e) {
+                              Navigator.pop(context);
+                              showAwesomeSnackBar(
+                                context,
+                                title: AppLocalizations.of(context)!.error,
+                                message: AppLocalizations.of(context)!
+                                    .products_linked_error,
+                                contentType: asc.ContentType.failure,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: ElevatedButton.icon(
+                  label: Text(
+                      AppLocalizations.of(context)!.add_ingredients_to_list),
+                  onPressed: () async {
+                    final shoppingListProvider =
+                        context.read<ShoppingListProvider>();
+                    final productsProvider = context.read<ProductProvider>();
+
+                    final markedProducts = productsProvider.products
+                        .where((p) => selected.contains(p.id))
+                        .toList();
+
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) =>
+                          const Center(child: CircularProgressIndicator()),
+                    );
+
+                    try {
+                      int addedProducts = 0;
+
+                      for (var product in markedProducts) {
+                        final exists = shoppingListProvider.shoppingList
+                            .any((c) => c.productId == product.id);
+
+                        if (!exists) {
+                          await shoppingListProvider.addToShoppingList(
+                            product.id!,
+                            product.price,
+                            product.name,
+                            product.supermarket,
+                          );
+                          addedProducts++;
+                        }
+                      }
+
+                      Navigator.pop(context);
+
+                      Navigator.pop(context);
+
+                      showAwesomeSnackBar(
+                        context,
+                        title: AppLocalizations.of(context)!.success,
+                        message: addedProducts > 0
+                            ? AppLocalizations.of(context)!
+                                .products_added_to_list
+                            : AppLocalizations.of(context)!
+                                .products_already_in_list,
+                        contentType: asc.ContentType.success,
+                      );
+                    } catch (e) {
+                      Navigator.pop(context);
+
+                      Navigator.pop(context);
+
+                      showAwesomeSnackBar(
+                        context,
+                        title: AppLocalizations.of(context)!.error,
+                        message: AppLocalizations.of(context)!
+                            .snackBarErrorAddingProduct,
+                        contentType: asc.ContentType.failure,
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -255,14 +273,17 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
   void showProductDetail(BuildContext context, Map<String, dynamic> product) {
     final String? photo = product['foto'];
     final String? description = product['descripcion'];
-    final bool hasDescription = description != null && description.trim().isNotEmpty;
+    final bool hasDescription =
+        description != null && description.trim().isNotEmpty;
 
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 80),
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -277,10 +298,10 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                       width: double.infinity,
                       child: (photo != null && photo.isNotEmpty)
                           ? Image.network(
-                        photo,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => _imagePlaceholder(),
-                      )
+                              photo,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                            )
                           : _imagePlaceholder(),
                     ),
                   ),
@@ -293,7 +314,8 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 12),
@@ -311,7 +333,8 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                   // SUPERMERCADO
                   Text(
                     '${AppLocalizations.of(context)!.supermarket}: ${product['supermercado'] ?? '-'}',
-                    style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                    style: const TextStyle(
+                        fontSize: 16, fontStyle: FontStyle.italic),
                   ),
 
                   const SizedBox(height: 24),
@@ -370,10 +393,15 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
   /// - Si no se encuentra el paso, devuelve false.
   /// - Si la actualización se hace correctamente, devuelve true.
   /// - Si ocurre un error durante el proceso, lo muestra por consola y devuelve false.
-  Future<bool> updateStepInDB(recipeId, int stepNumber, String newTitle, String newDescription,) async {
+  Future<bool> updateStepInDB(
+    recipeId,
+    int stepNumber,
+    String newTitle,
+    String newDescription,
+  ) async {
     try {
       final response =
-      await Supabase.instance.client.from('pasos_receta').update({
+          await Supabase.instance.client.from('pasos_receta').update({
         'titulo': newTitle,
         'descripcion': newDescription,
       }).match({
@@ -445,25 +473,24 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
 
     final option = await showDialog<String>(
       context: context,
-      builder: (context) =>
-          AlertDialog(
-            title: Text(AppLocalizations.of(context)!.save_changes),
-            content: Text(AppLocalizations.of(context)!.changes_confirmation),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, 'cancelar'),
-                child: Text(AppLocalizations.of(context)!.cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, 'salir'),
-                child: Text(AppLocalizations.of(context)!.no_save_exit),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, 'guardar'),
-                child: Text(AppLocalizations.of(context)!.save_exit),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.save_changes),
+        content: Text(AppLocalizations.of(context)!.changes_confirmation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancelar'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'salir'),
+            child: Text(AppLocalizations.of(context)!.no_save_exit),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 'guardar'),
+            child: Text(AppLocalizations.of(context)!.save_exit),
+          ),
+        ],
+      ),
     );
 
     if (option == 'cancelar') return false;
@@ -525,20 +552,17 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
       if (recipeDetailProvider.photoChanged && newPhotoFile != null) {
         final bytes = await newPhotoFile!.readAsBytes();
         final fileName =
-            '${widget.recipe.name}_${Random()
-            .nextInt(9999)
-            .toString()
-            .padLeft(4, '0')}';
+            '${widget.recipe.name}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
         final path = 'recetas/${widget.recipe.userUuid}/$fileName.jpg';
 
         await Supabase.instance.client.storage.from('fotos').uploadBinary(
-          path,
-          bytes,
-          fileOptions: const FileOptions(contentType: 'image/jpeg'),
-        );
+              path,
+              bytes,
+              fileOptions: const FileOptions(contentType: 'image/jpeg'),
+            );
 
         final newPhotoUrl =
-        Supabase.instance.client.storage.from('fotos').getPublicUrl(path);
+            Supabase.instance.client.storage.from('fotos').getPublicUrl(path);
 
         final finalRecipe = widget.recipe.copyWith(photo: newPhotoUrl);
         await recipeProvider.updateRecipe(finalRecipe);
@@ -597,11 +621,11 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                   pinned: false,
                   centerTitle: true,
                   expandedHeight: MediaQuery.of(context).size.height * 0.55,
-
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(60),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       color: Theme.of(context).scaffoldBackgroundColor,
                       child: AnimatedCrossFade(
                         duration: const Duration(milliseconds: 200),
@@ -641,14 +665,15 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                               final originalName = widget.recipe.name.trim();
                               final newValue = capitalize(value.trim());
 
-                              context.read<RecipeDetailProvider>().setNameChanged(newValue != originalName);
+                              context
+                                  .read<RecipeDetailProvider>()
+                                  .setNameChanged(newValue != originalName);
                             },
                           ),
                         ),
                       ),
                     ),
                   ),
-
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.parallax,
                     background: Stack(
@@ -661,7 +686,9 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                               end: Alignment.bottomCenter,
                               colors: [
                                 Theme.of(context).colorScheme.primary,
-                                isLight ? const Color(0xFFF1F8E9) : const Color(0xFF1E1E1E),
+                                isLight
+                                    ? const Color(0xFFF1F8E9)
+                                    : const Color(0xFF1E1E1E),
                               ],
                               stops: const [0.25, 0.55],
                             ),
@@ -678,18 +705,25 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                             child: AspectRatio(
                               aspectRatio: 16 / 9,
                               child: newPhotoFile != null
-                                  ? Image.file(newPhotoFile!, width: double.infinity, fit: BoxFit.cover)
+                                  ? Image.file(newPhotoFile!,
+                                      width: double.infinity, fit: BoxFit.cover)
                                   : (recipe.photo.isNotEmpty
-                                  ? (recipe.photo.startsWith("http")
-                                  ? Image.network(recipe.photo, width: double.infinity, fit: BoxFit.cover)
-                                  : Image.file(File(recipe.photo), width: double.infinity, fit: BoxFit.cover))
-                                  : Container(
-                                width: double.infinity,
-                                color: Colors.grey[300],
-                                child: const Center(
-                                  child: Icon(Icons.image, size: 60, color: Colors.white70),
-                                ),
-                              )),
+                                      ? (recipe.photo.startsWith("http")
+                                          ? Image.network(recipe.photo,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover)
+                                          : Image.file(File(recipe.photo),
+                                              width: double.infinity,
+                                              fit: BoxFit.cover))
+                                      : Container(
+                                          width: double.infinity,
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: Icon(Icons.image,
+                                                size: 60,
+                                                color: Colors.white70),
+                                          ),
+                                        )),
                             ),
                           ),
                         ),
@@ -703,8 +737,10 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                     // ---------- STEPPER PERSONALIZADO ----------
                     delegate: SliverChildListDelegate([
                       Builder(builder: (context) {
-                        final recipeStepsProvider = context.watch<RecipeStepsProvider>();
-                        final recipeDetailProvider = context.watch<RecipeDetailProvider>();
+                        final recipeStepsProvider =
+                            context.watch<RecipeStepsProvider>();
+                        final recipeDetailProvider =
+                            context.watch<RecipeDetailProvider>();
 
                         if (recipeStepsProvider.isLoading) {
                           return const Center(
@@ -718,7 +754,9 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                         if (recipeStepsProvider.steps.isEmpty) {
                           if (recipeDetailProvider.isEditing) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              context.read<RecipeDetailProvider>().setEditing(false);
+                              context
+                                  .read<RecipeDetailProvider>()
+                                  .setEditing(false);
                             });
                           }
                           return clickableBlueText();
@@ -762,8 +800,8 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                       Consumer<ProductsRecipeProvider>(
                         builder: (context, prov, _) {
                           if (prov.products.isEmpty) {
-                            return Text(
-                                AppLocalizations.of(context)!.no_linked_products);
+                            return Text(AppLocalizations.of(context)!
+                                .no_linked_products);
                           }
                           return Column(
                             children: prov.products.map((product) {
@@ -779,22 +817,26 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                                 child: SizedBox(
                                   height: 85,
                                   child: Padding(
-                                    padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
                                     child: Center(
                                       child: ListTile(
                                         contentPadding:
-                                        const EdgeInsets.symmetric(vertical: 8),
+                                            const EdgeInsets.symmetric(
+                                                vertical: 8),
                                         leading: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           child: AspectRatio(
                                             aspectRatio: 1.4,
                                             child: Image.network(
                                               product.photo,
                                               fit: BoxFit.contain,
                                               errorBuilder: (_, __, ___) =>
-                                              const Icon(Icons.image_not_supported,
-                                                  size: 50, color: Colors.grey),
+                                                  const Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 50,
+                                                      color: Colors.grey),
                                             ),
                                           ),
                                         ),
@@ -810,9 +852,8 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                                             Icons.arrow_forward_ios,
                                             size: 20,
                                             color: Colors.grey),
-                                        onTap: () =>
-                                            showProductDetail(
-                                                context, product.toMap()),
+                                        onTap: () => showProductDetail(
+                                            context, product.toMap()),
                                       ),
                                     ),
                                   ),
@@ -844,92 +885,91 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
           ],
         ),
         floatingActionButton: (!editingName &&
-            !context
-                .watch<RecipeDetailProvider>()
-                .isEditing)
+                !context.watch<RecipeDetailProvider>().isEditing)
             ? SpeedDial(
-          heroTag: 'fab-menu',
-          animatedIcon: AnimatedIcons.menu_close,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
-          buttonSize: const Size(58, 58),
-          children: [
-            // ---------- ICONO EDITAR PASOS ----------
-            SpeedDialChild(
-              child: const Icon(Icons.description),
-              label: AppLocalizations.of(context)!.edit_step,
-              onTap: () async {
-                final recipeStepsProvider = context.read<RecipeStepsProvider>();
+                heroTag: 'fab-menu',
+                animatedIcon: AnimatedIcons.menu_close,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                buttonSize: const Size(58, 58),
+                children: [
+                  // ---------- ICONO EDITAR PASOS ----------
+                  SpeedDialChild(
+                    child: const Icon(Icons.description),
+                    label: AppLocalizations.of(context)!.edit_step,
+                    onTap: () async {
+                      final recipeStepsProvider =
+                          context.read<RecipeStepsProvider>();
 
-                if (recipeStepsProvider.steps.isEmpty) {
-                  await recipeStepsProvider.createStep("", "");
-                }
+                      if (recipeStepsProvider.steps.isEmpty) {
+                        await recipeStepsProvider.createStep("", "");
+                      }
 
-                context.read<RecipeDetailProvider>().setEditing(true);
-              },
-            ),
+                      context.read<RecipeDetailProvider>().setEditing(true);
+                    },
+                  ),
 
-            // ---------- ICONO EDITAR IMAGEN ----------
-            SpeedDialChild(
-              child: const Icon(Icons.image),
-              label: AppLocalizations.of(context)!.change_photo,
-              onTap: () {
-                showEditPhotoDialog();
-              },
-            ),
+                  // ---------- ICONO EDITAR IMAGEN ----------
+                  SpeedDialChild(
+                    child: const Icon(Icons.image),
+                    label: AppLocalizations.of(context)!.change_photo,
+                    onTap: () {
+                      showEditPhotoDialog();
+                    },
+                  ),
 
-            // ---------- ICONO EDITAR NOMBRE ----------
-            SpeedDialChild(
-              child: const Icon(Icons.edit),
-              label: AppLocalizations.of(context)!.edit_name,
-              onTap: () {
-                setState(() {
-                  editingName = true;
-                });
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _focusNode.requestFocus();
-                  Future.delayed(const Duration(milliseconds: 1), () {
-                    nameController.selection = TextSelection.collapsed(
-                      offset: nameController.text.length,
-                    );
-                  });
-                });
-              },
-            ),
-          ],
-        )
+                  // ---------- ICONO EDITAR NOMBRE ----------
+                  SpeedDialChild(
+                    child: const Icon(Icons.edit),
+                    label: AppLocalizations.of(context)!.edit_name,
+                    onTap: () {
+                      setState(() {
+                        editingName = true;
+                      });
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _focusNode.requestFocus();
+                        Future.delayed(const Duration(milliseconds: 1), () {
+                          nameController.selection = TextSelection.collapsed(
+                            offset: nameController.text.length,
+                          );
+                        });
+                      });
+                    },
+                  ),
+                ],
+              )
 
-        // ---------- FABS CONFIRMAR CAMBIOS / CANCELAR CAMBIOS ----------
+            // ---------- FABS CONFIRMAR CAMBIOS / CANCELAR CAMBIOS ----------
             : Row(
-          children: [
-            const Spacer(),
-            FloatingActionButton(
-              heroTag: 'fab-save',
-              onPressed: () async {
-                await saveChanges();
-                context.read<RecipeDetailProvider>().setEditing(false);
-                setState(() {
-                  editingName = false;
-                });
-              },
-              backgroundColor: Colors.green,
-              child: const Icon(Icons.check, color: Colors.white),
-            ),
-            const SizedBox(width: 16),
-            FloatingActionButton(
-              heroTag: 'fab-cancel',
-              onPressed: () {
-                context.read<RecipeDetailProvider>().setEditing(false);
-                editingName = false;
-                context
-                    .read<RecipeDetailProvider>()
-                    .setNameChanged(false);
-              },
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.cancel, color: Colors.white),
-            ),
-          ],
-        ),
+                children: [
+                  const Spacer(),
+                  FloatingActionButton(
+                    heroTag: 'fab-save',
+                    onPressed: () async {
+                      await saveChanges();
+                      context.read<RecipeDetailProvider>().setEditing(false);
+                      setState(() {
+                        editingName = false;
+                      });
+                    },
+                    backgroundColor: Colors.green,
+                    child: const Icon(Icons.check, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  FloatingActionButton(
+                    heroTag: 'fab-cancel',
+                    onPressed: () {
+                      context.read<RecipeDetailProvider>().setEditing(false);
+                      editingName = false;
+                      context
+                          .read<RecipeDetailProvider>()
+                          .setNameChanged(false);
+                    },
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.cancel, color: Colors.white),
+                  ),
+                ],
+              ),
       ),
     );
   }
