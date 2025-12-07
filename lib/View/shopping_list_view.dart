@@ -373,26 +373,7 @@ class ShoppingListViewState extends State<ShoppingListView> {
                                             ),
 
                                             // ---------- NOMBRE Y PRECIO DEL PRODUCTO ----------
-                                            title: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                    maxLines: 2,
-                                                    product.name),
-                                                Text(
-                                                    '\$${(product.price).toStringAsFixed(2)}',
-                                                    style: TextStyle(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .primary,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 12))
-                                              ],
-                                            ),
+                                            title: Text(maxLines: 2, product.name),
                                             trailing: Row(
                                               // HACEMOS QUE OCUPE LO NECESARIO
                                               mainAxisSize: MainAxisSize.min,
@@ -500,12 +481,15 @@ class ShoppingListViewState extends State<ShoppingListView> {
                                         ),
                                       ),
                                     ),
-                                    Divider(
-                                      height: 1,
-                                      thickness: 0.8,
-                                      indent: 8,
-                                      endIndent: 8,
-                                      color: Colors.grey.shade400,
+                                    Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Divider(
+                                        height: 1,
+                                        thickness: 0.8,
+                                        indent: 8,
+                                        endIndent: 8,
+                                        color: Colors.grey.shade400,
+                                      ),
                                     ),
                                   ],
                                 );
