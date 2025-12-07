@@ -111,6 +111,7 @@ class RecipeProvider with ChangeNotifier {
         'usuariouuid': newRecipe.userUuid,
         'foto': newRecipe.photo,
         'tiempo': newRecipe.time,
+        'codigo_compartir': newRecipe.shareCode
       }).select();
 
 

@@ -468,4 +468,93 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paste_image_from_clipboard => 'Paste imagen from clipboard';
+
+  @override
+  String get code => 'Code';
+
+  @override
+  String get import_recipe => 'Import recipe';
+
+  @override
+  String get type_code_recipe => 'Type the recipe\'s code';
+
+  @override
+  String get import => 'Import';
+
+  @override
+  String get recipe_already_imported => 'Recipe already imported as';
+
+  @override
+  String get own_recipe_warning => 'Your own recipe can\'t be imported';
+
+  @override
+  String get invalid_code => 'Invalid code or recipe not found';
+
+  @override
+  String get ingredients => 'Ingredients';
+
+  @override
+  String get all_none => 'All/None';
+
+  @override
+  String get duplicated_info =>
+      'Products with barcodes that you already own will not be duplicated. All other products will be duplicated if they remain selected';
+
+  @override
+  String get owned_product => 'Owned';
+
+  @override
+  String get new_product => 'New';
+
+  @override
+  String get will_duplicate => 'Will duplicate';
+
+  @override
+  String get steps => 'Steps';
+
+  @override
+  String get what_will_be_imported => 'Will be imported:';
+
+  @override
+  String get already_have => 'you already have';
+
+  @override
+  String get new_products => 'new';
+
+  @override
+  String get new_products_in_special_supermarket =>
+      'New products will be organized in \"Imported recipes\"';
+
+  @override
+  String and_more(Object count) {
+    return 'and $count more';
+  }
+
+  @override
+  String and_more_steps(Object count) {
+    return 'and $count more steps';
+  }
+
+  @override
+  String get import_error => 'Import error';
+
+  @override
+  String get recipe_imported_successfully => 'Recipe imported successfully';
+
+  @override
+  String get imported_recipes => 'Imported recipes';
+
+  @override
+  String products_organized_in(Object recipeName) {
+    return 'Products will be organized in \"$recipeName\"';
+  }
+
+  @override
+  String get share_recipe_message => 'I’m sharing my recipe: ';
+
+  @override
+  String get use_code => 'Use the code: ';
+
+  @override
+  String get error_sharing_code => 'Error sharing the code';
 }

@@ -6,6 +6,8 @@ class RecipeModel {
   String userUuid;
   String photo;
   String time;
+  final String? shareCode;
+  final String? importedCode;
 
   RecipeModel({
     this.id,
@@ -13,30 +15,36 @@ class RecipeModel {
     required this.description,
     required this.userUuid,
     required this.photo,
-    required this.time
+    required this.time,
+    this.shareCode,
+    this.importedCode,
   });
 
   /// Crea un RecipeModel desde un Map de la base de datos
   factory RecipeModel.fromMap(Map<String, dynamic> map) {
     return RecipeModel(
-        id: map['id'] as int?,
-        name: map['nombre']?.toString() ?? '',
-        description: map['descripcion']?.toString() ?? '',
-        userUuid: map['usuariouuid']?.toString() ?? '',
-        photo: map['foto']?.toString() ?? '',
-        time: map ['tiempo']?.toString() ?? ''
+      id: map['id'] as int?,
+      name: map['nombre']?.toString() ?? '',
+      description: map['descripcion']?.toString() ?? '',
+      userUuid: map['usuariouuid']?.toString() ?? '',
+      photo: map['foto']?.toString() ?? '',
+      time: map['tiempo']?.toString() ?? '',
+      shareCode: map['codigo_compartir'],
+      importedCode: map['codigo_importado'],
     );
   }
 
   /// Convierte el RecipeModel a un Map para la base de datos
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      if (id != null) 'id': id,
       'nombre': name,
       'descripcion': description,
       'usuariouuid': userUuid,
       'foto': photo,
-      'tiempo': time
+      'tiempo': time,
+      if (shareCode != null) 'codigo_compartir': shareCode,
+      if (importedCode != null) 'codigo_importado': importedCode,
     };
   }
 
@@ -48,6 +56,8 @@ class RecipeModel {
     String? userUuid,
     String? photo,
     String? time,
+    String? shareCode,
+    String? importedCode,
   }) {
     return RecipeModel(
       id: id ?? this.id,
@@ -56,8 +66,8 @@ class RecipeModel {
       userUuid: userUuid ?? this.userUuid,
       photo: photo ?? this.photo,
       time: time ?? this.time,
+      shareCode: shareCode ?? this.shareCode,
+      importedCode: importedCode ?? this.importedCode,
     );
   }
-
-
 }

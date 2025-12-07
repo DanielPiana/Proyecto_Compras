@@ -985,6 +985,168 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Pegar imagen desde el portapapeles'**
   String get paste_image_from_clipboard;
+
+  /// No description provided for @code.
+  ///
+  /// In es, this message translates to:
+  /// **'Código'**
+  String get code;
+
+  /// No description provided for @import_recipe.
+  ///
+  /// In es, this message translates to:
+  /// **'Importar receta'**
+  String get import_recipe;
+
+  /// No description provided for @type_code_recipe.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe el código de la receta'**
+  String get type_code_recipe;
+
+  /// No description provided for @import.
+  ///
+  /// In es, this message translates to:
+  /// **'Importar'**
+  String get import;
+
+  /// No description provided for @recipe_already_imported.
+  ///
+  /// In es, this message translates to:
+  /// **'Receta ya importada como'**
+  String get recipe_already_imported;
+
+  /// No description provided for @own_recipe_warning.
+  ///
+  /// In es, this message translates to:
+  /// **'No puedes importar tu propia receta'**
+  String get own_recipe_warning;
+
+  /// No description provided for @invalid_code.
+  ///
+  /// In es, this message translates to:
+  /// **'Código inválido o receta no encontrada'**
+  String get invalid_code;
+
+  /// No description provided for @ingredients.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingredientes'**
+  String get ingredients;
+
+  /// No description provided for @all_none.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos/Ninguno'**
+  String get all_none;
+
+  /// No description provided for @duplicated_info.
+  ///
+  /// In es, this message translates to:
+  /// **'Los productos con código de barras que ya tengas no se duplicarán, los demás, si ya los tienes, se duplicarán si los dejas seleccionados'**
+  String get duplicated_info;
+
+  /// No description provided for @owned_product.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya lo tienes'**
+  String get owned_product;
+
+  /// No description provided for @new_product.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo'**
+  String get new_product;
+
+  /// No description provided for @will_duplicate.
+  ///
+  /// In es, this message translates to:
+  /// **'Se duplicará'**
+  String get will_duplicate;
+
+  /// No description provided for @steps.
+  ///
+  /// In es, this message translates to:
+  /// **'Pasos'**
+  String get steps;
+
+  /// No description provided for @what_will_be_imported.
+  ///
+  /// In es, this message translates to:
+  /// **'Se importará:'**
+  String get what_will_be_imported;
+
+  /// No description provided for @already_have.
+  ///
+  /// In es, this message translates to:
+  /// **'que ya tienes'**
+  String get already_have;
+
+  /// No description provided for @new_products.
+  ///
+  /// In es, this message translates to:
+  /// **'nuevos'**
+  String get new_products;
+
+  /// No description provided for @new_products_in_special_supermarket.
+  ///
+  /// In es, this message translates to:
+  /// **'Los productos nuevos se organizarán en \"Recetas importadas\"'**
+  String get new_products_in_special_supermarket;
+
+  /// No description provided for @and_more.
+  ///
+  /// In es, this message translates to:
+  /// **'y {count} más'**
+  String and_more(Object count);
+
+  /// No description provided for @and_more_steps.
+  ///
+  /// In es, this message translates to:
+  /// **'y {count} pasos más'**
+  String and_more_steps(Object count);
+
+  /// No description provided for @import_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al importar'**
+  String get import_error;
+
+  /// No description provided for @recipe_imported_successfully.
+  ///
+  /// In es, this message translates to:
+  /// **'Receta importada correctamente'**
+  String get recipe_imported_successfully;
+
+  /// No description provided for @imported_recipes.
+  ///
+  /// In es, this message translates to:
+  /// **'Recetas importadas'**
+  String get imported_recipes;
+
+  /// No description provided for @products_organized_in.
+  ///
+  /// In es, this message translates to:
+  /// **'Los productos se organizarán en \"{recipeName}\"'**
+  String products_organized_in(Object recipeName);
+
+  /// No description provided for @share_recipe_message.
+  ///
+  /// In es, this message translates to:
+  /// **'Te comparto mi receta: '**
+  String get share_recipe_message;
+
+  /// No description provided for @use_code.
+  ///
+  /// In es, this message translates to:
+  /// **'Usa el código: '**
+  String get use_code;
+
+  /// No description provided for @error_sharing_code.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al compartir el código'**
+  String get error_sharing_code;
 }
 
 class _AppLocalizationsDelegate

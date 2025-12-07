@@ -469,4 +469,93 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get paste_image_from_clipboard => 'Pegar imagen desde el portapapeles';
+
+  @override
+  String get code => 'Código';
+
+  @override
+  String get import_recipe => 'Importar receta';
+
+  @override
+  String get type_code_recipe => 'Escribe el código de la receta';
+
+  @override
+  String get import => 'Importar';
+
+  @override
+  String get recipe_already_imported => 'Receta ya importada como';
+
+  @override
+  String get own_recipe_warning => 'No puedes importar tu propia receta';
+
+  @override
+  String get invalid_code => 'Código inválido o receta no encontrada';
+
+  @override
+  String get ingredients => 'Ingredientes';
+
+  @override
+  String get all_none => 'Todos/Ninguno';
+
+  @override
+  String get duplicated_info =>
+      'Los productos con código de barras que ya tengas no se duplicarán, los demás, si ya los tienes, se duplicarán si los dejas seleccionados';
+
+  @override
+  String get owned_product => 'Ya lo tienes';
+
+  @override
+  String get new_product => 'Nuevo';
+
+  @override
+  String get will_duplicate => 'Se duplicará';
+
+  @override
+  String get steps => 'Pasos';
+
+  @override
+  String get what_will_be_imported => 'Se importará:';
+
+  @override
+  String get already_have => 'que ya tienes';
+
+  @override
+  String get new_products => 'nuevos';
+
+  @override
+  String get new_products_in_special_supermarket =>
+      'Los productos nuevos se organizarán en \"Recetas importadas\"';
+
+  @override
+  String and_more(Object count) {
+    return 'y $count más';
+  }
+
+  @override
+  String and_more_steps(Object count) {
+    return 'y $count pasos más';
+  }
+
+  @override
+  String get import_error => 'Error al importar';
+
+  @override
+  String get recipe_imported_successfully => 'Receta importada correctamente';
+
+  @override
+  String get imported_recipes => 'Recetas importadas';
+
+  @override
+  String products_organized_in(Object recipeName) {
+    return 'Los productos se organizarán en \"$recipeName\"';
+  }
+
+  @override
+  String get share_recipe_message => 'Te comparto mi receta: ';
+
+  @override
+  String get use_code => 'Usa el código: ';
+
+  @override
+  String get error_sharing_code => 'Error al compartir el código';
 }

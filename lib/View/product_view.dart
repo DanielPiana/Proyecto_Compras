@@ -207,8 +207,6 @@ class ProductsViewState extends State<ProductsView> {
               // ---------- CONTENIDO ----------
               content: SingleChildScrollView(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (isMobile)
                       ElevatedButton.icon(
@@ -660,8 +658,6 @@ class ProductsViewState extends State<ProductsView> {
               title: Text(AppLocalizations.of(context)!.createProduct),
               content: SingleChildScrollView(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ---------- ESCANEO DE CÓDIGO DE BARRAS ----------
                     if (isMobile)
