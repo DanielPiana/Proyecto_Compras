@@ -902,11 +902,11 @@ abstract class AppLocalizations {
   /// **'Aquí puedes gestionar tus recetas: añadir, editar, eliminar o compartir, con pasos personalizados e ingredientes'**
   String get recipe_placeholder_body;
 
-  /// No description provided for @recipe_placeholder_top.
+  /// No description provided for @recipe_placeholder_bottom.
   ///
   /// In es, this message translates to:
-  /// **'Importa tu primera receta'**
-  String get recipe_placeholder_top;
+  /// **'Crea tu primera receta'**
+  String get recipe_placeholder_bottom;
 
   /// No description provided for @products_added_to_list.
   ///
@@ -1165,6 +1165,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Error al actualizar la foto'**
   String get photo_updated_error;
+
+  /// No description provided for @recipe_placeholder_top.
+  ///
+  /// In es, this message translates to:
+  /// **'Importa tu primera receta'**
+  String get recipe_placeholder_top;
 }
 
 class _AppLocalizationsDelegate

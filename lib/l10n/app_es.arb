@@ -134,7 +134,7 @@
    "receipt_placeholder_body": "Aquí puede ver las facturas generadas para registrar tus gastos y mantener un control de tus compras\n Las facturas se generan desde la pestaña Compra.",
    "recipe_placeholder_title": "No tienes recetas",
    "recipe_placeholder_body": "Aquí puedes gestionar tus recetas: añadir, editar, eliminar o compartir, con pasos personalizados e ingredientes",
-   "recipe_placeholder_top": "Crea tu primera receta",
+   "recipe_placeholder_bottom": "Crea tu primera receta",
    "products_added_to_list" : "Se añadieron todos los productos a la lista de la compra",
    "products_already_in_list" : "Todos los productos seleccionados ya estaban en la lista",
    "add_ingredients_to_list" : "Añadir a lista",

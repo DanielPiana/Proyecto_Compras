@@ -425,7 +425,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here you can manage your recipes: add, edit, delete, or share them, with custom steps and ingredients.';
 
   @override
-  String get recipe_placeholder_top => 'Import your first recipe';
+  String get recipe_placeholder_bottom => 'Create your first recipe';
 
   @override
   String get products_added_to_list =>
@@ -566,4 +566,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photo_updated_error => 'Error updating photo';
+
+  @override
+  String get recipe_placeholder_top => 'Import your first recipe';
 }

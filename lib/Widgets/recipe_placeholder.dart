@@ -47,7 +47,7 @@ class RecipePlaceholder extends StatelessWidget {
                 children: [
                   Text(
                     AppLocalizations.of(context)!
-                        .recipe_placeholder_top,
+                        .recipe_placeholder_bottom,
                     style: const TextStyle(
                       color: Colors.grey,
                       fontStyle: FontStyle.italic,
