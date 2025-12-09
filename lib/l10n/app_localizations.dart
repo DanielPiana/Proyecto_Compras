@@ -905,7 +905,7 @@ abstract class AppLocalizations {
   /// No description provided for @recipe_placeholder_top.
   ///
   /// In es, this message translates to:
-  /// **'Crea tu primera receta'**
+  /// **'Importa tu primera receta'**
   String get recipe_placeholder_top;
 
   /// No description provided for @products_added_to_list.

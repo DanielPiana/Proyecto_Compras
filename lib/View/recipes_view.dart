@@ -18,6 +18,7 @@ import '../Widgets/recipe_placeholder.dart';
 import '../Widgets/awesome_snackbar.dart';
 import '../l10n/app_localizations.dart';
 import '../models/recipe_model.dart';
+import '../utils/image_name_normalizer.dart';
 import '../utils/image_picker.dart';
 import 'recipe_detail_view.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart' as asc;
@@ -856,8 +857,8 @@ class RecipesViewState extends State<RecipesView> {
 
                     if (selectedImage != null) {
                       final bytes = await selectedImage!.readAsBytes();
-                      final fileName =
-                          '${name}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+                      final fileName = '${normalizeImageName(name)}_${Random().nextInt(9999).toString().padLeft(4, '0')}';
+
                       final path = 'recetas/$userUuid/$fileName.jpg';
 
                       await Supabase.instance.client.storage

@@ -426,7 +426,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aquí puedes gestionar tus recetas: añadir, editar, eliminar o compartir, con pasos personalizados e ingredientes';
 
   @override
-  String get recipe_placeholder_top => 'Crea tu primera receta';
+  String get recipe_placeholder_top => 'Importa tu primera receta';
 
   @override
   String get products_added_to_list =>
