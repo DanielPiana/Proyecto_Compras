@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:proyectocompras/utils/capitalize.dart';
+import 'package:food_manager/utils/capitalize.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Providers/shopping_list_provider.dart';
 import '../Providers/products_provider.dart';

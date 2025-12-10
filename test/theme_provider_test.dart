@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:proyectocompras/Providers/theme_provider.dart';
+import 'package:food_manager/Providers/theme_provider.dart';
 
 
 void main() {

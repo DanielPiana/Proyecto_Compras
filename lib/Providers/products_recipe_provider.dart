@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import 'package:proyectocompras/Providers/products_provider.dart';
+import 'package:food_manager/Providers/products_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/product_model.dart';

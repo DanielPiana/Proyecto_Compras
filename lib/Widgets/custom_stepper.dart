@@ -1,8 +1,8 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:proyectocompras/Providers/recipe_detail_provider.dart';
-import 'package:proyectocompras/Widgets/awesome_snackbar.dart';
+import 'package:food_manager/Providers/recipe_detail_provider.dart';
+import 'package:food_manager/Widgets/awesome_snackbar.dart';
 import '../Providers/recipe_steps_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/step_recipe_model.dart';

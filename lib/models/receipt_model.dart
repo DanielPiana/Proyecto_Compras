@@ -1,4 +1,4 @@
-import 'package:proyectocompras/models/product_receipt_model.dart';
+import 'package:food_manager/models/product_receipt_model.dart';
 
 /// Modelo que representa una factura/ticket con sus productos asociados
 class ReceiptModel {
