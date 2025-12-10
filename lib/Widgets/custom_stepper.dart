@@ -31,31 +31,34 @@ class _CustomStepperState extends State<CustomStepper> {
   @override
   void initState() {
     super.initState();
+
+    // CARGAR EL PRIMER PASO EN LOS CONTROLLERS
     _titleController.text = widget.recipeSteps.first.title;
     _descriptionController.text = widget.recipeSteps.first.description;
 
-    final provider = context.read<RecipeDetailProvider>();
+    final recipeDetailProvider = context.read<RecipeDetailProvider>();
 
-    provider.addListener(() {
-      if (!_lastEditingState && provider.isEditing) {
+    recipeDetailProvider.addListener(() {
+      // SI CAMBIAMOS EL ESTADO DE EDICIÓN, PONEMOS EL FOCUS EN EL CONTROLLER
+      if (!_lastEditingState && recipeDetailProvider.isEditing) {
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted) {
             _focusNode.requestFocus();
           }
         });
       }
-      _lastEditingState = provider.isEditing;
+      _lastEditingState = recipeDetailProvider.isEditing;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final detailRecipeProvider = context.read<RecipeDetailProvider>();
-    // CARGAMOS PASOS DESDE EL PROVIDER
-    final steps = context
-        .watch<RecipeStepsProvider>()
-        .steps;
 
+    // CARGAMOS PASOS DESDE EL PROVIDER
+    final steps = context.watch<RecipeStepsProvider>().steps;
+
+    // SI NO HAY PASOS, RESETEAMOS A PASO 0 VACÍO
     if (steps.isEmpty) {
       if (currentStep != 0) {
         setState(() {
@@ -64,6 +67,7 @@ class _CustomStepperState extends State<CustomStepper> {
           _descriptionController.text = '';
         });
       }
+      // SI EL PASO ACTUAL FUE BORRADO, IR AL ULTIMO DISPONIBLE
     } else if (currentStep >= steps.length) {
       setState(() {
         currentStep = steps.length - 1;
@@ -74,22 +78,20 @@ class _CustomStepperState extends State<CustomStepper> {
 
     return Column(
       children: [
+        // CONTAINER PRINCIPAL
         Container(
           margin: const EdgeInsets.all(0),
           decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade600, width: 0.8),
               borderRadius: BorderRadius.circular(10),
-              color: Theme
-                  .of(context)
-                  .brightness == Brightness.light
-                  ? Colors.white
-                  : const Color(0xFF424242),
+              color: Theme.of(context).brightness == Brightness.light ? Colors.white : const Color(0xFF424242),
           ),
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // CONTAINER INDICADOR DE PASO EN EL QUE ESTAS
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
@@ -99,9 +101,7 @@ class _CustomStepperState extends State<CustomStepper> {
                     border: Border.all(color: Colors.blue.withOpacity(0.3)),
                   ),
                   child: Text(
-                    '${AppLocalizations.of(context)!.step}: ${steps.isEmpty
-                        ? 0
-                        : currentStep + 1} de ${steps.length}',
+                    '${AppLocalizations.of(context)!.step}: ${steps.isEmpty ? 0 : currentStep + 1} de ${steps.length}',
                     style: const TextStyle(
                       color: Colors.blue,
                       fontSize: 12,
@@ -110,6 +110,7 @@ class _CustomStepperState extends State<CustomStepper> {
                   ),
                 ),
                 const SizedBox(height: 6),
+                // CAMBIO DE MODO LECTURA A MODO EDICIÓN
                 AnimatedCrossFade(
                   duration: const Duration(milliseconds: 400),
                   crossFadeState: context
@@ -117,11 +118,13 @@ class _CustomStepperState extends State<CustomStepper> {
                       .isEditing
                       ? CrossFadeState.showSecond
                       : CrossFadeState.showFirst,
+                  // MODO LECTURA
                   firstChild: (steps.isEmpty)
                       ? const SizedBox.shrink()
                       : Column(
                     children: [
                       Center(
+
                         child: Text(
                           steps[currentStep].title,
                           style: const TextStyle(
@@ -130,7 +133,9 @@ class _CustomStepperState extends State<CustomStepper> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 12),
+
                       Text(
                         steps[currentStep].description,
                         style: const TextStyle(
@@ -140,6 +145,7 @@ class _CustomStepperState extends State<CustomStepper> {
                       ),
                     ],
                   ),
+                  // MODO EDICION
                   secondChild: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Column(
@@ -153,12 +159,8 @@ class _CustomStepperState extends State<CustomStepper> {
                           ),
                           onChanged: (value) {
                             if (steps.isEmpty) return;
-                            final updated =
-                            steps[currentStep].copyWith(title: value);
-                            context
-                                .read<RecipeStepsProvider>()
-                                .updateLocalStep(
-                                updated.stepNumber, updated);
+                            final updated = steps[currentStep].copyWith(title: value);
+                            context.read<RecipeStepsProvider>().updateLocalStep(updated.stepNumber, updated);
                             detailRecipeProvider.setStepChanged(true);
                           },
                         ),
@@ -172,12 +174,8 @@ class _CustomStepperState extends State<CustomStepper> {
                           ),
                           onChanged: (value) {
                             if (steps.isEmpty) return;
-                            final actualizado =
-                            steps[currentStep].copyWith(description: value);
-                            context
-                                .read<RecipeStepsProvider>()
-                                .updateLocalStep(
-                                actualizado.stepNumber, actualizado);
+                            final actualizado = steps[currentStep].copyWith(description: value);
+                            context.read<RecipeStepsProvider>().updateLocalStep(actualizado.stepNumber, actualizado);
                             detailRecipeProvider.setStepChanged(true);
                           },
                         ),
@@ -187,11 +185,12 @@ class _CustomStepperState extends State<CustomStepper> {
                 ),
 
                 const SizedBox(height: 16),
-
+                // BOTONES NUEVO PASO/ELIMINAR PASO EN MODO EDICION
                 if (detailRecipeProvider.isEditing)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -200,22 +199,21 @@ class _CustomStepperState extends State<CustomStepper> {
                           ),
                         ),
                         onPressed: () {
-                          final pProv = context.read<RecipeStepsProvider>();
-                          if (pProv.steps.length == 10) {
+                          final recipeStepsProvider = context.read<RecipeStepsProvider>();
+                          if (recipeStepsProvider.steps.length == 10) {
                             showAwesomeSnackBar(context,
                                 title: AppLocalizations.of(context)!.warning,
                                 message: AppLocalizations.of(context)!.max_steps_warning,
                                 contentType: ContentType.warning);
                           } else {
-
-                            pProv.createStep("", "");
-                            final newSteps = pProv.steps;
+                            // CREAR PASO VACIO
+                            recipeStepsProvider.createStep("", "");
+                            final newSteps = recipeStepsProvider.steps;
+                            // IR AL PASO RECIEN CREADO
                             setState(() {
                               currentStep = newSteps.isEmpty ? 0 : newSteps.length - 1;
-                              _titleController.text =
-                              newSteps.isNotEmpty ? newSteps.last.title : "";
-                              _descriptionController.text =
-                              newSteps.isNotEmpty ? newSteps.last.description : "";
+                              _titleController.text = newSteps.isNotEmpty ? newSteps.last.title : "";
+                              _descriptionController.text = newSteps.isNotEmpty ? newSteps.last.description : "";
                             });
                             context.read<RecipeDetailProvider>().setEditing(
                                 true);
@@ -234,20 +232,20 @@ class _CustomStepperState extends State<CustomStepper> {
                           ),
                         ),
                         onPressed: () async {
-                          final pProv = context.read<RecipeStepsProvider>();
-                          if (pProv.steps.isEmpty) return;
-                          final paso = pProv.steps[currentStep];
+                          final recipeStepsProvider = context.read<RecipeStepsProvider>();
+                          if (recipeStepsProvider.steps.isEmpty) return;
+                          final paso = recipeStepsProvider.steps[currentStep];
 
-                          final confirmacion = await showDialog<bool>(
+                          final confirmation = await showDialog<bool>(
                             context: context,
                             builder: (dialogContext) {
                               return AlertDialog(
                                 title: Text(
                                     AppLocalizations.of(context)!.delete_step),
-                                content: Text(AppLocalizations.of(context)!
-                                    .delete_step_confirmation),
+                                content: Text(
+                                    AppLocalizations.of(context)!.delete_step_confirmation),
                                 actions: [
-                                  TextButton(
+                                  ElevatedButton(
                                     onPressed: () =>
                                         Navigator.pop(dialogContext, false),
                                     child: Text(
@@ -272,18 +270,18 @@ class _CustomStepperState extends State<CustomStepper> {
                             },
                           );
 
-                          if (confirmacion != true) return;
-                          await pProv.deleteStep(paso.stepNumber);
+                          if (confirmation != true) return;
+
+                          await recipeStepsProvider.deleteStep(paso.stepNumber);
 
                           if (!mounted) return;
-                          final len = pProv.steps.length;
-                          if (len > 0) {
+                          final stepsLength = recipeStepsProvider.steps.length;
+
+                          if (stepsLength > 0) {
                             setState(() {
-                              if (currentStep >= len) currentStep = len - 1;
-                              _titleController.text =
-                                  pProv.steps[currentStep].title;
-                              _descriptionController.text =
-                                  pProv.steps[currentStep].description;
+                              if (currentStep >= stepsLength) currentStep = stepsLength - 1;
+                              _titleController.text = recipeStepsProvider.steps[currentStep].title;
+                              _descriptionController.text = recipeStepsProvider.steps[currentStep].description;
                             });
                           } else {
                             setState(() {
@@ -344,8 +342,7 @@ class _CustomStepperState extends State<CustomStepper> {
                   setState(() {
                     currentStep--;
                     _titleController.text = steps[currentStep].title;
-                    _descriptionController.text =
-                        steps[currentStep].description;
+                    _descriptionController.text = steps[currentStep].description;
                   });
                 }
                     : null,
