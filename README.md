@@ -1,7 +1,10 @@
 # TRABAJO FINAL DE GRADO - FOOD MANAGER
 ## Descripción del proyecto
+<img src="https://github.com/DanielPiana/Food_Manager/blob/master/assets/icon_app.png" width="100" align="right" style="margin-rigth:10px;" alt="FoodManagerLogo"/>
+
 **Food manager** es una aplicación desarrollada como el proyecto final de módulo del curso de Desarrollo aplicaciones multiplataforma, diseñada a partir de una necesidad personal, la cual es juntar en una única aplicación la gestión de información relacionada con la compra y alimentación.
 
+<br>
 
 ## Objetivos del proyecto
 ### Objetivos principales
@@ -16,6 +19,7 @@
 - **Gestión de facturas**: Registrar y guardar las facturas de compra,
   permitiendo llevar un control del gasto.
 
+<br>
 
 ## Funcionalidades
 1. Gestión de productos
@@ -23,6 +27,7 @@
 3. Gestión de facturas
 4. Gestión de recetas
 
+<br>
 
 ## Tecnologías utilizadas
 - **Flutter**: Framework multiplataforma de código abierto desarrollado por Google para crear aplicaciones nativas.
@@ -37,10 +42,11 @@
     - Storage para almacenamiento de fotos.
 - **Open Food Facts**: API externa para escaneo y consulta de información de productos mediante códigos de barras, gratis y de código abierto.
 
+<br>
 
 ## Documentación
 - [Documentación de la memoria del proyecto]()
-- [Manual de uso del proyecto]()
+- [Manual de uso del proyecto](https://github.com/DanielPiana/Food_Manager/blob/master/Piana_Salviejo_Daniel_Manual_ProyectoFinal_DAM25.pdf)
 - [Página desplegada con la documentación del proyecto]()
 
 
